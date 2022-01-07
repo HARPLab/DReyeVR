@@ -1,13 +1,15 @@
 # Using `DReyeVR`
 
 Now that you have DReyeVR up and running, this guide will highlight some useful features for researchers using DReyeVR:
-- Maneuvering the Ego-vehicle
-- Using the PythonAPI
-- Adding custom data to the ego-sensor
-- Recording/replaying a scenario
-- Switching control from manual to AI (handoff)
-- Using our config file to modify DReyeVR params 
-- Other guides
+- [Maneuvering the Ego-vehicle](Usage.md#maneuvering-the-ego-vehicle)
+- [Using the PythonAPI](Usage.md#using-the-pythonapi)
+- [Adding custom data to the ego-sensor](Usage.md#adding-custom-data-to-the-ego-sensor)
+- [Recording/replaying a scenario](Usage.md#recordingreplaying-a-scenario)
+- [Switching control from manual to AI (handoff)](Usage.md#control-handoff-to-ai)
+- [Using our config file to modify DReyeVR params](Usage.md#using-our-custom-config-file)
+- [Other guides](Usage.md#other-guides)
+
+![UsageSchematic](Figures/Usage/UsageSchematic.png)
 
 # Maneuvering the Ego-vehicle
 These control schemes work both in VR and non-VR. With the main difference being that in VR you can move the camera pose and orientation with your head tracking, but in flat-screen-mode (non-VR) you'll need to use a mouse like in a first-person game. 
