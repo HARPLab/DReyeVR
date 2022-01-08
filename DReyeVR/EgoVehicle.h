@@ -196,6 +196,17 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     bool bUseMPH;
     float SpeedometerScale; // scale from CM/s to MPH or KPH depending on bUseMPH
 
+    ////////////////:STEERINGWHEEL:////////////////
+    void ConstructSteeringWheel(); // needs to be called in the constructor
+    UPROPERTY(Category = Steering, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    class UStaticMeshComponent *SteeringWheel;
+    void TickSteeringWheel(const float DeltaTime);
+    FVector InitWheelLocation;
+    FRotator InitWheelRotation;
+    float MaxSteerAngleDeg;
+    float MaxSteerVelocity;
+    float SteeringScale;
+
     ////////////////:OTHER:////////////////
 
     // Actor registry

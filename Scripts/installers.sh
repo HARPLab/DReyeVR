@@ -10,7 +10,7 @@ install_over_carla() {
     cp -v Configs/Default*.ini $CARLA_ROOT/Unreal/CarlaUE4/Config/
     cp -v Configs/DReyeVRConfig.ini $CARLA_ROOT/Unreal/CarlaUE4/Config/
     mkdir -p $CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Blueprints/Vehicles/DReyeVR/
-    cp -v Blueprints/* $CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Blueprints/Vehicles/DReyeVR/
+    cp -v -r Blueprints/* $CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Blueprints/Vehicles/DReyeVR/
     mkdir -p $CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Blueprints/Vehicles/DReyeVR/Sounds/
     cp -v -r Sounds/*.uasset $CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Blueprints/Vehicles/DReyeVR/Sounds/
     mkdir -p $CARLA_ROOT/Unreal/CarlaUE4/Content/DReyeVR/ # new DReyeVR content folder
