@@ -85,8 +85,8 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - See [`Docs/LODs.md`](Docs/LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
 
 ## Citation
-If you use our work, please cite the corresponding paper:
-```
+If you use our work, please cite the corresponding [paper](https://arxiv.org/abs/2201.01931):
+```bibtex
 @misc{silvera2022dreyevr,
       title={DReyeVR: Democratizing Virtual Reality Driving Simulation for Behavioural & Interaction Research}, 
       author={Gustavo Silvera and Abhijat Biswas and Henny Admoni},
