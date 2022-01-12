@@ -42,6 +42,9 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
 
     // Initialize text render components
     ConstructDashText();
+
+    // Initialize the steering wheel
+    ConstructSteeringWheel();
 }
 
 void AEgoVehicle::ReadConfigVariables()
@@ -50,6 +53,12 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("EgoVehicle", "DashLocation", DashboardLocnInVehicle);
     ReadConfigValue("EgoVehicle", "SpeedometerInMPH", bUseMPH);
     ReadConfigValue("EgoVehicle", "TurnSignalDuration", TurnSignalDuration);
+    // steering wheel
+    ReadConfigValue("SteeringWheel", "InitLocation", InitWheelLocation);
+    ReadConfigValue("SteeringWheel", "InitRotation", InitWheelRotation);
+    ReadConfigValue("SteeringWheel", "MaxSteerAngleDeg", MaxSteerAngleDeg);
+    ReadConfigValue("SteeringWheel", "MaxSteerVelocity", MaxSteerVelocity);
+    ReadConfigValue("SteeringWheel", "SteeringScale", SteeringScale);
     // camera
     ReadConfigValue("EgoVehicle", "FieldOfView", FieldOfView);
     // other/cosmetic
@@ -133,6 +142,9 @@ void AEgoVehicle::Tick(float DeltaSeconds)
 
     // Draw the flat-screen HUD items like eye-reticle and FPS counter
     DrawFlatHUD(DeltaSeconds);
+
+    // Update the steering wheel to be responsive to user input
+    TickSteeringWheel(DeltaSeconds);
 
     // Draw the spectator vr screen and overlay elements
     DrawSpectatorScreen();
@@ -625,6 +637,42 @@ void AEgoVehicle::UpdateDash()
         GearShifter->SetText(FText::FromString("R"));
     else
         GearShifter->SetText(FText::FromString("D"));
+}
+
+/// ========================================== ///
+/// -----------------:WHEEL:------------------ ///
+/// ========================================== ///
+
+void AEgoVehicle::ConstructSteeringWheel()
+{
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SteeringWheelSM(
+        TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/SteeringWheel/"
+             "SM_SteeringWheel_DReyeVR.SM_SteeringWheel_DReyeVR'"));
+    SteeringWheel = CreateDefaultSubobject<UStaticMeshComponent>(FName("SteeringWheel"));
+    SteeringWheel->SetStaticMesh(SteeringWheelSM.Object);
+    SteeringWheel->SetupAttachment(GetRootComponent()); // The vehicle blueprint itself
+    SteeringWheel->SetRelativeLocation(InitWheelLocation);
+    SteeringWheel->SetRelativeRotation(InitWheelRotation);
+    SteeringWheel->SetGenerateOverlapEvents(false); // don't collide with itself
+    SteeringWheel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    SteeringWheel->SetVisibility(true);
+}
+
+void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
+{
+    const FRotator CurrentRotation = SteeringWheel->GetRelativeRotation();
+    const float TargetAngle = GetVehicleInputs().Steering * SteeringScale;
+    float DeltaAngle = (TargetAngle - CurrentRotation.Roll);
+
+    // place a speed-limit on the steering wheel
+    DeltaAngle = FMath::Clamp(DeltaAngle, -MaxSteerVelocity, MaxSteerVelocity);
+
+    // create the new rotation using the deltas
+    FRotator NewRotation = CurrentRotation + DeltaTime * FRotator(0.f, 0.f, DeltaAngle);
+
+    // Clamp the roll amount so the wheel can't spin infinitely
+    NewRotation.Roll = FMath::Clamp(NewRotation.Roll, -MaxSteerAngleDeg, MaxSteerAngleDeg);
+    SteeringWheel->SetRelativeRotation(NewRotation);
 }
 
 /// ========================================== ///

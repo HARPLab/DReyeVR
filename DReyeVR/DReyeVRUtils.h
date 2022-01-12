@@ -120,10 +120,18 @@ static void ReadConfigValue(const FString &Section, const FString &Variable, FVe
 }
 static void ReadConfigValue(const FString &Section, const FString &Variable, FRotator &Value)
 {
-    // simplu uses the same format as with FVector
-    FVector Tmp;
-    ReadConfigValue(Section, Variable, Tmp);
-    Value = FRotator(Tmp.Y, Tmp.Z, Tmp.X).Clamp(); // Convert to euler FRotators
+    EnsureConfigsUpdated();
+    std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) != Params.end())
+    {
+        if (Value.InitFromString(Params[VariableName]) == false)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Unable to construct FRotator for %s from %s"), *FString(VariableName.c_str()),
+                   *(Params[VariableName]));
+        }
+    }
+    else
+        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
 }
 static void ReadConfigValue(const FString &Section, const FString &Variable, FString &Value)
 {

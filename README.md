@@ -81,6 +81,7 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - See [`Docs/Usage.md`](Docs/Usage.md) to learn how to use several key DReyeVR features
 - See [`Docs/SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
+- See [`Docs/Model.md`](Docs/Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/Signs.md`](Docs/Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
 - See [`Docs/LODs.md`](Docs/LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
 
