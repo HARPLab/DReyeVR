@@ -20,7 +20,7 @@ With all this in mind, you are probably going to be interested in:
 - Other: `$CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Static/Vehicles/4Wheeled/XYZ`
 
 # Example: Adding a dynamic steering wheel
-Problen: It is quite jarring to drive without a responsive steering wheel, and since the Carla vehicle meshes were not designed for human drivers, there is no need to separate the steering wheel from the overall vehicle shell. This is problematic since the wheel is now a part of the vehicle mesh and cannot be animated during runtime. 
+Problem: It is quite jarring to drive without a responsive steering wheel, and since the Carla vehicle meshes were not designed for human drivers, there is no need to separate the steering wheel from the overall vehicle shell. This is problematic since the wheel is now a part of the vehicle mesh and cannot be animated during runtime. 
 
 In our case, we elected to use the TeslaM3 mesh for our base class, so we'll be working with that here too. 
 
