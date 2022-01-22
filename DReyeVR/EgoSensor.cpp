@@ -107,7 +107,7 @@ void AEgoSensor::InitEyeTracker()
     // no easily discernible difference between v1 and v2
     /// TODO: use the status output from StartFramework to determine if SRanipal loaded successfully
     int Status = SRanipalFramework->StartFramework(SupportedEyeVersion::version1);
-    if (Status == SRanipalEye_Framework::FrameworkStatus::ERROR_SRANIPAL ||
+    if (Status == SRanipalEye_Framework::FrameworkStatus::ERROR_SRANIPAL || // matches the patch_sranipal.sh script
         Status == SRanipalEye_Framework::FrameworkStatus::NOT_SUPPORT)
     {
         UE_LOG(LogTemp, Error, TEXT("Unable to start SRanipal framework!"));

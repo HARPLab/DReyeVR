@@ -18,7 +18,7 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
     | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | YES | NO |
 - Vehicle controls 
   - Generic keyboard WASD + mouse
-  - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/drb1992/LogitechWheelPlugin) 
+  - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) 
     - Includes force-feedback with the steering wheel.
     - We used a [Logitech G923 Racing Wheel & Pedals](https://www.logitechg.com/en-us/products/driving/driving-force-racing-wheel.html)
 - Realistic rear-view mirrors (WARNING: **very** performance intensive)
@@ -80,7 +80,7 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - While Windows (10) is recommended for optimized VR support, all our work translates to Linux systems except for the eye tracking and hardware integration which have Windows-only dependencies.
   - Unfortunately the eye-tracking firmware is proprietary & does not work on Linux
     - This is (currently) only supported on Windows because of some proprietary dependencies between [HTC SRanipal SDK](https://developer.vive.com/resources/knowledgebase/vive-sranipal-sdk/) and Tobii's SDK. Those interested in the Linux discussion for HTC's Vive Pro Eye Tracking can follow the subject [here (Vive)](https://forum.vive.com/topic/6994-eye-tracking-in-linux/), [here (Vive)](https://forum.vive.com/topic/7012-vive-pro-eye-on-ubuntu-16-or-18/), and [here (Tobii)](https://developer.tobii.com/community/forums/topic/vive-pro-eye-with-stream-engine/).
-  - Additionally, the [LogitechWheelPlugin](https://github.com/drb1992/LogitechWheelPlugin) we use only has Windows support currently. Though it should be possible to use the G923 on Linux as per the [Arch Wiki](https://wiki.archlinux.org/title/Logitech_Racing_Wheel).
+  - Additionally, the [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) we use only has Windows support currently. Though it should be possible to use the G923 on Linux as per the [Arch Wiki](https://wiki.archlinux.org/title/Logitech_Racing_Wheel).
 
 ## Documentation & Guides
 - See [`Docs/Usage.md`](Docs/Usage.md) to learn how to use several key DReyeVR features
@@ -107,7 +107,6 @@ If you use our work, please cite the corresponding [paper](https://arxiv.org/abs
 
 - This project builds upon and extends the [CARLA 0.9.13 simulator](https://carla.org/)
 - This repo includes some code from CARLA: Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB) & Intel Corporation.
-- This repo includes some code from HTC Corporation. See [SRanipal/](SRanipal). These are only the minimal modifications required to fix bugs in [SRanipal 1.3.1.1](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/).
 - This repo includes some code from Hewlett-Packard Development Company, LP. See [Tools/Diagnostics/nvidia.ph](Tools/Diagnostics/nvidia.ph). This is a modified diagnostic tool used during development. 
 
 ## Licenses

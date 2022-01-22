@@ -252,7 +252,7 @@ void AEgoVehicle::TickLogiWheel()
 const std::vector<FString> VarNames = {"rgdwPOV[0]", "rgdwPOV[1]", "rgdwPOV[2]", "rgdwPOV[3]"};
 /// NOTE: this is a debug function used to dump all the information we can regarding
 // the Logitech wheel hardware we used since the exact buttons were not documented in
-// the repo: https://github.com/drb1992/LogitechWheelPlugin
+// the repo: https://github.com/HARPLab/LogitechWheelPlugin
 void AEgoVehicle::LogLogitechPluginStruct(const DIJOYSTATE2 *Now)
 {
     if (Old == nullptr)
@@ -380,7 +380,7 @@ void AEgoVehicle::ApplyForceFeedback() const
         LogiPlaySpringForce(WheelIndex, OffsetPercentage, SaturationPercentage, CoeffPercentage);
     }
     /// NOTE: there are other kinds of forces as described in the LogitechWheelPlugin API:
-    // https://github.com/drb1992/LogitechWheelPlugin/blob/master/LogitechWheelPlugin/Source/LogitechWheelPlugin/Private/LogitechBWheelInputDevice.cpp
+    // https://github.com/HARPLab/LogitechWheelPlugin/blob/master/LogitechWheelPlugin/Source/LogitechWheelPlugin/Private/LogitechBWheelInputDevice.cpp
     // For example:
     /*
         Force Types
