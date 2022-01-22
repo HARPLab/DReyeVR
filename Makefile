@@ -22,4 +22,4 @@ scenario-runner:
 patch-sranipal:
 	@Scripts/patch_sranipal.sh ${CARLA}
 
-all: carla scenario-runner patch-sranipal patch-logitech
+all: carla scenario-runner patch-sranipal
