@@ -6,8 +6,8 @@ SCENARIO_RUNNER_ROOT=$2
 
 set -e # fail on error
 
-SUPPORTED_CARLA="0.9.11"
-SUPPORTED_SCENARIO_RUNNER="v0.9.11"
+SUPPORTED_CARLA="0.9.13"
+SUPPORTED_SCENARIO_RUNNER="v0.9.13"
 
 source Scripts/utils.sh
 source Scripts/installers.sh

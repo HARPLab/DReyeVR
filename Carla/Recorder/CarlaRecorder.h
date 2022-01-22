@@ -151,7 +151,8 @@ public:
   std::string ShowFileActorsBlocked(std::string Name, double MinTime = 30, double MinDistance = 10);
 
   // replayer
-  std::string ReplayFile(std::string Name, double TimeStart, double Duration, uint32_t FollowId);
+  std::string ReplayFile(std::string Name, double TimeStart, double Duration,
+      uint32_t FollowId, bool ReplaySensors);
   void SetReplayerTimeFactor(double TimeFactor);
   void SetReplayerIgnoreHero(bool IgnoreHero);
   void StopReplayer(bool KeepActors = false);
@@ -163,8 +164,8 @@ public:
   void RecFastForward();
   void RecRewind();
   void RecRestart();
-  void RecIncrTimestep(const float Amnt);
-  
+  void IncrTimeFactor(const float Amnt);
+
 private:
 
   bool Enabled;   // enabled or not
@@ -203,18 +204,17 @@ private:
 
   // replayer
   CarlaReplayer Replayer;
-  float TimestepReplayer = 1.0;
 
   // query tools
   CarlaRecorderQuery Query;
 
   void AddExistingActors(void);
-  void AddActorPosition(FActorView &View);
-  void AddWalkerAnimation(FActorView &View);
-  void AddVehicleAnimation(FActorView &View);
-  void AddTrafficLightState(FActorView &View);
-  void AddVehicleLight(FActorView &View);
-  void AddActorKinematics(FActorView &View);
-  void AddActorBoundingBox(FActorView &View);
+  void AddActorPosition(FCarlaActor *CarlaActor);
+  void AddWalkerAnimation(FCarlaActor *CarlaActor);
+  void AddVehicleAnimation(FCarlaActor *CarlaActor);
+  void AddTrafficLightState(FCarlaActor *CarlaActor);
+  void AddVehicleLight(FCarlaActor *CarlaActor);
+  void AddActorKinematics(FCarlaActor *CarlaActor);
+  void AddActorBoundingBox(FCarlaActor *CarlaActor);
   void AddDReyeVRData();
 };

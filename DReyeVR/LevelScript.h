@@ -47,6 +47,7 @@ class ADReyeVRLevel : public ALevelScriptActor
 
     // Meta world functions
     void SetVolume();
+    FTransform GetSpawnPoint(int SpawnPointIndex = 0) const;
 
   private:
     // for handling inputs and possessions

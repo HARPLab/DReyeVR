@@ -17,8 +17,6 @@ ADReyeVRLevel::ADReyeVRLevel(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Level", "EgoVolumePercent", EgoVolumePercent);
     ReadConfigValue("Level", "NonEgoVolumePercent", NonEgoVolumePercent);
     ReadConfigValue("Level", "AmbientVolumePercent", AmbientVolumePercent);
-    // update the non-ego volume percent
-    ACarlaWheeledVehicle::NonEgoVolume = NonEgoVolumePercent / 100.f;
 }
 
 void ADReyeVRLevel::BeginPlay()
@@ -70,25 +68,44 @@ bool ADReyeVRLevel::FindEgoVehicle()
         return true;
     TArray<AActor *> FoundEgoVehicles;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEgoVehicle::StaticClass(), FoundEgoVehicles);
-    if (FoundEgoVehicles.Num() > 0)
+    for (AActor *Vehicle : FoundEgoVehicles)
     {
-        UE_LOG(LogTemp, Log, TEXT("Found EgoVehicle"));
-        /// TODO: add support for multiple Ego Vehicles?
-        EgoVehiclePtr = Cast<AEgoVehicle>(FoundEgoVehicles[0]);
+        UE_LOG(LogTemp, Log, TEXT("Found EgoVehicle in world: %s"), *(Vehicle->GetName()));
+        EgoVehiclePtr = CastChecked<AEgoVehicle>(Vehicle);
         EgoVehiclePtr->SetLevel(this);
         if (!AI_Player)
             AI_Player = EgoVehiclePtr->GetController();
+        /// TODO: handle multiple ego-vehcles? (we should only ever have one!)
         return true;
     }
-    UE_LOG(LogTemp, Log, TEXT("Did not find EgoVehicle"));
-    return false;
+    UE_LOG(LogTemp, Error, TEXT("Did not find EgoVehicle"));
+#if 0
+    UE_LOG(LogTemp, Log, TEXT("Did not find EgoVehicle, spawning"));
+    FActorSpawnParameters EgoVehicleSpawnInfo;
+    EgoVehicleSpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    FTransform Spawn = GetSpawnPoint();
+    FSoftObjectPath Ref(
+        "Blueprint'/Game/Carla/Blueprints/Vehicles/DReyeVR/BP_EgoVehicle_DReyeVR.BP_EgoVehicle_DReyeVR'");
+    UObject *Obj = Ref.ResolveObject();
+    UBlueprint *Blueprint = Cast<UBlueprint>(Obj);
+    if (Blueprint != nullptr)
+    {
+        EgoVehiclePtr = GetWorld()->SpawnActor<AEgoVehicle>(Blueprint->GeneratedClass, // TODO: refactor so
+                                                            Spawn.GetLocation(),       // that the EgoVehicle class
+                                                            Spawn.Rotator(),           // contains its own vehicle mesh
+                                                            EgoVehicleSpawnInfo);      // properties without BP
+    }
+    if (EgoVehiclePtr == nullptr)
+        UE_LOG(LogTemp, Error, TEXT("Spawning EgoVehicle failed!"))
+#endif
+    return (EgoVehiclePtr != nullptr);
 }
 
 void ADReyeVRLevel::SetupSpectator()
 {
     /// TODO: fix bug where HMD is not detected on package BeginPlay()
     // if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
-    const bool bEnableVRSpectator = true; 
+    const bool bEnableVRSpectator = true;
     if (bEnableVRSpectator)
     {
         FVector SpawnLocn;
@@ -247,18 +264,19 @@ void ADReyeVRLevel::Restart()
 
 void ADReyeVRLevel::IncrTimestep()
 {
-    UE_LOG(LogTemp, Log, TEXT("Incr timestep"));
-    UCarlaStatics::GetRecorder(GetWorld())->RecIncrTimestep(0.2);
+    UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(0.1);
 }
 
 void ADReyeVRLevel::DecrTimestep()
 {
-    UE_LOG(LogTemp, Log, TEXT("Decr Timestep"));
-    UCarlaStatics::GetRecorder(GetWorld())->RecIncrTimestep(-0.2);
+    UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(-0.1);
 }
 
 void ADReyeVRLevel::SetVolume()
 {
+    // update the non-ego volume percent
+    ACarlaWheeledVehicle::Volume = NonEgoVolumePercent / 100.f;
+
     // for all in-world audio components such as ambient birdsong, fountain splashing, smoke, etc.
     for (TObjectIterator<UAudioComponent> Itr; Itr; ++Itr)
     {
@@ -268,6 +286,7 @@ void ADReyeVRLevel::SetVolume()
         }
         Itr->SetVolumeMultiplier(AmbientVolumePercent / 100.f);
     }
+
     // for all in-world vehicles (including the EgoVehicle) manually set their volumes
     TArray<AActor *> FoundActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACarlaWheeledVehicle::StaticClass(), FoundActors);
@@ -276,10 +295,29 @@ void ADReyeVRLevel::SetVolume()
         ACarlaWheeledVehicle *Vehicle = Cast<ACarlaWheeledVehicle>(A);
         if (Vehicle != nullptr)
         {
-            float NewVolume = ACarlaWheeledVehicle::NonEgoVolume;
-            if (Vehicle->IsA(AEgoVehicle::StaticClass())) // dynamic cast, requires -frrti
+            float NewVolume = ACarlaWheeledVehicle::Volume; // Non ego volume
+            if (Vehicle->IsA(AEgoVehicle::StaticClass()))   // dynamic cast, requires -frrti
                 NewVolume = EgoVolumePercent / 100.f;
             Vehicle->SetVolume(NewVolume);
         }
     }
+}
+
+FTransform ADReyeVRLevel::GetSpawnPoint(int SpawnPointIndex) const
+{
+    ACarlaGameModeBase *GM = UCarlaStatics::GetGameMode(GetWorld());
+    if (GM != nullptr)
+    {
+        TArray<FTransform> SpawnPoints = GM->GetSpawnPointsTransforms();
+        size_t WhichPoint = 0; // default to first one
+        if (SpawnPointIndex < 0)
+            WhichPoint = FMath::RandRange(0, SpawnPoints.Num());
+        else
+            WhichPoint = FMath::Clamp(SpawnPointIndex, 0, SpawnPoints.Num());
+
+        if (WhichPoint < SpawnPoints.Num()) // SpawnPoints could be empty
+            return SpawnPoints[WhichPoint];
+    }
+    /// TODO: return a safe bet (position of the player start maybe?)
+    return FTransform(FRotator::ZeroRotator, FVector::ZeroVector, FVector::OneVector);
 }

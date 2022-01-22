@@ -66,7 +66,7 @@ With all the installations done, we can move on to actually using Carla+UE4 with
 
 1. From here we can compile a binary of Carla with VR support. To do so, run `make package` and locate the resulting executable in: 
    1. Linux: `carla/Dist/CARLA_Shipping_*/LinuxNoEditor/CarlaUE4.sh`
-   2. Windows: `carla\Build\UE4Carla\0.9.11-*\WindowsNoEditor\CarlaUE4.exe`
+   2. Windows: `carla\Build\UE4Carla\0.9.13-*\WindowsNoEditor\CarlaUE4.exe`
 2. Then run the binary with VR mode enabled with `-vr` flags:
    1. Linux: `./CarlaUE4.sh -vr` (from any terminal)
    2. Windows: `CarlaUE4.exe -vr` (from the `x64 Visual C++ Toolset` command prompt)

@@ -97,7 +97,7 @@ void AEgoSensor::PrePhysTick(float DeltaSeconds)
 
 void AEgoSensor::InitEyeTracker()
 {
-#if USE_SRANIPAL
+#if USE_SRANIPAL_PLUGIN
     bSRanipalEnabled = false;
     // initialize SRanipal framework for eye tracking
     UE_LOG(LogTemp, Warning, TEXT("Attempting to use SRanipal eye tracking"));
@@ -127,7 +127,7 @@ void AEgoSensor::InitEyeTracker()
 
 void AEgoSensor::DestroyEyeTracker()
 {
-#if USE_SRANIPAL
+#if USE_SRANIPAL_PLUGIN
     if (SRanipalFramework)
     {
         SRanipalFramework->StopFramework();
@@ -144,7 +144,7 @@ void AEgoSensor::TickEyeTracker()
     auto Combined = &(EyeSensorData.Combined);
     auto Left = &(EyeSensorData.Left);
     auto Right = &(EyeSensorData.Right);
-#if USE_SRANIPAL
+#if USE_SRANIPAL_PLUGIN
     if (bSRanipalEnabled)
     {
         /// NOTE: the GazeRay is the normalized direction vector of the actual gaze "ray"
@@ -377,7 +377,7 @@ void AEgoSensor::TickFrameCapture()
 void AEgoSensor::Register()
 {
     // Register EgoSensor with ActorRegistry
-    FActorView::IdType ID = EgoSensorID;
+    FCarlaActor::IdType ID = EgoSensorID;
     FActorDescription SensorDescr;
     SensorDescr.Id = "sensor.dreyevr.dreyevrsensor";
     FString RegistryTags = "EgoSensor,DReyeVR";

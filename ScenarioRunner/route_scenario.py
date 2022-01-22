@@ -14,7 +14,7 @@ from __future__ import print_function
 import math
 import traceback
 import xml.etree.ElementTree as ET
-import numpy.random as random
+from numpy import random
 
 import py_trees
 
@@ -156,17 +156,17 @@ class RouteScenario(BasicScenario):
 
         self._update_route(world, config, debug_mode)
 
-        ego_vehicle = self._initialize_ego_vehicle_DReyeVR(find_ego_vehicle(world))
+        self.ego_vehicle = self._initialize_ego_vehicle_DReyeVR(find_ego_vehicle(world))
 
         self.list_scenarios = self._build_scenario_instances(world,
-                                                             ego_vehicle,
+                                                             self.ego_vehicle,
                                                              self.sampled_scenarios_definitions,
                                                              scenarios_per_tick=5,
                                                              timeout=self.timeout,
                                                              debug_mode=debug_mode)
 
         super(RouteScenario, self).__init__(name=config.name,
-                                            ego_vehicles=[ego_vehicle],
+                                            ego_vehicles=[self.ego_vehicle],
                                             config=config,
                                             world=world,
                                             debug_mode=False,
@@ -208,13 +208,14 @@ class RouteScenario(BasicScenario):
 
     def _initialize_ego_vehicle_DReyeVR(self, ego_vehicle):
         """
-        Set/Update the start position of the ego_vehicle
+        Set/Update the start position of the ego_vehicle (instead of _update_ego_vehicle below)
         """
         # move ego to correct position
         elevate_transform = self.route[0][0]
         elevate_transform.location.z += 0.5
         ego_vehicle.set_transform(elevate_transform)
         CarlaDataProvider.register_actor(ego_vehicle)
+        CarlaDataProvider.ego_DReyeVR = ego_vehicle.type_id
         return ego_vehicle
 
     def _update_ego_vehicle(self):
@@ -346,7 +347,7 @@ class RouteScenario(BasicScenario):
             scenario_configuration.other_actors = list_of_actor_conf_instances
             scenario_configuration.trigger_points = [egoactor_trigger_position]
             scenario_configuration.subtype = definition['scenario_type']
-            scenario_configuration.ego_vehicles = [ActorConfigurationData('DReyeVR_EgoVehicle',
+            scenario_configuration.ego_vehicles = [ActorConfigurationData(ego_vehicle.type_id,
                                                                           ego_vehicle.get_transform(),
                                                                           'hero')]
             route_var_name = "ScenarioRouteNumber{}".format(scenario_number)
@@ -440,6 +441,12 @@ class RouteScenario(BasicScenario):
         # Add all the actors of the specific scenarios to self.other_actors
         for scenario in self.list_scenarios:
             self.other_actors.extend(scenario.other_actors)
+        
+        for i, actor in enumerate(self.other_actors):
+            if actor.type_id == self.ego_vehicle.type_id:
+                self.other_actors.pop(i) # removes reference to any DReyeVR ego vehicles that might've been spawned
+                # NOTE: even if it thinks it spawned DReyeVR ego vehicles, it cant. Only one can be spawned by the
+                # carla ActorRegistry (See RegisterActor)
 
     def _create_behavior(self):
         """

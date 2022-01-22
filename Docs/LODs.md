@@ -8,7 +8,7 @@ Ever noticed how in major video games/3d programs most of the models/textures de
 Here's an example of the `SM_Tesla` static mesh provided by Carla
 | LOD 0 (14,406 triangles)       | LOD 1 (3,601 triangles)        | LOD 2 (1,799 triangles)        | LOD 3 (864 triangles)          |
 | ------------------------------ | ------------------------------ | ------------------------------ | ------------------------------ |
-| ![LOD0](Figures/LODs/lod0.png) | ![LOD0](Figures/LODs/lod1.png) | ![LOD0](Figures/LODs/lod2.png) | ![LOD0](Figures/LODs/lod3.png) |
+| ![LOD0](Figures/LODs/lod0.jpg) | ![LOD0](Figures/LODs/lod1.jpg) | ![LOD0](Figures/LODs/lod2.jpg) | ![LOD0](Figures/LODs/lod3.jpg) |
 
 ## Okay so what?
 While the default LOD settings are pretty good in Carla, this works because **Carla was not designed for VR** and expects to be run on a flat screen. However, we are using Carla in a VR setting, and it quickly becomes much more pronounced when models transform into lower/higher quality forms. This can be very distracting and immersion-breaking for the person in the headset. 
@@ -29,13 +29,13 @@ In order to actually access the LOD's for every blueprint, we're actually going 
 
 For example, for the `SM_TeslaM3_v2` skeletal mesh (note there is also a `SM_Tesla` static mesh, the naming scheme is unfortunately not very consistent), head over to `Content/Carla/Static/Vehicles/4Wheeled/Tesla/` in the Content Browser to see the following folder layout: 
 
-![TeslaContent](Figures/LODs/tesla_content.png)
+![TeslaContent](Figures/LODs/tesla_content.jpg)
 
 Notice how the model underlined in **pink** is the skeletal mesh we are interested in. Double click it to open it in the Editor. 
 
 Then, in the left, in the `Asset Details` pane (highlighted below in **red**) you can see the LOD Picker settings is currently set to Auto (LOD0) this will automatically compute and assign the LOD for this mesh based on your distance. You can see the current LOD settings in action in the top left of the preview window (highlighted below in **yellow**).
 
-![TeslaSkeletal](Figures/LODs/tesla_skeletal.png)
+![TeslaSkeletal](Figures/LODs/tesla_skeletal.jpg)
 
 From the LOD picker you could check the `"Custom"` box and edit the individual LOD settings manually, but this is a lot of tedious work that would need to be applied to **every** static mesh individually. In this guide we'll try to avoid tedious work. 
 
@@ -48,7 +48,7 @@ If you don't have an existing LODSettings asset (we've provided one in [`Tools/L
 
 | LODSettings pre application                    | LODSettings post application                    |
 | ---------------------------------------------- | ----------------------------------------------- |
-| ![LODSettings1](Figures/LODs/lod_settings.png) | ![LODSettings1](Figures/LODs/lod_settings2.png) |
+| ![LODSettings1](Figures/LODs/lod_settings.jpg) | ![LODSettings1](Figures/LODs/lod_settings2.jpg) |
 
 Now you should be able to open up the newly created `LODSettings` asset (`SM_Vehicle_LODSettings`) in the editor and edit all the important LOD parameters from there. Here is where the fine-tuning for screen-size takes place as you can manually tune when transitions happen. 
 ### NOTE
@@ -66,7 +66,7 @@ Something to keep in mind is that different vehicles even have different number 
 
 This should look something like the following (with LODGroups collapsed):
 
-<img src="Figures/LODs/lod_settings_editor.png" width=50%>
+<img src="Figures/LODs/lod_settings_editor.jpg" width=50%>
 
 Theoretically we should be able to have this class completely in C++ since it is a [`USkeletalMeshLODSettings`](https://docs.unrealengine.com/4.26/en-US/API/Runtime/Engine/Engine/USkeletalMeshLODSettings/) class. But it is fairly low on the priority list. 
 
@@ -81,7 +81,7 @@ The steps we recommend are as follows:
 2. In the bottom right (View Options) uncheck the `Folders` option
 3. In the top left click the `Filters` and check the `SkeletalMesh` option
    - Now you should see this (notice all pink underlined):
-	![AllSkeletalMeshes](Figures/LODs/all_skeletal_meshes.png)
+	![AllSkeletalMeshes](Figures/LODs/all_skeletal_meshes.jpg)
 4. Now select all the meshes **EXCEPT for the following** 
 	- Windows:
        1. SM_Cybertruck_v2
@@ -91,21 +91,21 @@ The steps we recommend are as follows:
        2. SK_ChargetCop
        3. SK_lincolnv5
        4. SK_MercedesCCC
-	![AllSkeletalMeshesSelected](Figures/LODs/all_skeletal_meshes_selected.png)
+	![AllSkeletalMeshesSelected](Figures/LODs/all_skeletal_meshes_selected.jpg)
 	- We are still unsure why, but these particular vehicles cause a segmentation fault (something to do with their vertex makeup) upon this application. You will need to manually set the LOD parameters for individual custom LOD's for each of them (ie. do NOT use the `SM_Vehicle_LODSettings.uasset` at all)
 5. Right click any of the highlighted vehicles -> `Asset Actions` -> `Bulk Edit via Property Matrix`
-	![BulkEditMatrix](Figures/LODs/bulk_edit_matrix.png)
+	![BulkEditMatrix](Figures/LODs/bulk_edit_matrix.jpg)
 6. In the `Bulk Edit` window that opens up, verify all the correct skeletal meshes on the left, then in `LODSettings` on the right, click the 3x3 grid icon (Pick asset) and choose the newly created `SM_Vehicle_LODSettings.uasset` asset. 
    1. To apply this to all the selected skeletal meshes, go to the top bar -> `File` -> `Save`
    2. The end result should look something like this:
-	![BulkEdit](Figures/LODs/bulk_edit.png)
+	![BulkEdit](Figures/LODs/bulk_edit.jpg)
 
 As mentioned in step 4, some particular vehicles cause a seg-fault after giving them this `LODSettings`. We are still investigating why exactly but for now its safer to just manually go into each vehicle and tune the individual `LOD` settings after checking `Custom` and seeing the `LOD0`, `LOD1`, `LOD2`, ... etc. options. 
 
 ## Finished
 Now, all the static meshes (with some exceptions) will respect any changes made to `SM_Vehicle_LODSettings.uasset` automatically, so you won't have to reapply the settings each time you want to make a change to the LODSettings asset, just make the change.
 
-Also, if something unfortunate happens and one of your skeletal meshes gets corrupted (its happened to us), then its fairly simple to reclone a `Carla 0.9.11` build, run the `Update.sh` script and copy over the old (new) static meshes to replace the ones in your existing project. 
+Also, if something unfortunate happens and one of your skeletal meshes gets corrupted (its happened to us), then its fairly simple to reclone a `Carla 0.9.13` build, run the `Update.sh` script and copy over the old (new) static meshes to replace the ones in your existing project. 
 
 ## Download everything instead
 Option 1: (use our script)

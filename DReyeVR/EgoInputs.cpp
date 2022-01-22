@@ -24,8 +24,8 @@ void AEgoVehicle::SetupPlayerInputComponent(UInputComponent *PlayerInputComponen
     PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Pressed, this, &AEgoVehicle::ToggleReverse);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Pressed, this, &AEgoVehicle::HoldHandbrake);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Released, this, &AEgoVehicle::ReleaseHandbrake);
-    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalLeft);
-    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalRight);
+    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalRight);
+    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalLeft);
     /// Mouse X and Y input for looking up and turning
     PlayerInputComponent->BindAxis("MouseLookUp_DReyeVR", this, &AEgoVehicle::MouseLookUp);
     PlayerInputComponent->BindAxis("MouseTurn_DReyeVR", this, &AEgoVehicle::MouseTurn);
@@ -219,7 +219,7 @@ void AEgoVehicle::MouseTurn(const float mX_Input)
 
 void AEgoVehicle::InitLogiWheel()
 {
-#if USE_LOGITECH_WHEEL
+#if USE_LOGITECH_PLUGIN
     LogiSteeringInitialize(false);
     bIsLogiConnected = LogiIsConnected(0); // get status of connected device
     if (!bIsLogiConnected)
@@ -235,7 +235,7 @@ void AEgoVehicle::InitLogiWheel()
 
 void AEgoVehicle::TickLogiWheel()
 {
-#if USE_LOGITECH_WHEEL
+#if USE_LOGITECH_PLUGIN
     if (bIsLogiConnected)
     {
         // Taking logitech inputs for steering
@@ -247,7 +247,7 @@ void AEgoVehicle::TickLogiWheel()
 #endif
 }
 
-#if USE_LOGITECH_WHEEL
+#if USE_LOGITECH_PLUGIN
 
 const std::vector<FString> VarNames = {"rgdwPOV[0]", "rgdwPOV[1]", "rgdwPOV[2]", "rgdwPOV[3]"};
 /// NOTE: this is a debug function used to dump all the information we can regarding

@@ -1,4 +1,4 @@
-# Installing `DReyeVR` to a working Carla 0.9.11 build   
+# Installing `DReyeVR` to a working Carla 0.9.13 build   
 ## Prerequisites
 - To continue, this guide assumes the following:
   - You have [SteamVR](https://store.steampowered.com/app/250820/SteamVR/) (free) installed and are using a SteamVR compatible headset. 
@@ -7,28 +7,100 @@
   - You have [Unreal Engine 4.24](https://www.unrealengine.com/en-US/blog/unreal-engine-4-24-released) installed.
   - You are running a **Windows 10** or **Linux** x86-64 machine 
     - If you are using **Windows 10**, we recommend using [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for our installer scripts. 
-  - **IMPORTANT:** You have a fully functional vanilla [Carla 0.9.11 build](https://carla.readthedocs.io/en/0.9.11/#building-carla) installed
-    - This requires the `-b 0.9.11` when cloning (`git clone https://github.com/carla-simulator/carla -b 0.9.11`) from their [GitHub repo](https://github.com/carla-simulator/carla)
-    - Use [Building on Linux](https://carla.readthedocs.io/en/0.9.11/build_linux/) or [Building on Windows](https://carla.readthedocs.io/en/0.9.11/build_windows/) to follow their instructions on building CARLA 0.9.11. 
-  - (Optional) You have a fully functional default [Carla Scenario Runner v0.9.11 build](https://github.com/carla-simulator/scenario_runner/tree/v0.9.11)
-    - Simply clone `git clone https://github.com/carla-simulator/scenario_runner -b v0.9.11` and verify it works with your carla build
-- Make sure you compile Carla 0.9.11 and ensure it is working as expected. 
+  - **IMPORTANT:** You have a fully functional vanilla [Carla 0.9.13 build](https://carla.readthedocs.io/en/0.9.13/#building-carla) installed
+    - This requires the `-b 0.9.13` when cloning (`git clone https://github.com/carla-simulator/carla -b 0.9.13`) from their [GitHub repo](https://github.com/carla-simulator/carla)
+    - Use [Building on Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/) or [Building on Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/) to follow their instructions on building CARLA 0.9.13. 
+  - (Optional) You have a fully functional default [Carla Scenario Runner v0.9.13 build](https://github.com/carla-simulator/scenario_runner/tree/v0.9.13)
+    - Simply clone `git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13` and verify it works with your carla build
+- Make sure you compile Carla 0.9.13 and ensure it is working as expected. 
   - ie. `make PythonAPI && make launch` completes without error
   - Additionally, for Linux users who would like to use a more recent version of clang (instead of CARLA's recommended `clang-8` you should copy over the files in `Tools/BuildTools/*.sh` to Carla's `Util/BuildTools/`)
     - Also overwrite `LibCarla/source/test/common/test_streaming.cpp` with `Tools/BuildTools/test_streaming.cpp` to fix [this compilation error](https://github.com/carla-simulator/carla/issues/2416) on newer clang versions. 
     - Note that these `BuildTools` patches include the fix for `make package` on Linux described at the bottom of this file
 
+
+## DReyeVR installation command summary
+<details>
+
+**NOTE** Since DReyeVR is still installed using `bash`, on Windows you'll need [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) installed.
+<summary> Show command lines to install and build DReyeVR </summary>
+
+```bash
+# NOTE: On windows, this can almost all be done in WSL, except the make commands which need
+# to be done in the "Windows x64 Native Tools Command Prompt for VS 2019"
+mkdir CarlaDReyeVR && cd CarlaDReyeVR # doing everything in this "CarlaDReyeVR" directory
+
+#####################################################
+######### install Carla's UnrealEngine fork #########
+#####################################################
+# Linux: https://carla.readthedocs.io/en/0.9.13/build_linux/#unreal-engine
+# Windows: https://carla.readthedocs.io/en/0.9.13/build_windows/#unreal-engine
+
+#####################################################
+################### install Carla ###################
+#####################################################
+# Linux: https://carla.readthedocs.io/en/0.9.13/build_linux/
+# Windows: https://carla.readthedocs.io/en/0.9.13/build_windows/
+git clone https://github.com/carla-simulator/carla -b 0.9.13
+cd carla
+./Update.sh
+make PythonAPI && make launch
+
+#####################################################
+############## install DReyeVR plugins ##############
+#####################################################
+# (optional) install SRanipal (https://developer.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/download/latest/)
+mv /PATH/TO/SRANIPALPLUGIN/SDK/03_Unreal/Plugins/SRanipal Unreal/CarlaUE4/Plugins/ # install to carla
+
+# (optional) install LogitechWheelPlugin
+git clone https://github.com/drb1992/LogitechWheelPlugin
+mv LogitechWheelPlugin/LogitechWheelPlugin/Source/LogitechWheelPlugin/Private/Logitech*.h LogitechWheelPlugin/LogitechWheelPlugin/Source/LogitechWheelPlugin/Public/ # fix header file problem
+mv LogitechWheelPlugin/LogitechWheelPlugin Unreal/CarlaUE4/Plugins/ # install to carla
+
+cd .. # back to main directory
+
+#####################################################
+############## install scenario_runner ##############
+#####################################################
+# (optional) while you don't NEED scenario runner, it is certainly useful from a research pov
+git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13
+
+#####################################################
+################## install DReyeVR ##################
+#####################################################
+git clone https://github.com/HARPLab/DReyeVR
+cd DReyeVR
+./install.sh ../carla # to install only on carla
+./install.sh ../carla ../scenario_runner # to install on both carla & scenario runner
+cd ..
+
+#####################################################
+################## build everything #################
+#####################################################
+cd carla
+make launch # launch in editor
+make package # create an optimized package
+make check # run Carla unit tests
+```
+</details>
+
 ## Simple install
-Technically, the above prerequisites are all you really need to install DReyeVR and get a barebones VR ego-vehicle with **no eyetracking** and **no racing wheel integration**. If this suits your needs, simply skip down to the [Install DReyeVR](Install.md#installing-dreyevr) section of this doc and set the following macros to `false`:
-1. `USE_SRANIPAL` in [`EgoSensor.h`](../DReyeVR/EgoSensor.h)
-2. `USE_LOGITECH_WHEEL` in [`EgoVehicle.h`](../DReyeVR/EgoVehicle.h)
+Technically, the above prerequisites are all you really need to install DReyeVR and get a barebones VR ego-vehicle with **no eyetracking** and **no racing wheel integration**. If this suits your needs, simply skip down to the [Install DReyeVR](Install.md#installing-dreyevr) section of this doc and set the following variables in `Unreal/CarlaUE4/Source/CarlaUE4/CarlaUE4.Build.cs` to `false`:
+```c#
+////////////////////////////////////////////////////////////////////////////////////
+// Edit these variables to enable/disable features of DReyeVR
+bool UseSRanipalPlugin = true;
+bool UseLogitechPlugin = true;
+////////////////////////////////////////////////////////////////////////////////////
+```
+- NOTE: you only need to install the SRanipal plugin if `UseSRanipalPlugin` is enabled, and similarly you only need to install the Logitech plugin if `UseLogitechPlugin` is enabled. 
 
 ## First Steps
 Before installing `DReyeVR`, we'll also need to install the dependencies:
 - ### **Enabling SteamVR in UE4**
   - In the Editor for Carla go to `Settings->Plugins->Virtual Reality->SteamVR` and enable the plugin
   - Note that on Linux this you may need to install it through the [Valve GitHub repo](https://github.com/ValveSoftware/SteamVR-for-Linux)
-  - <img src = "Figures/Install/steamvr-enabled.png" alt="UE4DropDown" width=50%>
+  - <img src = "Figures/Install/steamvr-enabled.jpg" alt="UE4DropDown" width=50%>
 
 - ### **Download `SRanipal`**
   - ## What is this?
@@ -76,7 +148,7 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
       mv LogitechWheelPlugin/LogitechWheelPlugin $CARLA_ROOT/Unreal/CarlaUE4/Plugins
       ```
     - You should then see a Logitech Plugin enabled when you boot up the editor again:
-    - ![LogitechPlugin](Figures/Install/LogitechPlugin.png)
+    - ![LogitechPlugin](Figures/Install/LogitechPlugin.jpg)
   - Unfortunately, there is a bug with this plugin as well where the header (public) files are in the source (private) directory. In order to compile with Carla+DReyeVR you'll need to move all the `.h` files from `private/` to `public/`.
     - ```bash
       # in LogitechWheelPlugin/
@@ -106,7 +178,22 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
   conda create --name carla python=3.7
   conda activate carla
   ```
-  - Note that we've had some experience with compiling Boost 1.7.1 (required by Carla) being a problem when using an Anaconda python version. In which case the solution was to edit the boost source (make sure not to redownload it in Setup.sh) in Build/boost-1.72.0-c8-source/tools/build/src/tools/python.jam:547 to `python3m` instead of just `python3` for Conda.
+  - **NOTE (Linux)**: if you are having trouble with compiling Boost 1.72.0 (required by Carla) and you're using an `anaconda` based python environment, we found a quick solution to be:
+    ```bash
+    # find anaconda install:
+    which python3
+    ...
+    > PATH/TO/ANACONDA/envs/carla/bin/python3 # example output
+    # go to carla/install dir from here
+    cd PATH/TO/ANACONDA/envs/carla/install
+    # create a symlink between python3.7 -> python3.7m
+    ln -s python3.7m python3.7
+    ```
+    Now when you `make LibCarla` again, the `boost` errors should be resolved. 
+  Now when you `make LibCarla` again, the `boost` errors should be resolved. 
+    Now when you `make LibCarla` again, the `boost` errors should be resolved. 
+    - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
+  - **NOTE (Windows)**: if you are having trouble with linking errors when trying to `make PythonAPI` using a conda environment, check out [this solution](https://github.com/carla-simulator/carla/issues/2881#issuecomment-699452386). 
 
 - ### Sanity Check
   - After installing these plugins, you should see a `Unreal/CarlaUE4/Plugins` that looks like this:
@@ -119,7 +206,7 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
     ```
   
 ## Installing `DReyeVR`
-(Once you are done with this step, you should have a carla repo that looks just like this [Carla fork](https://github.com/HARPLab/carla/tree/DReyeVR-0.9.11) we created with the [`install.sh`](../install.sh) script pre-applied.)
+(Once you are done with this step, you should have a carla repo that looks just like this [Carla fork](https://github.com/HARPLab/carla/tree/DReyeVR-0.9.13) we created with the [`install.sh`](../install.sh) script pre-applied.)
 
 With all previous steps complete, run the [install.sh](../install.sh) script to copy all the requisite files over to Carla
 - Note this is a `bash` (`.sh`) script so it would be ideal to use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) if on Windows.
@@ -130,34 +217,31 @@ With all previous steps complete, run the [install.sh](../install.sh) script to 
 ./install.sh /path/to/carla # only installs to Carla
 ./install.sh /path/to/carla /path/to/scenario-runner # installs both
 ```
-The script will first check if each directory matches the expected version (`0.9.11` for Carla and `v0.9.11` for ScenarioRunner) using git and then proceed with the installation. 
+The script will first check if each directory matches the expected version (`0.9.13` for Carla and `v0.9.13` for ScenarioRunner) using git and then proceed with the installation. 
 
 As long as you have no errors in the previous sections (see [`Install.md`](Docs/Install.md)), you should be able to just build the `Carla` project with our `DReyeVR` files as follows:
 
 ## Building `DReyeVR`
-- If you are not interested in using SRanipal or the LogitechWheelPlugin, you can disable these at compile-time by toggling the following macros (set to `false`):
-  1. `USE_SRANIPAL` in [`EgoSensor.h`](../DReyeVR/EgoSensor.h)
-  2. `USE_LOGITECH_WHEEL` in [`EgoVehicle.h`](../DReyeVR/EgoVehicle.h)
-- Open the project directory in any terminal (Linux) or `Windows x64 Native Tools Command Prompt for VS 2017` (Windows)
+- If you are not interested in using SRanipal or the LogitechWheelPlugin, you can disable these at compile-time by changing the variables in `Unreal/CarlaUE4/Source/CarlaUE4/CarlaUE4.Build.cs` to `false`:
+  - ```c#
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Edit these variables to enable/disable features of DReyeVR
+    bool UseSRanipalPlugin = true;
+    bool UseLogitechPlugin = true;
+    ////////////////////////////////////////////////////////////////////////////////////
+    ```
+- Open the project directory in any terminal (Linux) or `Windows x64 Native Tools Command Prompt for VS 2019` (Windows)
   - Run `make PythonAPI && make launch` (the `PythonAPI` should be build first)
 - To build a package, run `make package` which should work as long as the editor version compiles
-  - Note that on Linux there is a bug in Carla 0.9.11 when running `make package` as described [here](https://github.com/carla-simulator/carla/issues/3758). Fortunately, the fix is easy:
-    ```bash
-    cd $CARLA_ROOT/Util/BuildTools/
-    # Open Package.sh in your favourite editor
-    ...
-    copy_if_changed "./Plugins/" "${DESTINATION}/Plugins/" # <-- change this (Package.sh:166)
-    copy_if_changed "./Unreal/CarlaUE4/Plugins/" "${DESTINATION}/Plugins/" # <-- to this (Package.sh:166)
-    ```
 
 Then, with the package built, run the Carla executable in VR mode with:
 ```bash
 # on Linux
-cd /PATH/TO/CARLA/Dist/CARLA_SHIPPING_*/LinuxNoEditor/
+cd /PATH/TO/CARLA/Dist/CARLA_Shipping_0.9.13/LinuxNoEditor/
 ./CarlaUE4.sh -vr
 
 # on Windows x64 Visual C++ Toolset
-cd \PATH\TO\CARLA\Build\UE4Carla\0.9.11-*\WindowsNoEditor\
+cd \PATH\TO\CARLA\Build\UE4Carla\0.9.13\WindowsNoEditor\
 CarlaUE4.exe -vr
 
 # Optional flag: -quality-level=Low

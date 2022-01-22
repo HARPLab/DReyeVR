@@ -11,6 +11,7 @@ public class CarlaUE4 : ModuleRules
 	public CarlaUE4(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PrivatePCHHeaderFile = "CarlaUE4.h";
+		ShadowVariableWarningLevel = WarningLevel.Off; // -Wno-shadow
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
 
@@ -20,29 +21,48 @@ public class CarlaUE4 : ModuleRules
 		}
 		else
 		{
-			// only build this carla exception in Editor mode
+			// only build this carla exception in package mode
 			PublicDefinitions.Add("NO_DREYEVR_EXCEPTIONS");
 		}
+
 		// Add module for SteamVR support with UE4
 		PublicDependencyModuleNames.AddRange(new string[] { "HeadMountedDisplay" });
 
-		// SRanipal plugin for Windows
 		if (IsWindows(Target))
-		{ // SRanipal unfortunately only works on Windows
+		{ 
 			bEnableExceptions = true; // enable unwind semantics for C++-style exceptions
-			PrivateDependencyModuleNames.AddRange(new string[] { "SRanipalEye", "LogitechWheelPlugin" });
+		}
+
+		////////////////////////////////////////////////////////////////////////////////////
+		// Edit these variables to enable/disable features of DReyeVR
+		bool UseSRanipalPlugin = true;
+		bool UseLogitechPlugin = true;
+		////////////////////////////////////////////////////////////////////////////////////
+
+		if (!IsWindows(Target))
+		{
+			// adjust definitions so they are OS-compatible
+			UseSRanipalPlugin = false;       // SRanipal only works on Windows
+			UseLogitechPlugin = false; // LogitechWheelPlugin also only works on Windows
+		}
+
+		// Add these preprocessor definitions to code
+		PublicDefinitions.Add("USE_SRANIPAL_PLUGIN=" + (UseSRanipalPlugin ? "true" : "false"));
+		PublicDefinitions.Add("USE_LOGITECH_PLUGIN=" + (UseLogitechPlugin ? "true" : "false"));
+
+		// Add plugin dependencies 
+		if (UseSRanipalPlugin)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "SRanipalEye" });
 			PrivateIncludePathModuleNames.AddRange(new string[] { "SRanipalEye" });
+		}
+
+		if (UseLogitechPlugin)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "LogitechWheelPlugin" });
 		}
 
 
 		PrivateDependencyModuleNames.AddRange( new string[] {"ImageWriteQueue"});
-		
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-		// Uncomment if you are using online features
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
 }
