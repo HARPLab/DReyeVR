@@ -17,15 +17,15 @@
 #include <stdio.h>
 #include <vector>
 
-#define USE_LOGITECH_WHEEL true // try to use the LogitechWheel plugin if available
+// #define USE_LOGITECH_PLUGIN true // handled in .Build.cs file
 
 #ifndef _WIN32
 // can only use LogitechWheel plugin on Windows! :(
-#undef USE_LOGITECH_WHEEL
-#define USE_LOGITECH_WHEEL false
+#undef USE_LOGITECH_PLUGIN
+#define USE_LOGITECH_PLUGIN false
 #endif
 
-#if USE_LOGITECH_WHEEL
+#if USE_LOGITECH_PLUGIN
 #include "LogitechSteeringWheelLib.h" // LogitechWheel plugin for hardware integration & force feedback
 #endif
 
@@ -63,7 +63,6 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     // Play sounds
     void PlayGearShiftSound(const float DelayBeforePlay = 0.f) const;
     void PlayTurnSignalSound(const float DelayBeforePlay = 0.f) const;
-    void PlayCrashSound(const float DelayBeforePlay = 0.f) const;
 
   protected:
     // Called when the game starts (spawned) or ends (destroyed)
@@ -81,9 +80,9 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     ////////////////:CAMERA:////////////////
     void ConstructCamera(); // needs to be called in the constructor
     void InitSteamVR();     // Initialize the Head Mounted Display
-    UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class USceneComponent *VRCameraRoot;
-    UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UCameraComponent *FirstPersonCam;
     FVector CameraLocnInVehicle{21.0f, -40.0f, 120.0f}; // depends on vehicle mesh (units in cm)
     float FieldOfView = 90.f;                           // in degrees
@@ -134,7 +133,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
 
     void InitLogiWheel();
     void TickLogiWheel();
-#if USE_LOGITECH_WHEEL
+#if USE_LOGITECH_PLUGIN
     DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
     void LogLogitechPluginStruct(const DIJOYSTATE2 *Now);
     void LogitechWheelUpdate();      // for logitech wheel integration
@@ -143,19 +142,10 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
 
     ////////////////:SOUNDS:////////////////
     void ConstructEgoSounds(); // needs to be called in the constructor
-    void TickSounds();
-    UPROPERTY(Category = Audio, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UAudioComponent *GearShiftSound; // nice for toggling reverse
-    UPROPERTY(Category = Audio, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UAudioComponent *TurnSignalSound; // good for turn signals
-    UPROPERTY(Category = Audio, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-    class UAudioComponent *CrashSound; // crashing with another actor
-
-    ////////////////:COLLISIONS:////////////////
-    void ConstructCollisionHandler(); // needs to be called in the constructor
-    UFUNCTION()
-    void OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherActor, UPrimitiveComponent *OtherComp,
-                        int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult);
 
     ////////////////:LEVEL:////////////////
     void TickLevel(float DeltaSeconds);
@@ -174,6 +164,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class ADReyeVRHUD *FlatHUD;
     void DrawFlatHUD(float DeltaSeconds);
     int ReticleSize = 100;               // diameter of reticle (line thickness is 10% of this)
+    bool bDrawFlatHud = true;            // whether to draw the flat hud at all (default true, but false in VR)
     bool bDrawFPSCounter = true;         // draw FPS counter in top left corner
     bool bDrawGaze = false;              // whether or not to draw a line for gaze-ray on HUD
     bool bDrawSpectatorReticle = true;   // Reticle used in the VR-spectator mode
@@ -184,12 +175,12 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     ////////////////:DASH:////////////////
     // Text Render components (Like the HUD but part of the mesh and works in VR)
     void ConstructDashText(); // needs to be called in the constructor
-    UPROPERTY(Category = Dash, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = "Dash", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UTextRenderComponent *Speedometer;
-    UPROPERTY(Category = Dash, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = "Dash", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UTextRenderComponent *TurnSignals;
     float TurnSignalDuration; // time in seconds
-    UPROPERTY(Category = Dash, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    UPROPERTY(Category = "Dash", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UTextRenderComponent *GearShifter;
     void UpdateDash();
     FVector DashboardLocnInVehicle{110, 0, 105}; // can change via params

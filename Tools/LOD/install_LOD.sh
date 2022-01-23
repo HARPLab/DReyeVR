@@ -22,11 +22,11 @@ fi
 
 echo -e "\nInstalling custom LOD's for DReyeVR"
 
-if [ ! -f ${CARLA_ROOT}/CHANGELOG.md ] || [[ `head -n 1 ${CARLA_ROOT}/CHANGELOG.md` != "## CARLA 0.9.11" ]]; then
-    echo -e "${R}Could not verify a correct Carla 0.9.11 installation${NC}"
+if [ ! -f ${CARLA_ROOT}/CHANGELOG.md ] || [[ `head -n 1 ${CARLA_ROOT}/CHANGELOG.md` != "## CARLA 0.9.13" ]]; then
+    echo -e "${R}Could not verify a correct Carla 0.9.13 installation${NC}"
     exit 1
 else    
-    echo -e "${G}Found a Carla 0.9.11 installation at ${CARLA_ROOT}${NC}"
+    echo -e "${G}Found a Carla 0.9.13 installation at ${CARLA_ROOT}${NC}"
 fi
 
 LINUX='https://docs.google.com/uc?export=download&id=1OqDOCAflENnXvbJCogBEmRhHQpEF1aKE'

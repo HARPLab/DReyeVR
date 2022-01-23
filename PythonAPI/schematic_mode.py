@@ -55,10 +55,10 @@ class DReyeVRWorld(World):
         data: Dict[str, Any] = self.sensor.data
         if len(data) == 0:
             return
-        rot = Rotation.from_euler("yxz", data["hmd_rotation"], degrees=True)
-        ray_start = data["hmd_location"] / 100 + rot.apply(data["eye_origin"] / 100)
+        rot = Rotation.from_euler("yxz", data["camera_rotation"], degrees=True)
+        ray_start = data["camera_location"] / 100 + rot.apply(data["gaze_origin"] / 100)
         # NOTE: ray_length is in carla metres
-        ray_end_locn = ray_start + ray_length * rot.apply(data["gaze_ray"])
+        ray_end_locn = ray_start + ray_length * rot.apply(data["gaze_dir"])
         gaze_ray_line = [
             carla.Location(ray_start[0], ray_start[1], ray_start[2]),
             carla.Location(ray_end_locn[0], ray_end_locn[1], ray_end_locn[2]),

@@ -1,0 +1,30 @@
+Welcome to DReyeVR Codebase!
+============================
+
+This Makefile will help you install the different DReyeVR utilities.
+
+Use the following commands:
+
+    help:
+
+        Display this help message.
+
+    carla | install:
+
+        Install necessary DReyeVR files to a working compatible CARLA installation.
+        Requires a Carla path, use CARLA=/PATH/TO/CARLA
+
+    sr | scenario-runner
+
+        Install necessary DReyeVR files to a working compatible ScenarioRunner installation.
+        Requires a ScenarioRunner path, use SR=/PATH/TO/SCENARIO_RUNNER
+
+    patch-sranipal:
+
+        Apply the patches required for building the SRanipal plugin in UE4. 
+        Requires a Carla path, use CARLA=/PATH/TO/CARLA
+
+    all:
+
+        Runs the carla installation, then scenario-runner, then the patche(s). 
+        Requires both CARLA=/PATH/TO/CARLA and SR=/PATH/TO/SCENARIO_RUNNER

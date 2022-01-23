@@ -95,7 +95,7 @@ def stop_recording(client):
 
 def scenario_runner_args(parser):
     # NOTE: see scenario_runner.py for a better explanation of these
-    parser.add_argument("-v", "--version", action="version", version="0.9.11")
+    parser.add_argument("-v", "--version", action="version", version="0.9.13")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=2000)
     parser.add_argument("--timeout", default="10.0")
@@ -129,7 +129,7 @@ def main():
     # Define arguments that will be received and parsed
 
     description = (
-        "DReyeVR Scenario Runner & Experiment Runner\n" "Current version: 0.9.11"
+        "DReyeVR Scenario Runner & Experiment Runner\n" "Current version: 0.9.13"
     )
 
     argparser = argparse.ArgumentParser(

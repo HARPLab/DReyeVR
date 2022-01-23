@@ -20,7 +20,7 @@ With all this in mind, you are probably going to be interested in:
 - Other: `$CARLA_ROOT/Unreal/CarlaUE4/Content/Carla/Static/Vehicles/4Wheeled/XYZ`
 
 # Example: Adding a dynamic steering wheel
-Problem: It is quite jarring to drive without a responsive steering wheel, and since the Carla vehicle meshes were not designed for human drivers, there is no need to separate the steering wheel from the overall vehicle shell. This is problematic since the wheel is now a part of the vehicle mesh and cannot be animated during runtime. 
+Problen: It is quite jarring to drive without a responsive steering wheel, and since the Carla vehicle meshes were not designed for human drivers, there is no need to separate the steering wheel from the overall vehicle shell. This is problematic since the wheel is now a part of the vehicle mesh and cannot be animated during runtime. 
 
 In our case, we elected to use the TeslaM3 mesh for our base class, so we'll be working with that here too. 
 
@@ -40,31 +40,31 @@ First, go to the static mesh file you wish to export, in our case we wanted to e
 I recommend using the highest LOD ([Level-Of-Detail](../LODS.md)) setting for this export, since this vehicle will be so close to the camera all the time it is pointless to have multiple LOD's, and it makes it simpler for the import to blender. 
 
 To do this, simply enter the static mesh by double clicking it, and on the left "Asset Details" pane, down in "LOD Settings" drag the "Number of LODs" slider down to 1, then click "Apply Changes" as follows. 
-- ![LODs](Figures/Model/LOD1.png)
+- ![LODs](Figures/Model/LOD1.jpg)
 
 ### Export to blender
 Now, back in the `Content Browser` you can right click the file then select `Asset Actions -> Export` and designate a place for the resulting `.FBX` file to be exported. 
-- ![Export](Figures/Model/Export.png)
+- ![Export](Figures/Model/Export.jpg)
 
 ### Model in Blender
 Now, open a fresh Blender window and delete the default spawned cube. Then go to `File -> Import -> FBX (.fbx)` and select the file you just created. 
 
 You should now be presented with a simple Blender window with the vehicle like this:
-- ![BlenderSolid](Figures/Model/BlenderSolid.png)
+- ![BlenderSolid](Figures/Model/BlenderSolid.jpg)
 
 In order to toggle moving around using `WASD` controls, press `shift + ` `. Move inside the vehicle where you can find the steering wheel. 
 
 The easiest way (I've found) to efficiently extract the steering wheel it so use the wireframe-mode to select all vertices, even those that aren't visible in the solid render. To go to wireframe mode press `z` then select `wireframe` (should be the left-most option). Then you should see something like this:
-- ![WireframeWheel](Figures/Model/WireframeWheel.png)
+- ![WireframeWheel](Figures/Model/WireframeWheel.jpg)
 
 Then, to actually select the proper vertices, we're going to need to change from `Object Mode` to `Edit Mode` in the top left corner of the viewport. Then we'll need to position our camera in such a way to minimize unwanted vertices being selected, and use whatever selection technique we want (I like the lasso selection) to select the entire steering wheel like this:
-- ![SelectedWheel](Figures/Model/SelectedWheel.png)
+- ![SelectedWheel](Figures/Model/SelectedWheel.jpg)
 NOTE: if you have excess vertices selected, you can always undo those with `shift+click` on individual vertices.
 
 Then, you should be able to move the entire bunch out of the vehicle (or duplicate them all with `shift+d` and clean up the original) to have something like this:
 | Wireframe | Rendered |
 | --- | --- |
-| ![WireFrameGotWheel](Figures/Model/WheelOut.png) | ![SolidOut](Figures/Model/VehicleAndWheel.png) | 
+| ![WireFrameGotWheel](Figures/Model/WheelOut.jpg) | ![SolidOut](Figures/Model/VehicleAndWheel.jpg) | 
 
 Finally, you should then be able to export the individual selections (need to export both the just-wheel and the just-vehicle models) by selecting all the vertices the same way (in wireframe) and deleting them (then undo-ing the deletion of course). Then selecting `File -> Export -> FBX(.fbx)` for best compatibility. Do this for both the Vehicle mesh as well as the steering wheel (I moved the steering wheel to the origin when exporting but I'm not sure this is necessary). 
 
@@ -83,7 +83,7 @@ In this animation blueprint, ensure the following:
 
 | Reparent | Animation | 
 | --- | --- | 
-| ![Reparent](Figures/Model/AnimClassOption.png) | ![AnimGraph](Figures/Model/AnimGraph.png) | 
+| ![Reparent](Figures/Model/AnimClassOption.jpg) | ![AnimGraph](Figures/Model/AnimGraph.jpg) | 
 
 Now you are done with the animation blueprint.
 
@@ -97,7 +97,7 @@ Then finally, you can delete the newly imported PhysicsAsset file since it is no
 And in `BP_EgoVehicle_DReyeVR`, you can finally edit the `Mesh (Inherited) -> Details -> Mesh` field to use the new SM we just updated (pink underline). Since this clears the `Animation` section, you'll also need to update the `Mesh (Inherited) -> Animation -> Anim Class` field to use the new animation class we just made. 
 
 Now the DReyeVR EgoVehicle should be fully drivable and operates just as it did before, but now with no steering wheel in the driver's seat!
-![NoWheel](Figures/Model/NoWheel.png)
+![NoWheel](Figures/Model/NoWheel.jpg)
 
 ## 3. Re-attach the steering wheel dynamically
 ### Import to UE4
@@ -110,7 +110,7 @@ To get rotations of the wheel to be in the Roll axis of the wheel itself (not it
 This will allow you to create a plain simple static mesh (cyan underline) from the skeletal mesh (pink underline) as follows:
 | Rotated Skeletal Mesh | Resulting Directory | 
 | --- | --- |
-| ![RotWheel](Figures/Model/WheelRot.png) | ![SelectedWheel](Figures/Model/SelectSMWheel.png) |
+| ![RotWheel](Figures/Model/WheelRot.jpg) | ![SelectedWheel](Figures/Model/SelectSMWheel.jpg) |
 
 ### Import in code
 Now that we have a reasonable steering wheel model as a simple static mesh, it is easy to spawn it and attach it to the ego-vehicle (currently without a steering wheel) in code. Managing it in code is nice because it will allow us to `SetRelativeRotation` of the mesh dynamically on every tick, allowing it to be responsive to our inputs at runtime. 

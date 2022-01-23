@@ -15,8 +15,11 @@
 #include "Vehicle/VehiclePhysicsControl.h"
 #include "VehicleVelocityControl.h"
 #include "WheeledVehicleMovementComponent4W.h"
-#include "Components/AudioComponent.h"         // UAudioComponent
-#include "Sound/SoundCue.h"                    // USoundCue
+#include "VehicleAnimInstance.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
+#include "MovementComponents/BaseCarlaMovementComponent.h"
+#include "Components/AudioComponent.h" // UAudioComponent
+#include "Sound/SoundCue.h" // USoundCue
 
 #include "CoreMinimal.h"
 
@@ -29,6 +32,31 @@
 #include "CarlaWheeledVehicle.generated.h"
 
 class UBoxComponent;
+
+UENUM()
+enum class EVehicleWheelLocation : uint8 {
+
+  FL_Wheel = 0,
+  FR_Wheel = 1,
+  BL_Wheel = 2,
+  BR_Wheel = 3,
+  //Use for bikes and bicycles
+  Front_Wheel = 0,
+  Back_Wheel = 1,
+};
+
+/// Type of door to open/close
+// When adding new door types, make sure that All is the last one.
+UENUM(BlueprintType)
+enum class EVehicleDoor : uint8 {
+  FL = 0,
+  FR = 1,
+  RL = 2,
+  RR = 3,
+  Hood = 4,
+  Trunk = 5,
+  All = 6
+};
 
 /// Base class for CARLA wheeled vehicles.
 UCLASS()
@@ -122,9 +150,15 @@ public:
   FVehiclePhysicsControl GetVehiclePhysicsControl() const;
 
   UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void RestoreVehiclePhysicsControl();
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
   FVehicleLightState GetVehicleLightState() const;
 
   void ApplyVehiclePhysicsControl(const FVehiclePhysicsControl &PhysicsControl);
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void SetSimulatePhysics(bool enabled);
 
   void SetWheelCollision(UWheeledVehicleMovementComponent4W *Vehicle4W, const FVehiclePhysicsControl &PhysicsControl);
 
@@ -158,6 +192,9 @@ public:
 
   UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
   void DeactivateVelocityControl();
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void ShowDebugTelemetry(bool Enabled);
 
   /// @todo This function should be private to AWheeledVehicleAIController.
   void FlushVehicleControl();
@@ -206,31 +243,57 @@ public:
 
   void SetWheelsFrictionScale(TArray<float> &WheelsFrictionScale);
 
-  static float NonEgoVolume;
+  void SetCarlaMovementComponent(UBaseCarlaMovementComponent* MoementComponent);
+
+  template<typename T = UBaseCarlaMovementComponent>
+  T* GetCarlaMovementComponent() const
+  {
+    return Cast<T>(BaseMovementComponent);
+  }
+
+  static float Volume;
   virtual void SetVolume(const float VolumeIn);
+  void PlayCrashSound(const float DelayBeforePlay = 0.f) const;
   /// @}
   // ===========================================================================
   /// @name Overriden from AActor
   // ===========================================================================
   /// @{
+
 protected:
 
   virtual void BeginPlay() override;
-  
-  // DReyeVR add-on (mostly sound related)
-  virtual void Tick(float DeltaTime) override;
+  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 
+  // sounds (DReyeVR)
   void ConstructSounds();
   void TickSounds();
   const FVector EngineLocnInVehicle{180.f, 0.f, 70.f};
-  UPROPERTY(Category = Sound, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-  class UAudioComponent *EngineRevSound = nullptr;  // good for feedback on throttle
-    
+  class UAudioComponent *EngineRevSound = nullptr;  // driver feedback on throttle
+  class UAudioComponent *CrashSound = nullptr; // crashing with another actor
+  double CollisionCooldownTime = 0.0;
+  // can add more sounds here... like a horn maybe?
+  
+  // collisions (DReyeVR)
+  void ConstructCollisionHandler(); // needs to be called in the constructor
+  UFUNCTION()
+  void OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherActor, UPrimitiveComponent *OtherComp,
+                      int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult);
+
   UFUNCTION(BlueprintImplementableEvent)
   void RefreshLightState(const FVehicleLightState &VehicleLightState);
 
   UFUNCTION(BlueprintCallable, CallInEditor)
   void AdjustVehicleBounds();
+
+  UPROPERTY(Category="Door Animation", EditAnywhere, BlueprintReadWrite)
+  TArray<FName> ConstraintComponentNames;
+
+  UPROPERTY(Category="Door Animation", EditAnywhere, BlueprintReadWrite)
+  float DoorOpenStrength = 100.0f;
+
+  UFUNCTION(BlueprintCallable, CallInEditor)
+  void ResetConstraints();
 
 private:
 
@@ -253,68 +316,58 @@ private:
   InputControl;
 
   FVehicleControl LastAppliedControl;
+  FVehiclePhysicsControl LastPhysicsControl;
 
-
-//-----CARSIM--------------------------------
 public:
 
-  // Enables carsim once enabled it won't turn back to UE4 physics simulation
-  // (for some reason the UE4 physics get meesed up after enabling carsim)
-  UFUNCTION(Category="CARLA Wheeled Vehicle", BlueprintCallable)
-  void EnableCarSim(FString SimfilePath = "");
+  /// Set the rotation of the car wheels indicated by the user
+  /// 0 = FL_VehicleWheel, 1 = FR_VehicleWheel, 2 = BL_VehicleWheel, 3 = BR_VehicleWheel
+  /// NOTE : This is purely aesthetic. It will not modify the physics of the car in any way
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void SetWheelSteerDirection(EVehicleWheelLocation WheelLocation, float AngleInDeg);
 
-  // Enables usage of carsim terrain
-  UFUNCTION(Category="CARLA Wheeled Vehicle", BlueprintCallable)
-  void UseCarSimRoad(bool bEnabled);
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  float GetWheelSteerAngle(EVehicleWheelLocation WheelLocation);
 
-  #ifdef WITH_CARSIM
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void OpenDoor(const EVehicleDoor DoorIdx);
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void CloseDoor(const EVehicleDoor DoorIdx);
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void OpenDoorPhys(const EVehicleDoor DoorIdx);
+
+  UFUNCTION(Category = "CARLA Wheeled Vehicle", BlueprintCallable)
+  void CloseDoorPhys(const EVehicleDoor DoorIdx);
+
   virtual FVector GetVelocity() const override;
-  #endif
 
-  UFUNCTION(Category="CARLA Wheeled Vehicle", BlueprintPure)
-  bool IsCarSimEnabled() const;
-
-  virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
+//-----CARSIM--------------------------------
+  UPROPERTY(Category="CARLA Wheeled Vehicle", EditAnywhere)
+  float CarSimOriginOffset = 150.f;
+//-------------------------------------------
 
 private:
 
-  // On car mesh hit, only works when carsim is enabled
-  UFUNCTION()
-  void OnCarSimHit(AActor *Actor,
-      AActor *OtherActor,
-      FVector NormalImpulse,
-      const FHitResult &Hit);
-
-  // On car mesh overlap, only works when carsim is enabled
-  // (this event triggers when overlapping with static environment)
-  UFUNCTION()
-  void OnCarSimOverlap(UPrimitiveComponent* OverlappedComponent,
-      AActor* OtherActor,
-      UPrimitiveComponent* OtherComp,
-      int32 OtherBodyIndex,
-      bool bFromSweep,
-      const FHitResult & SweepResult);
-
-  UFUNCTION()
-  void SwitchToUE4Physics();
-
-  UFUNCTION()
-  void RevertToCarSimPhysics();
-
   UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere)
-  bool bCarSimEnabled = false;
-
-  UPROPERTY(Category="CARLA Wheeled Vehicle", EditAnywhere)
-  float CarSimOriginOffset = 150.f;
+  bool bPhysicsEnabled = true;
 
   // Small workarround to allow optional CarSim plugin usage
   UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-  UMovementComponent * ExternalMovementComponent;
+  UBaseCarlaMovementComponent * BaseMovementComponent = nullptr;
 
-  #ifdef WITH_CARSIM
-  AActor* OffsetActor;
-  // Casted version of ExternalMovementComponent
-  UCarSimMovementComponent * CarSimMovementComponent;
-  #endif
-  //-------------------------------------------
+  UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  TArray<UPhysicsConstraintComponent*> ConstraintsComponents;
+
+  UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  TMap<UPhysicsConstraintComponent*, UPrimitiveComponent*> ConstraintDoor;
+
+  // container of the initial transform of the door, used to reset its position
+  UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  TMap<UPrimitiveComponent*, FTransform> DoorComponentsTransform;
+
+  UPROPERTY(Category="CARLA Wheeled Vehicle", VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+  TMap<UPrimitiveComponent*, UPhysicsConstraintComponent*> CollisionDisableConstraints;
+
 };

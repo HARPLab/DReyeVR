@@ -58,7 +58,10 @@ def spawn_other_vehicles(client, max_vehicles, world, traffic_manager):
                 blueprint.get_attribute("driver_id").recommended_values
             )
             blueprint.set_attribute("driver_id", driver_id)
-        blueprint.set_attribute("role_name", "autopilot")
+        try:
+            blueprint.set_attribute("role_name", "autopilot")
+        except IndexError:
+            pass
 
         batch.append(
             SpawnActor(blueprint, transform).then(

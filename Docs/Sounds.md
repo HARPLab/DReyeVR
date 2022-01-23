@@ -6,6 +6,7 @@ In this doc we'll go over how we added sound of the following:
 1. Vehicle engine revving
 2. Other vehicle sounds (gears/turn signals)
 3. Ambient world noise 
+4. Acknowledgements
 
 ## Engine revving
 One of the best feedback mechanisms for a user applying throttle is the roar of an engine as the RPM increases. 
@@ -93,12 +94,13 @@ To see how we implemented our audio components in DReyeVR (for both the ego-vehi
 ## Ambient noise in the World
 It's also doable (and fairly easy) to have ambient noise in the world that attenuates based on the distance to the source. 
 
+For reference, our provided Town03 has sound cues like this:
+![WorldSound](Figures/Sounds/sound_selected.jpg)
+
 Notice that once you drag & drop the sounds into the world, make sure to enable the **Override Attenuation** checkbox so you can edit the attenuation function, shape, and radius. 
 - The Inner Radius denotes the region where the volume is maximized
 - The FallOff Distance denotes the region where the attenuation function gets executed and fades in/out
 
-
-**NOTE:** All our `Starter_*` files were obtained from the [UE4 Starter Content Pack](https://docs.unrealengine.com/en-US/Basics/Packs/index.html), which is free to use.
 
 Our general strategy for simple ambient noise in the world follows these basic rules:
 1. Wind is universal, so always have a big box covering the entire map that is the `Starter_Wind05`, usually we set its default volume to 70%
@@ -106,26 +108,33 @@ Our general strategy for simple ambient noise in the world follows these basic r
 3. Smoke is a good indicator for industry/city/buildings, so usually where there are lots of buildings/downtown, we'll use `Starter_Smoke01`
 4. Steam works well for underground/dirty situations, so tunnels/railroads work well with `Starter_Steam01`
 5. Water is very useful whenever there is water in the scene (`Water`), but it is much nicer to keep 3D sound enabled
-   1. ie. don't uncheck `Enable Spacializaiton`
+   1. ie. don't uncheck `Enable Spatialization` (so the birds are audible entirely within this region)
 
 For custom tuning the attenuation parameters, see the `Details` pane after spawning an AmbientSound instance. It is also recommended to see this [Unreal Engine documentation on Audio Attenuation](https://docs.unrealengine.com/en-US/WorkingWithMedia/Audio/DistanceModelAttenuation/index.html)
-| Example attenuation parameter settings                  | Bird sounds selected                                                                                                                            |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![BirdAttenuation](Figures/Sounds/bird_attenuation.png) | ![BirdAttenuation](Figures/Sounds/bird_selected.png)</br> In the World Outliner simply searching for "Sound" returns all AmbientSound instances |
+| Example attenuation parameter settings  | Bird sounds selected  |
+| --- | --- |
+| ![BirdAttenuation](Figures/Sounds/bird_attenuation.jpg) | ![BirdAttenuation](Figures/Sounds/bird_selected.jpg)</br> In the World Outliner simply searching for "Sound" returns all AmbientSound instances |
 
 For reference, our birds ambient noise for Town03 looks like the following:
-![BirdAttenuation](Figures/Sounds/bird_world.png)
+![BirdAttenuation](Figures/Sounds/bird_world.jpg)
 It is difficult to see the orange lines denoting our attenuation spheres, but all three are selected and displayed (generally over all grassy patches). 
 
 We also added other custom sounds such as slight water splashing (works well with the fountain in the middle).
 
-Additionally, some maps are surrounded by water, this poses a challenge because often the coasts are very curvy and keeping a 3D sound spacialization only works if the sound is general enough to be emitting from the general body of water. This works great for the fountain where the water is symmetric, but require more granularly placed AmbientSounds in the world as follows (Town04):
+Additionally, some maps are surrounded by water, this poses a challenge because often the coasts are very curvy and keeping a 3D sound spatialization only works if the sound is general enough to be emitting from the general body of water. This works great for the fountain where the water is symmetric, but require more granularly placed AmbientSounds in the world as follows (Town04):
 
-![WaterWorld](Figures/Sounds/water_world.png)
+![WaterWorld](Figures/Sounds/water_world.jpg)
 
 It is more tedious to place these smaller & more granular sound components in the world, but they make for a much better experience and are relatively quick to edit (just copy & paste & move around).
 
-**NOTE** there is probably a better way to do this so we don't need to place a bunch of small sound sources. If you know of a better way please let us know. 
+**NOTE** there is probably a better way (such as [audio splines](https://blog.audiokinetic.com/volumetric_audio_emitter_for_custom_shapes_in_ue4/)) to do this so we don't need to place a bunch of small sound sources. 
 
-## Known issues
-Sometimes we've found that in the **packaged** release (`make package`) on Linux, the audio for certain sounds is super jumbled and sounds terrible. However, in the **editor** on Linux it is fine. We are not sure yet what is to blame, any help in solving this issue would be greatly appreciated. 
+## Acknowledgements
+- We used the Arthur Ontuzhan's [ContinueBreak guide](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12) for developing our engine revving sound. 
+- These are the sources from which we obtained our audio files. Some files have been modified to better suit DReyeVR's needs. 
+   - Light01, Light02, Smoke01, Starter_Birds01, Starter_Wind05, Starter_Wind06, Steam01
+      - These all come from the [UE4 starter content pack](https://docs.unrealengine.com/4.27/en-US/Basics/Projects/Browser/Packs/)
+   - Water ([source](https://www.youtube.com/watch?v=QCvnqJz-qIo))
+   - Crash ([source](https://www.youtube.com/watch?v=flMN4ME3isU))
+   - Turn signals ([source](https://www.youtube.com/watch?v=EYIw9-pnScQ))
+   - Gear shift ([source](https://www.youtube.com/watch?v=g_Gfkgfbz20))

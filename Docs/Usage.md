@@ -9,7 +9,7 @@ Now that you have DReyeVR up and running, this guide will highlight some useful 
 - [Using our config file to modify DReyeVR params](Usage.md#using-our-custom-config-file)
 - [Other guides](Usage.md#other-guides)
 
-![UsageSchematic](Figures/Usage/UsageSchematic.png)
+![UsageSchematic](Figures/Usage/UsageSchematic.jpg)
 
 # Maneuvering the Ego-vehicle
 These control schemes work both in VR and non-VR. With the main difference being that in VR you can move the camera pose and orientation with your head tracking, but in flat-screen-mode (non-VR) you'll need to use a mouse like in a first-person game. 
@@ -31,7 +31,7 @@ These control schemes work both in VR and non-VR. With the main difference being
   - **Toggle Reverse** - Is done by pressing any of the `ABXY` (7 in the image) buttons 
   - **Turn Signals** - Are both done by the left (4) and right (6) bumpers 
   - **Camera Adjust** - Is done in X and Y with the 4 d-pad buttons (2) on the face of the wheel, and in Z with the +/- buttons (5)
-- ![LogiWheel](Figures/Usage/g923.png) Image source: [Logitech g923 manual](https://www.logitech.com/assets/65932/2/g923-racing-wheel-qsg.pdf)
+- ![LogiWheel](Figures/Usage/g923.jpg) Image source: [Logitech g923 manual](https://www.logitech.com/assets/65932/2/g923-racing-wheel-qsg.pdf)
 
 Note that all the keyboard inputs are defined in [`DefaultInputs.ini`](../Config/DefaultInputs.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
 
@@ -39,8 +39,8 @@ However, the logitech wheel inputs are hardcoded into the source since they are 
   
 # Using the PythonAPI
 With the main Carla server running you should now be able to run all Carla provided `PythonAPI` scripts.
-- Note that not all scripts in the original [`Carla 0.9.11` PythonAPI](https://github.com/carla-simulator/carla/tree/0.9.11/PythonAPI) repo have been tested. We created some new scripts in place of others, such as `schematic_mode.py` which inherits from `no_rendering_mode.py` but adds support for our ego-vehicle and eye tracker. 
-- In some cases, we replace the old python scripts with newer ones, such as the [`no_rendering_mode.py`](https://github.com/carla-simulator/scenario_runner/blob/v0.9.11/no_rendering_mode.py) in `scenario-runner-v0.9.11` which is actually from release 0.9.5. 
+- Note that not all scripts in the original [`Carla 0.9.13` PythonAPI](https://github.com/carla-simulator/carla/tree/0.9.13/PythonAPI) repo have been tested. We created some new scripts in place of others, such as `schematic_mode.py` which inherits from `no_rendering_mode.py` but adds support for our ego-vehicle and eye tracker. 
+- In some cases, we replace the old python scripts with newer ones, such as the [`no_rendering_mode.py`](https://github.com/carla-simulator/scenario_runner/blob/v0.9.13/no_rendering_mode.py) in `scenario-runner-v0.9.13` which is actually from release 0.9.5. 
 
 ### Visualize in schematic mode
 ```bash
@@ -172,7 +172,7 @@ Now you can proceed to use `self.sensor.ego_sensor` as a standard [`carla.libcar
   ```
   - To clarify the structure of the inheritance at play here (Older generation to youngest):
     1. [`AActor`](https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/GameFramework/AActor/): Low-level unreal class for any object that can be spawned into the world
-    2. [`ASensor`](https://github.com/carla-simulator/carla/blob/0.9.11/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/Sensor.h): Carla actor that templates the structure for Sensors acting in the Carla world
+    2. [`ASensor`](https://github.com/carla-simulator/carla/blob/0.9.13/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/Sensor.h): Carla actor that templates the structure for Sensors acting in the Carla world
     3. [`ADReyeVRSensor`](../Carla/Sensor/DReyeVRSensor.h): Our sensor instance that contains logic for all Carla related tasks
         - Streaming to the PythonAPI
         - Receiving data from replayer to reenact
@@ -242,7 +242,7 @@ Now you can proceed to use `self.sensor.ego_sensor` as a standard [`carla.libcar
 
 # Recording/Replaying a scenario
 ## Motivations
-It is often useful to record a scenario of an experiment in order to reenact it in post and perform further analysis. We had to slightly augment the recorder and replayer to respect our ego-vehicle being persistent in the world, but all other functionality is maintained. We additionally reenact the ego-sensor data (including HMD pose and orientation) so an experimenter could see what the participant was looking at on every tick. For the full explanation of the Carla recorder see their [documentation](https://carla.readthedocs.io/en/0.9.11/adv_recorder/). 
+It is often useful to record a scenario of an experiment in order to reenact it in post and perform further analysis. We had to slightly augment the recorder and replayer to respect our ego-vehicle being persistent in the world, but all other functionality is maintained. We additionally reenact the ego-sensor data (including HMD pose and orientation) so an experimenter could see what the participant was looking at on every tick. For the full explanation of the Carla recorder see their [documentation](https://carla.readthedocs.io/en/0.9.13/adv_recorder/). 
 
 ## Recording
 The easiest way to start recording is with the handy `PythonAPI` scripts. 
@@ -269,9 +269,9 @@ cd $CARLA_ROOT/PythonAPI/examples/
 ```
 - Note that in the replaying mode, all user inputs will be ignored in favour of the replay inputs. However, you may still use the following level controls:
   1. **Toggle Play/Pause** - Is done by pressing `SpaceBar`
-  2. **Advance** - Is done by holding `Ctrl` and pressing `Left` arrow (backwards) or `Right` arrow (forwards)
-  3. **Change Advance Amount** - Is done by holding `Ctrl` and pressing `Up` arrow (increase) or `Down` arrow (decrease)
-  4. **Restart** - Is done by pressing `BackSpace`
+  2. **Advance** - Is done by holding `Alt` and pressing `Left` arrow (backwards) or `Right` arrow (forwards)
+  3. **Change Playback Speed** - Is done by holding `Alt` and pressing `Up` arrow (increase) or `Down` arrow (decrease)
+  4. **Restart** - Is done by holding `Alt` and pressing `BackSpace`
   6. **Possess Spectator** - Is done by pressing `1` (then use `WASDEQ+mouse` to fly around)
   7. **Re-possess Vehicle** - Is done by pressing `2`
 
@@ -280,12 +280,12 @@ It is usually ideal to have curated experiments in the form of scenarios parsed 
 
 For this purpose, we created a handy script that should be robust to some of the quirks of the existing implementation. This script ([`run_experiment.py`](../ScenarioRunner/run_experiment.py)) will automatically start recording for you AFTER the new map has been loaded, with a unique filename, all on a single client instance, so that you don't need to worry about a faulty recording or overwriting existing files. 
 
-With `scenario_runner` v0.9.11, you should have already set these environment variables:
+With `scenario_runner` v0.9.13, you should have already set these environment variables:
 ```bash
 # on bash (Linux)
 export CARLA_ROOT=/PATH/TO/carla/
 export SCENARIO_RUNNER_ROOT=/PATH/TO/scenario_runner/
-export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg                                           
+export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.13-py3.7-linux-x86_64.egg                                           
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/agents
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI
@@ -293,7 +293,7 @@ export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI
 # on Windows x64 Visual C++ Toolset
 set CARLA_ROOT=C:PATH\TO\carla\
 set SCENARIO_RUNNER_ROOT=C:PATH\TO\scenario_runner\
-set PYTHONPATH=%PYTHONPATH%;%CARLA_ROOT%\PythonAPI\carla\dist\carla-0.9.11-py3.7-win-amd64.egg
+set PYTHONPATH=%PYTHONPATH%;%CARLA_ROOT%\PythonAPI\carla\dist\carla-0.9.13-py3.7-win-amd64.egg
 set PYTHONPATH=%PYTHONPATH%;%CARLA_ROOT%\PythonAPI\carla\agents
 set PYTHONPATH=%PYTHONPATH%;%CARLA_ROOT%\PythonAPI\carla
 set PYTHONPATH=%PYTHONPATH%;%CARLA_ROOT%\PythonAPI
@@ -311,7 +311,7 @@ python run_experiment.py --title "dreyevr_experiment" --route %SCENARIO_RUNNER_R
 Note that you can rename the experiment to anything with `--title "your_experiment"`, and the resulting recording file will include this title in its filename. 
 
 # Control handoff to AI
-Sometimes it is useful to have an AI takeover of the ego-vehicle during an experiment for research purposes. This becomes easy to do in our simulator with the help of Carla's existing [TrafficManager-based autopilot](https://carla.readthedocs.io/en/0.9.11/adv_traffic_manager/) which can pilot our ego-vehicle just like any other carla Vehicle. 
+Sometimes it is useful to have an AI takeover of the ego-vehicle during an experiment for research purposes. This becomes easy to do in our simulator with the help of Carla's existing [TrafficManager-based autopilot](https://carla.readthedocs.io/en/0.9.13/adv_traffic_manager/) which can pilot our ego-vehicle just like any other carla Vehicle. 
 
 However, in order to start the autopilot, we currently only support using the PythonAPI for this task, so we created `DReyeVR_AI.py` which will do the job:
 ```bash
@@ -319,7 +319,7 @@ cd $CARLA_ROOT/PythonAPI/examples # go to carla PythonAPI
 ./DReyeVR_AI.py -n 0 # spawn no other vehicles, enable autopilot on EgoVehicle
 ```
 
-Currently we only support manual handoff by pressing `3` on the keyboard. This essentially unpossesses the player controller in favour of the Carla [WheeledVehicleAIController](https://github.com/carla-simulator/carla/blob/0.9.11/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/WheeledVehicleAIController.cpp) which will follow some route defined by Carla's TrafficManager.
+Currently we only support manual handoff by pressing `3` on the keyboard. This essentially unpossesses the player controller in favour of the Carla [WheeledVehicleAIController](https://github.com/carla-simulator/carla/blob/0.9.13/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/WheeledVehicleAIController.cpp) which will follow some route defined by Carla's TrafficManager.
 
 In order to re-possess the vehicle (handoff control back to the player), simply press `2`. We are working on a better approach for this where any user input will override the AI input. 
 
@@ -386,4 +386,4 @@ We have written other guides as well that serve more particular needs:
 - On Windows you're going to want to use the `Windows x64 Visual C++ Toolset` and call all the python files with `python SCRIPT.py` rather than just `./SCRIPT.py`
     - Additionally, environment variables are accessed `%LIKE_THIS%` instead of `$LIKE_THIS`.
     - And remember that file paths use a backwards slash to `LOCATE\FILES\THIS\WAY\` instead of `THE/NORMAL/WAY/`
-- There is a bug (we are not sure why, occurs in base carla too), where `Town06/07/10HD` are not present in the `package`d release. Some documentation [here](https://carla.readthedocs.io/en/0.9.11/start_quickstart/#import-additional-assets). 
+- There is a bug (we are not sure why, occurs in base carla too), where `Town06/07/10HD` are not present in the `package`d release. Some documentation [here](https://carla.readthedocs.io/en/0.9.13/start_quickstart/#import-additional-assets). 

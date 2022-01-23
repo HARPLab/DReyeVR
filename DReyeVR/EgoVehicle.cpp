@@ -37,9 +37,6 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
     // Initialize audio components
     ConstructEgoSounds();
 
-    // Initialize collision event functions
-    ConstructCollisionHandler();
-
     // Initialize text render components
     ConstructDashText();
 
@@ -90,11 +87,11 @@ void AEgoVehicle::BeginPlay()
     Player = UGameplayStatics::GetPlayerController(World, 0); // main player (0) controller
     Episode = UCarlaStatics::GetCurrentEpisode(World);
 
-    // Setup the HUD
-    InitFlatHUD();
-
     // Get information about the VR headset & initialize SteamVR
     InitSteamVR();
+
+    // Setup the HUD
+    InitFlatHUD();
 
     // Spawn and attach the EgoSensor
     InitSensor();
@@ -152,6 +149,9 @@ void AEgoVehicle::Tick(float DeltaSeconds)
     // Update the world level
     TickLevel(DeltaSeconds);
 
+    // Play sound that requires constant ticking
+    TickSounds();
+
     // Tick the logitech wheel
     TickLogiWheel();
 
@@ -168,7 +168,9 @@ void AEgoVehicle::InitSteamVR()
     bIsHMDConnected = UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled();
     if (bIsHMDConnected)
     {
-        UE_LOG(LogTemp, Log, TEXT("Head mounted device detected!"));
+        FString HMD_Name = UHeadMountedDisplayFunctionLibrary::GetHMDDeviceName().ToString();
+        FString HMD_Version = UHeadMountedDisplayFunctionLibrary::GetVersionString();
+        UE_LOG(LogTemp, Log, TEXT("HMD detected: %s, version %s"), *HMD_Name, *HMD_Version);
         // Now we'll begin with setting up the VR Origin logic
         UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Eye); // Also have Floor & Stage Level
     }
@@ -288,13 +290,11 @@ void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
 
 void AEgoVehicle::ConstructEgoSounds()
 {
-    // retarget the engine cue
-    static ConstructorHelpers::FObjectFinder<USoundCue> EgoEngineCue(
-        TEXT("SoundCue'/Game/Carla/Blueprints/Vehicles/DReyeVR/Sounds/EgoEngineRev.EgoEngineRev'"));
-    EngineRevSound->bAutoActivate = true;          // start playing on begin
-    EngineRevSound->SetSound(EgoEngineCue.Object); // using this sound
-
     // Initialize ego-centric audio components
+    // See ACarlaWheeledVehicle::ConstructSounds for all Vehicle sounds
+    ensureMsgf(EngineRevSound != nullptr, TEXT("Vehicle engine rev should be initialized!"));
+    ensureMsgf(CrashSound != nullptr, TEXT("Vehicle crash sound should be initialized!"));
+
     static ConstructorHelpers::FObjectFinder<USoundWave> GearSound(
         TEXT("SoundWave'/Game/Carla/Blueprints/Vehicles/DReyeVR/Sounds/GearShift.GearShift'"));
     GearShiftSound = CreateDefaultSubobject<UAudioComponent>(TEXT("GearShift"));
@@ -308,19 +308,6 @@ void AEgoVehicle::ConstructEgoSounds()
     TurnSignalSound->SetupAttachment(GetRootComponent());
     TurnSignalSound->bAutoActivate = false;
     TurnSignalSound->SetSound(TurnSignalSoundWave.Object);
-
-    static ConstructorHelpers::FObjectFinder<USoundWave> CarCrashSound(
-        TEXT("SoundWave'/Game/Carla/Blueprints/Vehicles/DReyeVR/Sounds/Crash.Crash'"));
-    CrashSound = CreateDefaultSubobject<UAudioComponent>(TEXT("CarCrash"));
-    CrashSound->SetupAttachment(GetRootComponent());
-    CrashSound->bAutoActivate = false;
-    CrashSound->SetSound(CarCrashSound.Object);
-}
-
-void AEgoVehicle::TickSounds()
-{
-    // parent (ACarlaWheeledVehicle) contains the EngineRev logic
-    Super::TickSounds();
 }
 
 void AEgoVehicle::PlayGearShiftSound(const float DelayBeforePlay) const
@@ -335,60 +322,13 @@ void AEgoVehicle::PlayTurnSignalSound(const float DelayBeforePlay) const
         this->TurnSignalSound->Play(DelayBeforePlay);
 }
 
-void AEgoVehicle::PlayCrashSound(const float DelayBeforePlay) const
-{
-    if (this->CrashSound)
-        this->CrashSound->Play(DelayBeforePlay);
-}
-
 void AEgoVehicle::SetVolume(const float VolumeIn)
 {
     if (GearShiftSound)
         GearShiftSound->SetVolumeMultiplier(VolumeIn);
     if (TurnSignalSound)
         TurnSignalSound->SetVolumeMultiplier(VolumeIn);
-    if (CrashSound)
-        CrashSound->SetVolumeMultiplier(VolumeIn);
     Super::SetVolume(VolumeIn);
-}
-
-/// ========================================== ///
-/// ---------------:COLLISIONS:--------------- ///
-/// ========================================== ///
-
-void AEgoVehicle::ConstructCollisionHandler()
-{
-    // using Carla's GetVehicleBoundingBox function
-    UBoxComponent *Bounds = this->GetVehicleBoundingBox();
-    Bounds->SetGenerateOverlapEvents(true);
-    Bounds->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    Bounds->SetCollisionProfileName(TEXT("Trigger"));
-    Bounds->OnComponentBeginOverlap.AddDynamic(this, &AEgoVehicle::OnOverlapBegin);
-}
-
-void AEgoVehicle::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherActor,
-                                 UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                 const FHitResult &SweepResult)
-{
-    if (OtherActor != nullptr && OtherActor != this)
-    {
-        FString actor_name = OtherActor->GetName();
-        UE_LOG(LogTemp, Log, TEXT("Collision with \"%s\""), *actor_name);
-        // can be more flexible, such as having collisions with static props or people too
-        if (OtherActor->IsA(ACarlaWheeledVehicle::StaticClass()))
-        {
-            // emit the car collision sound at the midpoint between the vehicles' collision
-            const FVector Location = (OtherActor->GetActorLocation() - GetActorLocation()) / 2.f;
-            // const FVector Location = OtherActor->GetActorLocation(); // more pronounced spacial audio
-            const FRotator Rotation(0.f, 0.f, 0.f);
-            const float VolMult = 1.f; //((OtherActor->GetVelocity() - GetVelocity()) / 40.f).Size();
-            const float PitchMult = 1.f;
-            const float SoundStartTime = 0.f; // how far in to the sound to begin playback
-            // "fire and forget" sound function
-            UGameplayStatics::PlaySoundAtLocation(GetWorld(), CrashSound->Sound, Location, Rotation, VolMult, PitchMult,
-                                                  SoundStartTime, CrashSound->AttenuationSettings, nullptr, this);
-        }
-    }
 }
 
 /// ========================================== ///
@@ -488,18 +428,19 @@ void AEgoVehicle::InitFlatHUD()
     AHUD *Raw_HUD = Player->GetHUD();
     FlatHUD = Cast<ADReyeVRHUD>(Raw_HUD);
     if (FlatHUD)
-    {
         FlatHUD->SetPlayer(Player);
-    }
     else
-    {
         UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
+    // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
+    if (bIsHMDConnected)
+    {
+        bDrawFlatHud = false;
     }
 }
 
 void AEgoVehicle::DrawFlatHUD(float DeltaSeconds)
 {
-    if (FlatHUD == nullptr || Player == nullptr)
+    if (FlatHUD == nullptr || Player == nullptr || bDrawFlatHud == false)
         return;
     // calculate View size (of open window). Note this is not the same as resolution
     FIntPoint ViewSize;
@@ -565,7 +506,7 @@ void AEgoVehicle::ConstructDashText() // dashboard text (speedometer, turn signa
     // Create turn signals
     TurnSignals = CreateDefaultSubobject<UTextRenderComponent>(TEXT("TurnSignals"));
     TurnSignals->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-    TurnSignals->SetRelativeLocation(DashboardLocnInVehicle + FVector(0, -40.f, 0));
+    TurnSignals->SetRelativeLocation(DashboardLocnInVehicle + FVector(0, 11.f, -5.f));
     TurnSignals->SetRelativeRotation(FRotator(0.f, 180.f, 0.f)); // need to flip it to get the text in driver POV
     TurnSignals->SetTextRenderColor(FColor::Red);
     TurnSignals->SetText(FText::FromString(""));
@@ -696,7 +637,7 @@ void AEgoVehicle::TickLevel(float DeltaSeconds)
 
 void AEgoVehicle::Register()
 {
-    FActorView::IdType ID = EgoVehicleID;
+    FCarlaActor::IdType ID = EgoVehicleID;
     FActorDescription Description;
     Description.Class = ACarlaWheeledVehicle::StaticClass();
     Description.Id = "vehicle.dreyevr.egovehicle";
