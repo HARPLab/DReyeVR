@@ -1,4 +1,5 @@
 #include "EgoVehicle.h"
+#include "Math/NumericLimits.h" // TNumericLimits<float>::Max
 
 ////////////////:INPUTS:////////////////
 /// NOTE: Here we define all the Input functions for the EgoVehicle just to keep them
@@ -20,12 +21,15 @@ void AEgoVehicle::SetupPlayerInputComponent(UInputComponent *PlayerInputComponen
     PlayerInputComponent->BindAxis("Steer_DReyeVR", this, &AEgoVehicle::SetSteering);
     PlayerInputComponent->BindAxis("Throttle_DReyeVR", this, &AEgoVehicle::SetThrottle);
     PlayerInputComponent->BindAxis("Brake_DReyeVR", this, &AEgoVehicle::SetBrake);
-    // reverse & handbrake actions
-    PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Pressed, this, &AEgoVehicle::ToggleReverse);
+    // button actions (press & release)
+    PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Pressed, this, &AEgoVehicle::PressReverse);
+    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, this, &AEgoVehicle::PressTurnSignalR);
+    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, this, &AEgoVehicle::PressTurnSignalL);
+    PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Released, this, &AEgoVehicle::ReleaseReverse);
+    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Released, this, &AEgoVehicle::ReleaseTurnSignalR);
+    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Released, this, &AEgoVehicle::ReleaseTurnSignalL);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Pressed, this, &AEgoVehicle::HoldHandbrake);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Released, this, &AEgoVehicle::ReleaseHandbrake);
-    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalRight);
-    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, this, &AEgoVehicle::TurnSignalLeft);
     /// Mouse X and Y input for looking up and turning
     PlayerInputComponent->BindAxis("MouseLookUp_DReyeVR", this, &AEgoVehicle::MouseLookUp);
     PlayerInputComponent->BindAxis("MouseTurn_DReyeVR", this, &AEgoVehicle::MouseTurn);
@@ -81,6 +85,7 @@ void AEgoVehicle::SetSteering(const float SteeringInput)
     float ScaledSteeringInput = this->ScaleSteeringInput * SteeringInput;
     this->GetVehicleMovementComponent()->SetSteeringInput(ScaledSteeringInput); // UE4 control
     // assign to input struct
+    /// TODO: ensure this doesn't conflict with LogitechWheel when both are connected
     VehicleInputs.Steering = ScaledSteeringInput;
 }
 
@@ -96,6 +101,7 @@ void AEgoVehicle::SetThrottle(const float ThrottleInput)
     this->SetVehicleLightState(Lights);
 
     // assign to input struct
+    /// TODO: ensure this doesn't conflict with LogitechWheel when both are connected
     VehicleInputs.Throttle = ScaledThrottleInput;
 }
 
@@ -111,11 +117,16 @@ void AEgoVehicle::SetBrake(const float BrakeInput)
     this->SetVehicleLightState(Lights);
 
     // assign to input struct
+    /// TODO: ensure this doesn't conflict with LogitechWheel when both are connected
     VehicleInputs.Brake = ScaledBrakeInput;
 }
 
-void AEgoVehicle::ToggleReverse()
+void AEgoVehicle::PressReverse()
 {
+    if (!bCanPressReverse)
+        return;
+    bCanPressReverse = false; // don't press again until release
+
     // negate to toggle bw + (forwards) and - (backwards)
     const int CurrentGear = this->GetVehicleMovementComponent()->GetTargetGear();
     const int NewGear = CurrentGear != 0 ? -1 * CurrentGear : -1; // set to -1 if parked, else -gear
@@ -134,8 +145,17 @@ void AEgoVehicle::ToggleReverse()
     this->PlayGearShiftSound();
 }
 
-void AEgoVehicle::TurnSignalRight()
+void AEgoVehicle::ReleaseReverse()
 {
+    VehicleInputs.ToggledReverse = false;
+    bCanPressReverse = true;
+}
+
+void AEgoVehicle::PressTurnSignalR()
+{
+    if (!bCanPressTurnSignalR)
+        return;
+    bCanPressTurnSignalR = false; // don't press again until release
     // store in local input container
     VehicleInputs.TurnSignalRight = true;
 
@@ -146,12 +166,22 @@ void AEgoVehicle::TurnSignalRight()
     this->SetVehicleLightState(Lights);
 
     this->PlayTurnSignalSound();
-    RightSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
-    LeftSignalTimeToDie = 0.f;                                                  // immediately stop left signal
+    RightSignalTimeToDie = TNumericLimits<float>::Max(); // wait until button released (+inf until then)
+    LeftSignalTimeToDie = 0.f;                           // immediately stop left signal
 }
 
-void AEgoVehicle::TurnSignalLeft()
+void AEgoVehicle::ReleaseTurnSignalR()
 {
+    VehicleInputs.TurnSignalRight = false;
+    RightSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    bCanPressTurnSignalR = true;
+}
+
+void AEgoVehicle::PressTurnSignalL()
+{
+    if (!bCanPressTurnSignalL)
+        return;
+    bCanPressTurnSignalL = false; // don't press again until release
     // store in local input container
     VehicleInputs.TurnSignalLeft = true;
 
@@ -162,22 +192,33 @@ void AEgoVehicle::TurnSignalLeft()
     this->SetVehicleLightState(Lights);
 
     this->PlayTurnSignalSound();
-    RightSignalTimeToDie = 0.f;                                                // immediately stop right signal
-    LeftSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    RightSignalTimeToDie = 0.f;                         // immediately stop right signal
+    LeftSignalTimeToDie = TNumericLimits<float>::Max(); // wait until button released (+inf until then)
 }
 
-void AEgoVehicle::HoldHandbrake()
+void AEgoVehicle::ReleaseTurnSignalL()
 {
-    this->GetVehicleMovementComponent()->SetHandbrakeInput(true); // UE4 control
+    VehicleInputs.TurnSignalLeft = false;
+    LeftSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    bCanPressTurnSignalL = true;
+}
+
+void AEgoVehicle::PressHandbrake()
+{
+    if (!bCanPressHandbrake)
+        return;
+    bCanPressHandbrake = false;                             // don't press again until release
+    GetVehicleMovementComponent()->SetHandbrakeInput(true); // UE4 control
     // assign to input struct
     VehicleInputs.HoldHandbrake = true;
 }
 
 void AEgoVehicle::ReleaseHandbrake()
 {
-    this->GetVehicleMovementComponent()->SetHandbrakeInput(false); // UE4 control
+    GetVehicleMovementComponent()->SetHandbrakeInput(false); // UE4 control
     // assign to input struct
     VehicleInputs.HoldHandbrake = false;
+    bCanPressHandbrake = true;
 }
 
 /// NOTE: in UE4 rotators are of the form: {Pitch, Yaw, Roll} (stored in degrees)
@@ -326,28 +367,23 @@ void AEgoVehicle::LogitechWheelUpdate()
 
     //    UE_LOG(LogTemp, Log, TEXT("Dpad value %f"), Dpad);
     //    if (WheelState->rgdwPOV[0] == 0) // should work now
-    if (WheelState->rgbButtons[0] || WheelState->rgbButtons[1] || WheelState->rgbButtons[2] ||
-        WheelState->rgbButtons[3]) // replace reverse with face buttons
-    {
-        if (isPressRisingEdgeRev == true) // only toggle reverse on rising edge of button press
-        {
-            isPressRisingEdgeRev = false; // not rising edge while the button is pressed
-            UE_LOG(LogTemp, Log, TEXT("Reversing: Dpad value %f"), Dpad);
-            ToggleReverse();
-        }
-    }
+
+    // Button presses (turn signals, reverse)
+    if (WheelState->rgbButtons[0] || WheelState->rgbButtons[1] || // Any of the 4 face pads
+        WheelState->rgbButtons[2] || WheelState->rgbButtons[3])
+        PressReverse();
     else
-    {
-        isPressRisingEdgeRev = true;
-    }
+        ReleaseReverse();
+
     if (WheelState->rgbButtons[4])
-    {
-        TurnSignalRight();
-    }
+        PressTurnSignalR();
+    else
+        ReleaseTurnSignalR();
+
     if (WheelState->rgbButtons[5])
-    {
-        TurnSignalLeft();
-    }
+        PressTurnSignalL();
+    else
+        ReleaseTurnSignalL();
 
     // VRCamerRoot base position adjustment
     if (WheelState->rgdwPOV[0] == 0) // positive in X
