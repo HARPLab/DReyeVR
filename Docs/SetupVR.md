@@ -1,6 +1,6 @@
 # Setting up VR Mode
 ### Installing Carla 
-Follow Carla's own installation guide [here for Linux](https://carla.readthedocs.io/en/latest/build_linux/) and [here for Windows](https://carla.readthedocs.io/en/latest/build_windows/). This will also provide the information to install (or build if using Linux) Unreal Engine 4.24 which is required to build Carla.
+Follow Carla's own installation guide [here for Linux](https://carla.readthedocs.io/en/latest/build_linux/) and [here for Windows](https://carla.readthedocs.io/en/latest/build_windows/). This will also provide the information to build [Unreal Engine 4.26](https://github.com/carlaunreal/unrealengine) which is required to build Carla.
 
 ## Setting up Carla for VR mode
 
@@ -28,7 +28,7 @@ In order for SteamVR to communicate with Unreal Engine, we'll need to use Valve'
 - On Linux download the latest version (as of writing this guide is for UE4.23) and place the unzipped folder in `carla/Unreal/CarlaUE4/Plugins/` as explained in the [section I of Valve's README](https://github.com/ValveSoftware/steamvr_unreal_plugin#i-how-to-add-this-plugin-to-your-ue4-project)
 - On Windows you can install SteamVR from within the [UE4 Marketplace](https://www.unrealengine.com/marketplace/en-US/product/steamvr-input-for-unreal), again the latest version is advised.
 
-As mentioned before, the current latest available version of SteamVR is for UE4.23 but our installation is for UE4.24. This is fine and will still function for our purposes, we'll simply have a skippable warning upon launching the editor. It will look something like this, just click `Yes`
+As mentioned before, the current latest available version of SteamVR is for UE4.23 but our installation is for UE4.26. This is fine and will still function for our purposes, we'll simply have a skippable warning upon launching the editor. It will look something like this, just click `Yes`
 ![SteamVRWarning](https://docs.google.com/drawings/d/e/2PACX-1vRmJfEeP6SmlzxgBhottJYmfrb72O7J3lztErcpmd97iBKFVAZe7DxPCGzBjyeqIfyRkeCyvafh1fTJ/pub?w=913&h=205)
 
 

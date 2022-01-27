@@ -69,7 +69,7 @@ void AEgoSensor::BeginDestroy()
     Super::BeginDestroy();
 }
 
-void AEgoSensor::PrePhysTick(float DeltaSeconds)
+void AEgoSensor::ManualTick(float DeltaSeconds)
 {
     if (!bIsReplaying) // only update the sensor with local values if not replaying
     {
@@ -116,8 +116,6 @@ void AEgoSensor::InitEyeTracker()
     // SRanipal->SetEyeParameter_() // can set the eye gaze jitter parameter
     // see SRanipal_Eyes_Enums.h
     // Get the reference timing to synchronize the SRanipal timer with Carla
-    SRanipal->GetEyeData_(EyeData);
-    DeviceTickStartTime = EyeData->timestamp;
     UE_LOG(LogTemp, Log, TEXT("Successfully started SRanipal framework"));
     bSRanipalEnabled = true;
 #else
@@ -150,10 +148,6 @@ void AEgoSensor::TickEyeTracker()
         /// NOTE: the GazeRay is the normalized direction vector of the actual gaze "ray"
         // Getting real eye tracker data
         check(SRanipal != nullptr);
-        // Get the "EyeData" which holds useful information such as the timestamp
-        SRanipal->GetEyeData_(EyeData);
-        EyeSensorData.TimestampDevice = EyeData->timestamp - DeviceTickStartTime;
-        EyeSensorData.FrameSequence = EyeData->frame_sequence;
         // Assigns EyeOrigin and Gaze direction (normalized) of combined gaze
         Combined->GazeValid = SRanipal->GetGazeRay(GazeIndex::COMBINE, Combined->GazeOrigin, Combined->GazeDir);
         // Assign Left/Right Gaze direction
@@ -175,9 +169,17 @@ void AEgoSensor::TickEyeTracker()
         // Assign Pupil positions
         Left->PupilPositionValid = SRanipal->GetPupilPosition(EyeIndex::LEFT, Left->PupilPosition);
         Right->PupilPositionValid = SRanipal->GetPupilPosition(EyeIndex::RIGHT, Right->PupilPosition);
-        // Assign Pupil Diameters
-        Left->PupilDiameter = EyeData->verbose_data.left.pupil_diameter_mm;
-        Right->PupilDiameter = EyeData->verbose_data.right.pupil_diameter_mm;
+
+        // Get the "EyeData" which holds useful information such as the timestamp
+        int EyeDataStatus = SRanipal->GetEyeData_(&EyeData);
+        if (EyeDataStatus == ViveSR::Error::WORK)
+        {
+            EyeSensorData.TimestampDevice = EyeData.timestamp;
+            EyeSensorData.FrameSequence = EyeData.frame_sequence;
+            // Assign Pupil Diameters
+            Left->PupilDiameter = EyeData.verbose_data.left.pupil_diameter_mm;
+            Right->PupilDiameter = EyeData.verbose_data.right.pupil_diameter_mm;
+        }
     }
     else
     {
@@ -192,6 +194,8 @@ void AEgoSensor::TickEyeTracker()
 
 void AEgoSensor::ComputeDummyEyeData()
 {
+    // Function to make "dummy" eye data where the eye gaze just looks around in a CCW circle.
+    // Useful for when the eye data is unavailable (Plugin not initialized, on Linux, etc.)
     auto Combined = &(EyeSensorData.Combined);
     auto Left = &(EyeSensorData.Left);
     auto Right = &(EyeSensorData.Right);

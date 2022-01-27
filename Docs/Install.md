@@ -4,7 +4,8 @@
   - You have [SteamVR](https://store.steampowered.com/app/250820/SteamVR/) (free) installed and are using a SteamVR compatible headset. 
     - For eye tracking, we assume you are specifically using an [HTC Vive Pro Eye](https://enterprise.vive.com/us/product/vive-pro-eye-office/) headset, but this is optional as eye tracking can be disabled.
   - If you need help setting up Carla/UE4 for VR. Take a look at [SetupVR.md](SetupVR.md) for a more in-depth explanation. 
-  - You have [Unreal Engine 4.24](https://www.unrealengine.com/en-US/blog/unreal-engine-4-24-released) installed.
+  - You have [Unreal Engine 4.26 (Carla)](https://github.com/carlaunreal/unrealengine) installed from source
+    - Note, if the link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github)
   - You are running a **Windows 10** or **Linux** x86-64 machine 
     - If you are using **Windows 10**, we recommend using [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for our installer scripts. 
   - **IMPORTANT:** You have a fully functional vanilla [Carla 0.9.13 build](https://carla.readthedocs.io/en/0.9.13/#building-carla) installed
@@ -12,11 +13,9 @@
     - Use [Building on Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/) or [Building on Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/) to follow their instructions on building CARLA 0.9.13. 
   - (Optional) You have a fully functional default [Carla Scenario Runner v0.9.13 build](https://github.com/carla-simulator/scenario_runner/tree/v0.9.13)
     - Simply clone `git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13` and verify it works with your carla build
-- Make sure you compile Carla 0.9.13 and ensure it is working as expected. 
+- **Tl;dr**:Make sure you compile Carla 0.9.13 and ensure it is working as expected. 
   - ie. `make PythonAPI && make launch` completes without error
-  - Additionally, for Linux users who would like to use a more recent version of clang (instead of CARLA's recommended `clang-8` you should copy over the files in `Tools/BuildTools/*.sh` to Carla's `Util/BuildTools/`)
-    - Also overwrite `LibCarla/source/test/common/test_streaming.cpp` with `Tools/BuildTools/test_streaming.cpp` to fix [this compilation error](https://github.com/carla-simulator/carla/issues/2416) on newer clang versions. 
-    - Note that these `BuildTools` patches include the fix for `make package` on Linux described at the bottom of this file
+  - Can verify unit tests pass with `make check`
 
 
 ## DReyeVR installation command summary
@@ -152,25 +151,80 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
   - To begin working with the `PythonAPI` in a `Carla` based Anaconda environment you can follow [this guide](https://github.com/carla-simulator/carla/issues/1054) to create the environment. If doing work with the `python` clients it is advisable to use a `Conda` environment. This is especially useful for avoiding the `ModuleNotFoundError: No module named 'carla'` errors that occur when you're missing `Carla` python.
   ```properties
   # in /PATH/TO/CARLA/
-  conda create --name carla python=3.7
+  conda create --name carla python=3.7.2
   conda activate carla
   ```
-  - **NOTE (Linux)**: if you are having trouble with compiling Boost 1.72.0 (required by Carla) and you're using an `anaconda` based python environment, we found a quick solution to be:
-    ```bash
-    # find anaconda install:
-    which python3
-    ...
-    > PATH/TO/ANACONDA/envs/carla/bin/python3 # example output
-    # go to carla/install dir from here
-    cd PATH/TO/ANACONDA/envs/carla/install
-    # create a symlink between python3.7 -> python3.7m
-    ln -s python3.7m python3.7
-    ```
-    Now when you `make LibCarla` again, the `boost` errors should be resolved. 
-  Now when you `make LibCarla` again, the `boost` errors should be resolved. 
-    Now when you `make LibCarla` again, the `boost` errors should be resolved. 
-    - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
-  - **NOTE (Windows)**: if you are having trouble with linking errors when trying to `make PythonAPI` using a conda environment, check out [this solution](https://github.com/carla-simulator/carla/issues/2881#issuecomment-699452386). 
+  - **NOTE (Linux)**: You might run into a problem when compiling Boost 1.72.0 (required by `LibCarla`).
+    <details>
+
+    <summary> Show instructions to get Anaconda working on Linux </summary>
+
+    - ```bash
+      # find anaconda install:
+      which python3
+      ...
+      > PATH/TO/ANACONDA/envs/carla/bin/python3 # example output
+      # go to carla/install dir from here
+      cd PATH/TO/ANACONDA/envs/carla/install
+      # create a symlink between python3.7 -> python3.7m
+      ln -s python3.7m python3.7
+      ```
+      Now when you `make LibCarla` again, the `boost` errors should be resolved.
+      - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
+
+    </details>
+
+  - **NOTE (Windows)**: Anaconda is not natively supported by CARLA, but it is very useful when managing multiple versions of CARLA and containerizing all the CARLA python dependencies.
+    <details>
+
+    <summary> Show instructions to get Anaconda working on Windows </summary>
+
+      1. Create your environment
+          ```bat
+          conda create --name carla python=3.7.2
+          conda activate carla
+          ```
+      2. When trying to `make PythonAPI` you'll need to apply [this fix](https://github.com/carla-simulator/carla/issues/2881#issuecomment-699452386) (Replace `py` with `python` in `BuildPythonAPI.bat`)
+          ```bat
+          make PythonAPI
+          ```
+      3. Add carla to "path" to locate the PythonAPI and ScenarioRunner. But since Anaconda [does not use the traditional `PYTHONPATH`](https://stackoverflow.com/questions/37006114/anaconda-permanently-include-external-packages-like-in-pythonpath) you'll need to:
+          - 3.1. Create a file `carla.pth` in `\PATH\TO\ANACONDA\envs\carla\Lib\site-packages\`
+          - 3.2. Insert the following content into `carla.pth`:
+            ```bat
+              C:\PATH\TO\CARLA\PythonAPI\carla\dist
+              C:\PATH\TO\CARLA\PythonAPI\carla\agents
+              C:\PATH\TO\CARLA\PythonAPI\carla
+              C:\PATH\TO\CARLA\PythonAPI
+              C:\PATH\TO\CARLA\PythonAPI\examples
+              C:\PATH\TO\SCENARIO_RUNNER\
+            ```
+      4. Install the specific carla wheel (`whl`) to Anaconda
+          ```bat
+          conda activate carla
+          pip install --no-deps PATH\TO\CARLA\PythonAPI\carla\dist\carla-0.9.13-cp37-cp37m-win_amd64.whl
+          cd \PATH\TO\SCENARIO_RUNNER
+          pip install -r requirements.txt # install all SR dependencies
+          conda install numpy
+          ```
+      5. Finally, there are some problems with `shapely` (SR dependency) and Conda. Luckily the solution is simple:
+          - Copy the files:
+            - `PATH\TO\ANACONDA\envs\carla\Lib\site-packages\shapely\DLLs\geos.dll`
+            - `PATH\TO\ANACONDA\envs\carla\Lib\site-packages\shapely\DLLs\geos_c.dll`
+          - To destination:
+            - `PATH\TO\ANACONDA\envs\carla\Library\bin\`
+      6. Now finally, you should be able to verify all PythonAPI actions work as expected via:
+          ```bat
+          conda activate carla
+          python
+          >>> Python 3.7.2 (default, Feb 21 2019, 17:35:59) [MSC v.1915 64 bit (AMD64)] :: Anaconda, Inc. on win32
+          >>> Type "help", "copyright", "credits" or "license" for more information.
+          >>> import carla
+          >>> from DReyeVR_utils import find_ego_vehicle
+          >>> from scenario_runner import ScenarioRunner
+          ```
+          With all these imports passing (no error/warning messages), you're good to go!
+  </details>
 
 - ### Sanity Check
   - After installing these plugins, you should see a `Unreal/CarlaUE4/Plugins` that looks like this:
@@ -206,11 +260,11 @@ As long as you have no errors in the previous sections, you should be able to ju
 ## Building `DReyeVR`
 - If you are not interested in using SRanipal or the LogitechWheelPlugin, you can disable these at compile-time by changing the variables in `Unreal/CarlaUE4/Source/CarlaUE4/CarlaUE4.Build.cs` to `false`:
   - ```c#
-    ////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////
     // Edit these variables to enable/disable features of DReyeVR
     bool UseSRanipalPlugin = true;
     bool UseLogitechPlugin = true;
-    ////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////
     ```
 - Open the project directory in any terminal (Linux) or `Windows x64 Native Tools Command Prompt for VS 2019` (Windows)
 ```bash

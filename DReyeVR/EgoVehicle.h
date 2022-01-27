@@ -74,8 +74,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class APlayerController *Player;
 
   private:
-    void Register();   // function to register the AEgoVehicle with Carla's ActorRegistry
-    void FinishTick(); // do all the things necessary at the end of a tick
+    void Register(); // function to register the AEgoVehicle with Carla's ActorRegistry
 
     ////////////////:CAMERA:////////////////
     void ConstructCamera(); // needs to be called in the constructor
@@ -104,13 +103,28 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void SetThrottle(const float ThrottleInput);
     void SetBrake(const float BrakeInput);
     bool bReverse;
-    bool isPressRisingEdgeRev = true; // first press is a rising edge
-    void ToggleReverse();
-    float RightSignalTimeToDie, LeftSignalTimeToDie; // how long the blinkers last
-    void TurnSignalLeft();
-    void TurnSignalRight();
-    void HoldHandbrake();
+    // "button presses" should have both a "Press" and "Release" function
+    // And, if using the logitech plugin, should also have an "is rising edge" bool so they can only
+    // be pressed after being released (cant double press w/ no release)
+    // Reverse toggle
+    void PressReverse();
+    void ReleaseReverse();
+    bool bCanPressReverse = true;
+    // left turn signal
+    void PressTurnSignalL();
+    void ReleaseTurnSignalL();
+    float LeftSignalTimeToDie; // how long until the blinkers go out
+    bool bCanPressTurnSignalL = true;
+    // right turn signal
+    void PressTurnSignalR();
+    void ReleaseTurnSignalR();
+    float RightSignalTimeToDie; // how long until the blinkers go out
+    bool bCanPressTurnSignalR = true;
+    // handbrake
+    void PressHandbrake();
     void ReleaseHandbrake();
+    bool bCanPressHandbrake = true;
+    // mouse controls
     void MouseLookUp(const float mY_Input);
     void MouseTurn(const float mX_Input);
 
