@@ -217,7 +217,7 @@ static void GenerateCrosshairImage(TArray<FColor> &Src, const float Size, const 
             const int x = i - Size / 2;
             const int y = j - Size / 2;
             const float Radius = Size / 3.f;
-            const int RadThickness = 3;
+            const int RadThickness = 3 * Size / 100.f;
             const int LineLen = 4 * RadThickness;
             const float RadLo = Radius - LineLen;
             const float RadHi = Radius + LineLen;

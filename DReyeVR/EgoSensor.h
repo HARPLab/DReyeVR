@@ -57,6 +57,8 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void ComputeDummyEyeData(); // when no hardware sensor is present
     void TickEyeTracker();      // tick hardware sensor
     void ComputeTraceFocusInfo(const ECollisionChannel TraceChannel, float TraceRadius = 0.f);
+    float MaxTraceLenM = 100.f;        // maximum trace length in m
+    bool bDrawDebugFocusTrace = false; // draw the trace ray and hit point or not
     float ComputeVergence(const FVector &L0, const FVector &LDir, const FVector &R0, const FVector &RDir) const;
 #if USE_SRANIPAL_PLUGIN
     SRanipalEye_Core *SRanipal;               // SRanipalEye_Core.h
