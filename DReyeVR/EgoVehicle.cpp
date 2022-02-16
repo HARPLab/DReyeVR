@@ -37,6 +37,9 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
     // Initialize audio components
     ConstructEgoSounds();
 
+    // Initialize mirrors
+    ConstructMirrors();
+
     // Initialize text render components
     ConstructDashText();
 
@@ -50,18 +53,38 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("EgoVehicle", "DashLocation", DashboardLocnInVehicle);
     ReadConfigValue("EgoVehicle", "SpeedometerInMPH", bUseMPH);
     ReadConfigValue("EgoVehicle", "TurnSignalDuration", TurnSignalDuration);
+    // mirrors
+    auto InitMirrorParams = [](const FString &Name, struct MirrorParams &Params) {
+        Params.Name = Name;
+        ReadConfigValue("Mirrors", Params.Name + "MirrorEnabled", Params.Enabled);
+        ReadConfigValue("Mirrors", Params.Name + "MirrorPos", Params.MirrorPos);
+        ReadConfigValue("Mirrors", Params.Name + "MirrorRot", Params.MirrorRot);
+        ReadConfigValue("Mirrors", Params.Name + "MirrorScale", Params.MirrorScale);
+        ReadConfigValue("Mirrors", Params.Name + "ReflectionPos", Params.ReflectionPos);
+        ReadConfigValue("Mirrors", Params.Name + "ReflectionRot", Params.ReflectionRot);
+        ReadConfigValue("Mirrors", Params.Name + "ReflectionScale", Params.ReflectionScale);
+        ReadConfigValue("Mirrors", Params.Name + "ScreenPercentage", Params.ScreenPercentage);
+    };
+    InitMirrorParams("Rear", RearMirrorParams);
+    InitMirrorParams("Left", LeftMirrorParams);
+    InitMirrorParams("Right", RightMirrorParams);
+    // rear mirror chassis
+    ReadConfigValue("Mirrors", "RearMirrorChassisPos", RearMirrorChassisPos);
+    ReadConfigValue("Mirrors", "RearMirrorChassisRot", RearMirrorChassisRot);
+    ReadConfigValue("Mirrors", "RearMirrorChassisScale", RearMirrorChassisScale);
     // steering wheel
     ReadConfigValue("SteeringWheel", "InitLocation", InitWheelLocation);
     ReadConfigValue("SteeringWheel", "InitRotation", InitWheelRotation);
     ReadConfigValue("SteeringWheel", "MaxSteerAngleDeg", MaxSteerAngleDeg);
     ReadConfigValue("SteeringWheel", "MaxSteerVelocity", MaxSteerVelocity);
-    ReadConfigValue("SteeringWheel", "SteeringScale", SteeringScale);
+    ReadConfigValue("SteeringWheel", "SteeringScale", SteeringAnimScale);
     // camera
     ReadConfigValue("EgoVehicle", "FieldOfView", FieldOfView);
     // other/cosmetic
     ReadConfigValue("EgoVehicle", "ActorRegistryID", EgoVehicleID);
     ReadConfigValue("EgoVehicle", "DrawDebugEditor", bDrawDebugEditor);
     // HUD (Head's Up Display)
+    ReadConfigValue("EgoVehicleHUD", "HUDScaleVR", HUDScaleVR);
     ReadConfigValue("EgoVehicleHUD", "DrawFPSCounter", bDrawFPSCounter);
     ReadConfigValue("EgoVehicleHUD", "DrawFlatReticle", bDrawFlatReticle);
     ReadConfigValue("EgoVehicleHUD", "ReticleSize", ReticleSize);
@@ -181,8 +204,7 @@ void AEgoVehicle::ConstructCamera()
 {
     // Spawn the RootComponent and Camera for the VR camera
     VRCameraRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VRCameraRoot"));
-    VRCameraRoot->SetupAttachment(GetRootComponent());      // The vehicle blueprint itself
-    VRCameraRoot->SetRelativeLocation(CameraLocnInVehicle); // Offset from center of camera
+    VRCameraRoot->SetupAttachment(GetRootComponent()); // The vehicle blueprint itself
 
     // Create a camera and attach to root component
     FirstPersonCam = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCam"));
@@ -190,6 +212,8 @@ void AEgoVehicle::ConstructCamera()
     FirstPersonCam->bUsePawnControlRotation = false; // free for VR movement
     FirstPersonCam->bLockToHmd = true;               // lock orientation and position to HMD
     FirstPersonCam->FieldOfView = FieldOfView;       // editable
+
+    ResetCamera();
 }
 
 const UCameraComponent *AEgoVehicle::GetCamera() const
@@ -285,6 +309,98 @@ void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
 }
 
 /// ========================================== ///
+/// ----------------:MIRROR:------------------ ///
+/// ========================================== ///
+
+void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
+                                           class UPlanarReflectionComponent *Reflection,
+                                           class USkeletalMeshComponent *VehicleMesh)
+{
+    UE_LOG(LogTemp, Log, TEXT("Initializing %s mirror"), *Name)
+
+    check(MirrorSM != nullptr);
+    MirrorSM->SetupAttachment(VehicleMesh);
+    MirrorSM->SetRelativeLocation(MirrorPos);
+    MirrorSM->SetRelativeRotation(MirrorRot);
+    MirrorSM->SetRelativeScale3D(MirrorScale);
+    MirrorSM->SetGenerateOverlapEvents(false); // don't collide with itself
+    MirrorSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    MirrorSM->SetVisibility(true);
+
+    check(Reflection != nullptr);
+    Reflection->SetupAttachment(MirrorSM);
+    Reflection->SetRelativeLocation(ReflectionPos);
+    Reflection->SetRelativeRotation(ReflectionRot);
+    Reflection->SetRelativeScale3D(ReflectionScale);
+    Reflection->NormalDistortionStrength = 0.0f;
+    Reflection->PrefilterRoughness = 0.0f;
+    Reflection->DistanceFromPlaneFadeoutStart = 1500.f;
+    Reflection->DistanceFromPlaneFadeoutEnd = 0.f;
+    Reflection->AngleFromPlaneFadeStart = 0.f;
+    Reflection->AngleFromPlaneFadeEnd = 90.f;
+    Reflection->PrefilterRoughnessDistance = 10000.f;
+    Reflection->ScreenPercentage = ScreenPercentage; // change this to reduce quality & improve performance
+    Reflection->bShowPreviewPlane = false;
+    Reflection->HideComponent(VehicleMesh);
+    Reflection->SetVisibility(true);
+    /// TODO: use USceneCaptureComponent::ShowFlags to define what gets rendered in the mirror
+    // https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/FEngineShowFlags/
+}
+
+void AEgoVehicle::ConstructMirrors()
+{
+
+    class USkeletalMeshComponent *VehicleMesh = GetMesh();
+    /// Rear mirror
+    if (RearMirrorParams.Enabled)
+    {
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> RearSM(
+            TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/"
+                 "RearMirror_DReyeVR_Glass_SM.RearMirror_DReyeVR_Glass_SM'"));
+        RearMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RearMirrorParams.Name + "MirrorSM")));
+        RearMirrorSM->SetStaticMesh(RearSM.Object);
+        RearReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(RearMirrorParams.Name + "Refl")));
+        RearMirrorParams.Initialize(RearMirrorSM, RearReflection, VehicleMesh);
+        // also add the chassis for this mirror
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> RearChassisSM(TEXT(
+            "StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/RearMirror_DReyeVR_SM.RearMirror_DReyeVR_SM'"));
+        RearMirrorChassisSM =
+            CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RearMirrorParams.Name + "MirrorChassisSM")));
+        RearMirrorChassisSM->SetStaticMesh(RearChassisSM.Object);
+        RearMirrorChassisSM->SetupAttachment(VehicleMesh);
+        RearMirrorChassisSM->SetRelativeLocation(RearMirrorChassisPos);
+        RearMirrorChassisSM->SetRelativeRotation(RearMirrorChassisRot);
+        RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisScale);
+        RearMirrorChassisSM->SetGenerateOverlapEvents(false); // don't collide with itself
+        RearMirrorChassisSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        RearMirrorChassisSM->SetVisibility(true);
+        RearMirrorSM->SetupAttachment(RearMirrorChassisSM);
+        RearReflection->HideComponent(RearMirrorChassisSM); // don't show this in the reflection
+    }
+    /// Left mirror
+    if (LeftMirrorParams.Enabled)
+    {
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftSM(TEXT(
+            "StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/LeftMirror_DReyeVR_SM.LeftMirror_DReyeVR_SM'"));
+        LeftMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(LeftMirrorParams.Name + "MirrorSM")));
+        LeftMirrorSM->SetStaticMesh(LeftSM.Object);
+        LeftReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(LeftMirrorParams.Name + "Refl")));
+        LeftMirrorParams.Initialize(LeftMirrorSM, LeftReflection, VehicleMesh);
+    }
+    /// Right mirror
+    if (RightMirrorParams.Enabled)
+    {
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> RightSM(
+            TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/"
+                 "RightMirror_DReyeVR_SM.RightMirror_DReyeVR_SM'"));
+        RightMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RightMirrorParams.Name + "MirrorSM")));
+        RightMirrorSM->SetStaticMesh(RightSM.Object);
+        RightReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(RightMirrorParams.Name + "Refl")));
+        RightMirrorParams.Initialize(RightMirrorSM, RightReflection, VehicleMesh);
+    }
+}
+
+/// ========================================== ///
 /// ----------------:SOUNDS:------------------ ///
 /// ========================================== ///
 
@@ -355,6 +471,8 @@ void AEgoVehicle::InitSpectator()
 
 void AEgoVehicle::InitReticleTexture()
 {
+    if (bIsHMDConnected)
+        ReticleSize *= HUDScaleVR;
 
     /// NOTE: need to create transient like this bc of a UE4 bug in release mode
     // https://forums.unrealengine.com/development-discussion/rendering/1767838-fimageutils-createtexture2d-crashes-in-packaged-build
@@ -388,24 +506,25 @@ void AEgoVehicle::DrawSpectatorScreen()
     Player->GetViewportSize(ViewSize.X, ViewSize.Y);
     // Get eye tracker variables
     const FRotator WorldRot = GetCamera()->GetComponentRotation();
-    const FVector CombinedGazePosn = CombinedOrigin + WorldRot.RotateVector(this->CombinedGaze);
+    const FVector LeftGazePosn = LeftOrigin + WorldRot.RotateVector(this->LeftGaze);
 
     /// TODO: draw other things on the spectator screen?
     if (bDrawSpectatorReticle)
     {
         /// NOTE: this is the better way to get the ViewportSize
         FVector2D ReticlePos;
-        UGameplayStatics::ProjectWorldToScreen(Player, CombinedGazePosn, ReticlePos, true);
+        UGameplayStatics::ProjectWorldToScreen(Player, LeftGazePosn, ReticlePos, true);
         /// NOTE: the SetSpectatorScreenModeTexturePlusEyeLayout expects normalized positions on the screen
         /// NOTE: to get the best drawing, the texture is offset slightly by this vector
-        const FVector2D ScreenOffset(ReticleSize * 0.5f, -ReticleSize);
-        ReticlePos += ScreenOffset; // move X right by Dim.X/2, move Y up by Dim.Y
+        // const FVector2D ScreenOffset(ReticleSize * 0.5f, -ReticleSize);
+        // ReticlePos += ScreenOffset; // move X right by Dim.X/2, move Y up by Dim.Y
         // define min and max bounds
         FVector2D TextureRectMin(FMath::Clamp(ReticlePos.X / ViewSize.X, 0.f, 1.f),
                                  FMath::Clamp(ReticlePos.Y / ViewSize.Y, 0.f, 1.f));
-        // max needs to define the bottom right corner, so needs to be +Dim.X right, and +Dim.Y down
-        FVector2D TextureRectMax(FMath::Clamp((ReticlePos.X + ReticleSize) / ViewSize.X, 0.f, 1.f),
-                                 FMath::Clamp((ReticlePos.Y + ReticleSize) / ViewSize.Y, 0.f, 1.f));
+        // max needs to define the bottom right corner, so needs to be +Dim.X ri// max needs to define the bottom
+        // right corner, so needs to be +Dim.X right, and +Dim.Y down
+        FVector2D TextureRectMax(FMath::Clamp((ReticlePos.X + ReticleSize) / ViewSize.X, TextureRectMin.X, 1.f),
+                                 FMath::Clamp((ReticlePos.Y + ReticleSize) / ViewSize.Y, TextureRectMin.Y, 1.f));
         UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenModeTexturePlusEyeLayout(
             FVector2D{0.f, 0.f}, // whole window (top left)
             FVector2D{1.f, 1.f}, // whole window (top ->*bottom? right)
@@ -602,17 +721,26 @@ void AEgoVehicle::ConstructSteeringWheel()
 void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
 {
     const FRotator CurrentRotation = SteeringWheel->GetRelativeRotation();
-    const float TargetAngle = GetVehicleInputs().Steering * SteeringScale;
-    float DeltaAngle = (TargetAngle - CurrentRotation.Roll);
+    const float RawSteering = GetVehicleInputs().Steering; // this is scaled in SetSteering
+    const float TargetAngle = (RawSteering / ScaleSteeringInput) * SteeringAnimScale;
+    FRotator NewRotation = CurrentRotation;
+    if (bIsLogiConnected)
+    {
+        NewRotation.Roll = TargetAngle;
+    }
+    else
+    {
+        float DeltaAngle = (TargetAngle - CurrentRotation.Roll);
 
-    // place a speed-limit on the steering wheel
-    DeltaAngle = FMath::Clamp(DeltaAngle, -MaxSteerVelocity, MaxSteerVelocity);
+        // place a speed-limit on the steering wheel
+        DeltaAngle = FMath::Clamp(DeltaAngle, -MaxSteerVelocity, MaxSteerVelocity);
 
-    // create the new rotation using the deltas
-    FRotator NewRotation = CurrentRotation + DeltaTime * FRotator(0.f, 0.f, DeltaAngle);
+        // create the new rotation using the deltas
+        NewRotation += DeltaTime * FRotator(0.f, 0.f, DeltaAngle);
 
-    // Clamp the roll amount so the wheel can't spin infinitely
-    NewRotation.Roll = FMath::Clamp(NewRotation.Roll, -MaxSteerAngleDeg, MaxSteerAngleDeg);
+        // Clamp the roll amount so the wheel can't spin infinitely
+        NewRotation.Roll = FMath::Clamp(NewRotation.Roll, -MaxSteerAngleDeg, MaxSteerAngleDeg);
+    }
     SteeringWheel->SetRelativeRotation(NewRotation);
 }
 

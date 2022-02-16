@@ -100,6 +100,11 @@
 				"Win64",
 				"Linux",
 				"Mac"
+			],
+			"WhitelistPlatforms": [
+				"Win32",
+				"Win64",
+				"Linux"
 			]
 		},
 		{

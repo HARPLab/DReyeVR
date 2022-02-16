@@ -78,6 +78,9 @@ def main():
         client.set_timeout(2.0)
         world = client.get_world()
         blueprints = world.get_blueprint_library().filter('vehicle.*')
+        # never spawn another dreyevr vehicle!
+        blueprints = [x for x in blueprints if "dreyevr" not in x.id]
+        assert blueprints is not None
 
         # NO FIXED TIMESTEP (DEBUG ONLY)
         settings = world.get_settings()
@@ -123,6 +126,7 @@ def main():
             if n >= count:
                 break
             blueprint = random.choice(blueprints)
+            assert blueprint is not None
             if blueprint.has_attribute('color'):
                 color = random.choice(blueprint.get_attribute('color').recommended_values)
                 blueprint.set_attribute('color', color)

@@ -106,15 +106,20 @@ struct EgoVariables
     // World coordinate Ego vehicle location & rotation
     FVector VehicleLocation = FVector::ZeroVector;
     FRotator VehicleRotation = FRotator::ZeroRotator;
-    // Relative Camera position and orientation
+    // Relative Camera position and orientation (for HMD offsets)
     FVector CameraLocation = FVector::ZeroVector;
     FRotator CameraRotation = FRotator::ZeroRotator;
+    // Absolute Camera position and orientation (includes vehicle & HMD offset)
+    FVector CameraLocationAbs = FVector::ZeroVector;
+    FRotator CameraRotationAbs = FRotator::ZeroRotator;
     // Ego variables
     float Velocity = 0.f; // note this is in cm/s (default UE4 units)
     void Read(std::ifstream &InFile)
     {
         ReadFVector(InFile, CameraLocation);
         ReadFRotator(InFile, CameraRotation);
+        ReadFVector(InFile, CameraLocationAbs);
+        ReadFRotator(InFile, CameraRotationAbs);
         ReadFVector(InFile, VehicleLocation);
         ReadFRotator(InFile, VehicleRotation);
         ReadValue<float>(InFile, Velocity);
@@ -123,6 +128,8 @@ struct EgoVariables
     {
         WriteFVector(OutFile, CameraLocation);
         WriteFRotator(OutFile, CameraRotation);
+        WriteFVector(OutFile, CameraLocationAbs);
+        WriteFRotator(OutFile, CameraRotationAbs);
         WriteFVector(OutFile, VehicleLocation);
         WriteFRotator(OutFile, VehicleRotation);
         WriteValue<float>(OutFile, Velocity);
@@ -135,6 +142,8 @@ struct EgoVariables
         Print += FString::Printf(TEXT("VehicleVel:%.4f,"), Velocity);
         Print += FString::Printf(TEXT("CameraLoc:%s,"), *CameraLocation.ToString());
         Print += FString::Printf(TEXT("CameraRot:%s,"), *CameraRotation.ToString());
+        Print += FString::Printf(TEXT("CameraLocAbs:%s,"), *CameraLocationAbs.ToString());
+        Print += FString::Printf(TEXT("CameraRotAbs:%s,"), *CameraRotationAbs.ToString());
         return Print;
     }
 };
@@ -189,8 +198,7 @@ struct FocusInfo
 {
     // substitute for SRanipal FFocusInfo in SRanipal_Eyes_Enums.h
     TWeakObjectPtr<class AActor> Actor;
-    FVector HitPointRelative;
-    FVector HitPointAbsolute;
+    FVector HitPoint; // in world space (absolute location)
     FVector Normal;
     FString ActorNameTag = "None"; // Tag of the actor being focused on
     float Distance;
@@ -200,8 +208,7 @@ struct FocusInfo
     {
         ReadFString(InFile, ActorNameTag);
         ReadValue<bool>(InFile, bDidHit);
-        ReadFVector(InFile, HitPointRelative);
-        ReadFVector(InFile, HitPointAbsolute);
+        ReadFVector(InFile, HitPoint);
         ReadFVector(InFile, Normal);
         ReadValue<float>(InFile, Distance);
     }
@@ -209,8 +216,7 @@ struct FocusInfo
     {
         WriteFString(OutFile, ActorNameTag);
         WriteValue<bool>(OutFile, bDidHit);
-        WriteFVector(OutFile, HitPointRelative);
-        WriteFVector(OutFile, HitPointAbsolute);
+        WriteFVector(OutFile, HitPoint);
         WriteFVector(OutFile, Normal);
         WriteValue<float>(OutFile, Distance);
     }
@@ -219,8 +225,7 @@ struct FocusInfo
         FString Print;
         Print += FString::Printf(TEXT("Hit:%d,"), bDidHit);
         Print += FString::Printf(TEXT("Distance:%.4f,"), Distance);
-        Print += FString::Printf(TEXT("HitPointRelative:%s,"), *HitPointRelative.ToString());
-        Print += FString::Printf(TEXT("HitPointAbsolute:%s,"), *HitPointAbsolute.ToString());
+        Print += FString::Printf(TEXT("HitPoint:%s,"), *HitPoint.ToString());
         Print += FString::Printf(TEXT("HitNormal:%s,"), *Normal.ToString());
         Print += FString::Printf(TEXT("ActorName:%s,"), *ActorNameTag);
         return Print;
@@ -409,6 +414,14 @@ class AggregateData // all DReyeVR sensor data is held here
     {
         return EgoVars.CameraRotation;
     }
+    const FVector &GetCameraLocationAbs() const
+    {
+        return EgoVars.CameraLocationAbs;
+    }
+    const FRotator &GetCameraRotationAbs() const
+    {
+        return EgoVars.CameraRotationAbs;
+    }
     float GetVehicleVelocity() const
     {
         return EgoVars.Velocity; // returns ego velocity in cm/s
@@ -428,7 +441,7 @@ class AggregateData // all DReyeVR sensor data is held here
     }
     const FVector &GetFocusActorPoint() const
     {
-        return FocusData.HitPointAbsolute;
+        return FocusData.HitPoint;
     }
     float GetFocusActorDistance() const
     {

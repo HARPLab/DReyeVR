@@ -459,6 +459,11 @@
 			"name": "DReyeVR_sign_right",
 			"path": "/Game/DReyeVR/DReyeVR_Signs/FullSign/SM_DReyeVR_sign_right.SM_DReyeVR_sign_right",
 			"size": "Big"
+		},
+		{
+			"name": "DReyeVR_sign_goal",
+			"path": "/Game/DReyeVR/DReyeVR_Signs/FullSign/SM_DReyeVR_sign_goal.SM_DReyeVR_sign_goal",
+			"size": "Big"
 		}
 	]
 }
