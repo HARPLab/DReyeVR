@@ -53,10 +53,10 @@ Now back in UE4, it'll be easiest if you duplicate the `TrafficSign/NoTurn/` dir
   - ```bash
 	# now RightCityA contains the following
 	RightCityA
-	├── M_NoTurns.uasset
-	├── SM_noTurn.uasset
-	├── SM_noTurn_n.uasset
-	└── SM_noTurn_.uasset
+	- M_NoTurns.uasset
+	- SM_noTurn.uasset
+	- SM_noTurn_n.uasset
+	- SM_noTurn_.uasset
     ``` 
 
 |                                                                                                                                                                                                                                                                              |                                                                    |

@@ -98,6 +98,9 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("VehicleInputs", "InvertMouseY", InvertMouseY);
     ReadConfigValue("VehicleInputs", "ScaleMouseY", ScaleMouseY);
     ReadConfigValue("VehicleInputs", "ScaleMouseX", ScaleMouseX);
+    // wheel hardware
+    ReadConfigValue("Hardware", "DeviceIdx", WheelDeviceIdx);
+    ReadConfigValue("Hardware", "LogUpdates", bLogLogitechWheel);
 }
 
 void AEgoVehicle::BeginPlay()
@@ -136,11 +139,14 @@ void AEgoVehicle::BeginPlay()
 
 void AEgoVehicle::BeginDestroy()
 {
+    Super::BeginDestroy();
+
     // destroy all spawned entities
     if (EgoSensor)
         EgoSensor->Destroy();
 
-    Super::BeginDestroy();
+    if (bIsLogiConnected)
+        DestroyLogiWheel(false);
 }
 
 // Called every frame
@@ -516,18 +522,13 @@ void AEgoVehicle::DrawSpectatorScreen()
         UGameplayStatics::ProjectWorldToScreen(Player, LeftGazePosn, ReticlePos, true);
         /// NOTE: the SetSpectatorScreenModeTexturePlusEyeLayout expects normalized positions on the screen
         /// NOTE: to get the best drawing, the texture is offset slightly by this vector
-        // const FVector2D ScreenOffset(ReticleSize * 0.5f, -ReticleSize);
-        // ReticlePos += ScreenOffset; // move X right by Dim.X/2, move Y up by Dim.Y
-        // define min and max bounds
-        FVector2D TextureRectMin(FMath::Clamp(ReticlePos.X / ViewSize.X, 0.f, 1.f),
-                                 FMath::Clamp(ReticlePos.Y / ViewSize.Y, 0.f, 1.f));
-        // max needs to define the bottom right corner, so needs to be +Dim.X ri// max needs to define the bottom
-        // right corner, so needs to be +Dim.X right, and +Dim.Y down
-        FVector2D TextureRectMax(FMath::Clamp((ReticlePos.X + ReticleSize) / ViewSize.X, TextureRectMin.X, 1.f),
-                                 FMath::Clamp((ReticlePos.Y + ReticleSize) / ViewSize.Y, TextureRectMin.Y, 1.f));
+        ReticlePos += FVector2D(0.f, -ReticleSize / 2.f); // move reticle up by size/2 (texture in quadrant 4)
+        // define min and max bounds (where the texture is actually drawn on screen)
+        const FVector2D TextureRectMin = ReticlePos / ViewSize;                 // top left
+        const FVector2D TextureRectMax = (ReticlePos + ReticleSize) / ViewSize; // bottom right
         UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenModeTexturePlusEyeLayout(
             FVector2D{0.f, 0.f}, // whole window (top left)
-            FVector2D{1.f, 1.f}, // whole window (top ->*bottom? right)
+            FVector2D{1.f, 1.f}, // whole window (top -> bottom right)
             TextureRectMin,      // top left of texture
             TextureRectMax,      // bottom right of texture
             true,                // draw eye data as background

@@ -33,7 +33,7 @@ These control schemes work both in VR and non-VR. With the main difference being
   - **Camera Adjust** - Is done in X and Y with the 4 d-pad buttons (2) on the face of the wheel, and in Z with the +/- buttons (5)
 - ![LogiWheel](Figures/Usage/g923.jpg) Image source: [Logitech g923 manual](https://www.logitech.com/assets/65932/2/g923-racing-wheel-qsg.pdf)
 
-Note that all the keyboard inputs are defined in [`DefaultInputs.ini`](../Config/DefaultInputs.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
+Note that all the keyboard inputs are defined in [`DefaultInput.ini`](../Configs/DefaultInput.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
 
 However, the logitech wheel inputs are hardcoded into the source since they are checked for on every tick (instead of through the UE4 keyboard events). To see the values and modify them, see [`EgoInputs.cpp`](../DReyeVR/EgoInputs.cpp)
   

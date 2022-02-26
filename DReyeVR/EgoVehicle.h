@@ -188,9 +188,12 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
 
     void InitLogiWheel();
     void TickLogiWheel();
+    void DestroyLogiWheel(bool DestroyModule);
+    bool bLogLogitechWheel = false;
+    int WheelDeviceIdx = 0; // usually leaving as 0 is fine, only use 1 if 0 is taken
 #if USE_LOGITECH_PLUGIN
-    DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
-    void LogLogitechPluginStruct(const DIJOYSTATE2 *Now);
+    struct DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
+    void LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now);
     void LogitechWheelUpdate();      // for logitech wheel integration
     void ApplyForceFeedback() const; // for logitech wheel integration
 #endif

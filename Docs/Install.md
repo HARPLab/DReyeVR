@@ -121,11 +121,11 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
   - After downloading the `.zip` file, unzipping it should present a directory similar to this
     - ```
       SDK
-      ├── 01_C/
-      ├── 02_Unity/
-      ├── 03_Unreal/
-      ├── Eye_SRanipal_SDK_Guide.pdf
-      └── Lip_SRanipal_SDK_Guide.pdf
+      - 01_C/
+      - 02_Unity/
+      - 03_Unreal/
+      - Eye_SRanipal_SDK_Guide.pdf
+      - Lip_SRanipal_SDK_Guide.pdf
       ```
     - Then, unzip the SRanipal unreal plugin and copy over the `03_Unreal/Plugins/SRanipal/` directory to the Carla installation
     - ```bash
@@ -230,10 +230,10 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
   - After installing these plugins, you should see a `Unreal/CarlaUE4/Plugins` that looks like this:
   - ```
     Plugins
-    ├── Carla/
-    ├── CarlaExporter/
-    ├── LogitechWheelPlugin/
-    └── SRanipal/
+    - Carla/
+    - CarlaExporter/
+    - LogitechWheelPlugin/
+    - SRanipal/
     ```
   
 ## Installing `DReyeVR`
@@ -291,4 +291,4 @@ CarlaUE4.exe -vr
 
 ## Now what?
 
-Now that you've successfully installed DReyeVR continue to [`Usage.md`](Usage.md) to learn how to use DReyeVR for your own VR driving research simulator. 
+Now that you've successfully installed DReyeVR continue to [`Usage.md`](Usage.md) to learn how to use DReyeVR for your own VR driving research simulator.
