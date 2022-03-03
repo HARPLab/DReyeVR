@@ -35,6 +35,7 @@ carla_install() {
     cp -v Carla/Sensor/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/
     cp -v Carla/Game/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Game/
     cp -v Carla/Settings/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Settings/
+    cp -v Carla/Traffic/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Traffic/
     cp -v Carla/Actor/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Actor/
     cp -v Carla/Recorder/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Recorder/
     # BuildTools

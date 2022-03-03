@@ -17,6 +17,9 @@ ADReyeVRLevel::ADReyeVRLevel(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Level", "EgoVolumePercent", EgoVolumePercent);
     ReadConfigValue("Level", "NonEgoVolumePercent", NonEgoVolumePercent);
     ReadConfigValue("Level", "AmbientVolumePercent", AmbientVolumePercent);
+
+    // Recorder/replayer
+    ReadConfigValue("Replayer", "RunSyncReplay", bReplaySync);
 }
 
 void ADReyeVRLevel::BeginPlay()
@@ -147,6 +150,12 @@ void ADReyeVRLevel::BeginDestroy()
 void ADReyeVRLevel::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    /// TODO: clean up replay init
+    if (!bRecorderInitiated) // can't do this in constructor
+    {
+        // Initialize recorder/replayer
+        SetupReplayer(); // once this is successfully run, it no longer gets executed
+    }
     if (EgoVehiclePtr && SpectatorPtr && AI_Player)
     {
         if (ControlMode == DRIVER::AI) // when AI is controlling EgoVehicle
@@ -253,23 +262,36 @@ void ADReyeVRLevel::FastForward()
 
 void ADReyeVRLevel::Rewind()
 {
-    UCarlaStatics::GetRecorder(GetWorld())->RecRewind();
+    if (UCarlaStatics::GetRecorder(GetWorld()))
+        UCarlaStatics::GetRecorder(GetWorld())->RecRewind();
 }
 
 void ADReyeVRLevel::Restart()
 {
     UE_LOG(LogTemp, Log, TEXT("Restarting recording"));
-    UCarlaStatics::GetRecorder(GetWorld())->RecRestart();
+    if (UCarlaStatics::GetRecorder(GetWorld()))
+        UCarlaStatics::GetRecorder(GetWorld())->RecRestart();
 }
 
 void ADReyeVRLevel::IncrTimestep()
 {
-    UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(0.1);
+    if (UCarlaStatics::GetRecorder(GetWorld()))
+        UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(0.1);
 }
 
 void ADReyeVRLevel::DecrTimestep()
 {
-    UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(-0.1);
+    if (UCarlaStatics::GetRecorder(GetWorld()))
+        UCarlaStatics::GetRecorder(GetWorld())->IncrTimeFactor(-0.1);
+}
+
+void ADReyeVRLevel::SetupReplayer()
+{
+    if (UCarlaStatics::GetRecorder(GetWorld()) && UCarlaStatics::GetRecorder(GetWorld())->GetReplayer())
+    {
+        UCarlaStatics::GetRecorder(GetWorld())->GetReplayer()->SetSyncMode(bReplaySync);
+        bRecorderInitiated = true;
+    }
 }
 
 void ADReyeVRLevel::SetVolume()

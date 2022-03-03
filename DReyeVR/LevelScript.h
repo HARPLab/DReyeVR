@@ -45,6 +45,9 @@ class ADReyeVRLevel : public ALevelScriptActor
     void IncrTimestep();
     void DecrTimestep();
 
+    // Replayer
+    void SetupReplayer();
+
     // Meta world functions
     void SetVolume();
     FTransform GetSpawnPoint(int SpawnPointIndex = 0) const;
@@ -63,4 +66,8 @@ class ADReyeVRLevel : public ALevelScriptActor
     float EgoVolumePercent;
     float NonEgoVolumePercent;
     float AmbientVolumePercent;
+
+    // for recorder/replayer params
+    bool bReplaySync = false;        // false allows for interpolation
+    bool bRecorderInitiated = false; // allows tick-wise checking for replayer/recorder
 };

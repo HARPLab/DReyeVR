@@ -41,6 +41,9 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
 
     void SetEgoVehicle(class AEgoVehicle *EgoVehicle); // provide access to EgoVehicle (and by extension its camera)
 
+    // function where replayer requests a screenshot
+    void TakeScreenshot() override;
+
   protected:
     void BeginPlay();
     void BeginDestroy();
@@ -78,7 +81,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     ////////////////:FRAMECAPTURE:////////////////
     void ConstructFrameCapture(); // needs to be called in the constructor
     void InitFrameCapture();      // needs to be called in BeginPlay
-    void TickFrameCapture();
+    size_t ScreenshotCount = 0;
     class UCameraComponent *Camera; // for frame capture views
     class UTextureRenderTarget2D *CaptureRenderTarget = nullptr;
     class USceneCaptureComponent2D *FrameCap = nullptr;
@@ -87,6 +90,8 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     int FrameCapWidth;
     int FrameCapHeight;
     bool bCaptureFrameData;
+    bool bFileFormatJPG = true;
+    bool bFrameCapForceLinearGamma = true;
 
     ////////////////:OTHER:////////////////
     int EgoSensorID;

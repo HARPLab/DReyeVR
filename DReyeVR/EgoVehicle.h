@@ -60,6 +60,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     const UCameraComponent *GetCamera() const;
     UCameraComponent *GetCamera();
     const DReyeVR::UserInputs &GetVehicleInputs() const;
+    FVector2D ProjectGazeToScreen(const FVector &Origin, const FVector &Dir, bool bPlayerViewportRelative = true) const;
 
     // Play sounds
     void PlayGearShiftSound(const float DelayBeforePlay = 0.f) const;
@@ -222,6 +223,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     UPROPERTY(Category = HUD, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class ADReyeVRHUD *FlatHUD;
     void DrawFlatHUD(float DeltaSeconds);
+    FVector2D ReticlePos;                // 2D reticle position from eye gaze
     int ReticleSize = 100;               // diameter of reticle (line thickness is 10% of this)
     bool bDrawFlatHud = true;            // whether to draw the flat hud at all (default true, but false in VR)
     bool bDrawFPSCounter = true;         // draw FPS counter in top left corner

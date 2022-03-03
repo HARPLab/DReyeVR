@@ -503,6 +503,31 @@ void AEgoVehicle::InitReticleTexture()
     check(ReticleTexture->Resource);
 }
 
+FVector2D AEgoVehicle::ProjectGazeToScreen(const FVector &InOrigin, const FVector &InDir,
+                                           bool bPlayerViewportRelative) const
+{
+    if (this->Player == nullptr)
+        return FVector2D::ZeroVector;
+
+    // compute the 3D world point of the InOrigin + InDir
+    const FVector &WorldPos = GetCamera()->GetComponentLocation();
+    const FRotator &WorldRot = GetCamera()->GetComponentRotation();
+    const FVector Origin = WorldPos + WorldRot.RotateVector(InOrigin);
+    const FVector GazeDir = 100.f * WorldRot.RotateVector(InDir);
+    const FVector WorldPoint = Origin + GazeDir;
+
+    FVector2D ProjectedCoords;
+    // first project the 3D point to 2D using the player's viewport
+    UGameplayStatics::ProjectWorldToScreen(this->Player, WorldPoint, ProjectedCoords, bPlayerViewportRelative);
+
+    // then perform any other operations and transformations
+
+    /// NOTE: we like using this constant offset for visualization
+    ProjectedCoords += FVector2D(0.f, -0.5f * this->ReticleSize); // move reticle up by size/2 (texture in quadrant 4)
+
+    return ProjectedCoords;
+}
+
 void AEgoVehicle::DrawSpectatorScreen()
 {
     if (!bEnableSpectatorScreen || Player == nullptr || !bIsHMDConnected)
@@ -510,19 +535,12 @@ void AEgoVehicle::DrawSpectatorScreen()
     // calculate View size (of open window). Note this is not the same as resolution
     FIntPoint ViewSize;
     Player->GetViewportSize(ViewSize.X, ViewSize.Y);
-    // Get eye tracker variables
-    const FRotator WorldRot = GetCamera()->GetComponentRotation();
-    const FVector LeftGazePosn = LeftOrigin + WorldRot.RotateVector(this->LeftGaze);
 
     /// TODO: draw other things on the spectator screen?
     if (bDrawSpectatorReticle)
     {
-        /// NOTE: this is the better way to get the ViewportSize
-        FVector2D ReticlePos;
-        UGameplayStatics::ProjectWorldToScreen(Player, LeftGazePosn, ReticlePos, true);
+        const FVector2D &ReticlePos = EgoSensor->GetData()->GetProjectedReticleCoords();
         /// NOTE: the SetSpectatorScreenModeTexturePlusEyeLayout expects normalized positions on the screen
-        /// NOTE: to get the best drawing, the texture is offset slightly by this vector
-        ReticlePos += FVector2D(0.f, -ReticleSize / 2.f); // move reticle up by size/2 (texture in quadrant 4)
         // define min and max bounds (where the texture is actually drawn on screen)
         const FVector2D TextureRectMin = ReticlePos / ViewSize;                 // top left
         const FVector2D TextureRectMax = (ReticlePos + ReticleSize) / ViewSize; // bottom right
@@ -591,7 +609,7 @@ void AEgoVehicle::DrawFlatHUD(float DeltaSeconds)
             }
             if (ReticleTexture != nullptr && ReticleTexture->Resource != nullptr)
             {
-                FlatHUD->DrawReticle(ReticleTexture, ReticlePos + FVector2D(-ReticleSize * 0.5f, -ReticleSize * 0.5f));
+                FlatHUD->DrawReticle(ReticleTexture, EgoSensor->GetData()->GetProjectedReticleCoords());
             }
 #endif
         }

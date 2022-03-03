@@ -67,10 +67,7 @@ public:
   // replay finish
   bool ProcessReplayerFinish(bool bApplyAutopilot, bool bIgnoreHero, std::unordered_map<uint32_t, bool> &IsHero);
 
-  // DReyeVR variables:
-  AActor *DReyeVRActorPtr = nullptr; // is an AActor so the DReyeVR includes are only present in the .cpp files
-
-  FTransform EgoTransform; // DReyeVR ego-vehicle transform
+  // update the DReyeVR ego sensor
   void ProcessReplayerDReyeVRData(const DReyeVRDataRecorder &DReyeVRDataInstance, const double Per);
 
   // set the camera position to follow an actor
