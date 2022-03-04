@@ -1,7 +1,8 @@
 #include "EgoVehicle.h"
-#include "Math/NumericLimits.h"                // TNumericLimits<float>::Max
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
 #include "HeadMountedDisplayTypes.h"           // EOrientPositionSelector
+#include "Math/NumericLimits.h"                // TNumericLimits<float>::Max
+#include <string>                              // std::string, std::wstring
 
 ////////////////:INPUTS:////////////////
 /// NOTE: Here we define all the Input functions for the EgoVehicle just to keep them
@@ -104,7 +105,8 @@ void AEgoVehicle::ResetCamera()
     FirstPersonCam->SetRelativeRotation(FRotator::ZeroRotator);
     if (bIsHMDConnected)
     {
-        UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition(0, EOrientPositionSelector::OrientationAndPosition);
+        UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition(
+            0, EOrientPositionSelector::OrientationAndPosition);
         // reload world
         UGameplayStatics::OpenLevel(this, FName(*GetWorld()->GetName()), false);
     }
@@ -278,8 +280,8 @@ void AEgoVehicle::ReleaseHandbrake()
 
 /// NOTE: in UE4 rotators are of the form: {Pitch, Yaw, Roll} (stored in degrees)
 /// We are basing the limits off of "Cervical Spine Functional Anatomy ad the Biomechanics of Injury":
-// "The cervical spine's range of motion is approximately 80° to 90° of flexion, 70° of extension,
-// 20° to 45° of lateral flexion, and up to 90° of rotation to both sides."
+// "The cervical spine's range of motion is approximately 80 deg to 90 deg of flexion, 70 deg of extension,
+// 20 deg to 45 deg of lateral flexion, and up to 90 deg of rotation to both sides."
 // (www.ncbi.nlm.nih.gov/pmc/articles/PMC1250253/)
 /// NOTE: flexion = looking down to chest, extension = looking up , lateral = roll
 /// ALSO: These functions are only used in non-VR mode, in VR you can move freely
@@ -317,10 +319,21 @@ void AEgoVehicle::InitLogiWheel()
 {
 #if USE_LOGITECH_PLUGIN
     LogiSteeringInitialize(false);
-    bIsLogiConnected = LogiIsConnected(0); // get status of connected device
+    bIsLogiConnected = LogiIsConnected(WheelDeviceIdx); // get status of connected device
     if (bIsLogiConnected)
     {
-        UE_LOG(LogTemp, Log, TEXT("Found a Logitech device connected on input 0"));
+        const size_t n = 1000; // name shouldn't be more than 1000 chars right?
+        wchar_t *NameBuffer = (wchar_t *)malloc(n * sizeof(wchar_t));
+        if (LogiGetFriendlyProductName(WheelDeviceIdx, NameBuffer, n) == false)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Unable to get Logi friendly name!"));
+            NameBuffer = L"Unknown";
+        }
+        std::wstring wNameStr(NameBuffer, n);
+        std::string NameStr(wNameStr.begin(), wNameStr.end());
+        FString LogiName(NameStr.c_str());
+        UE_LOG(LogTemp, Log, TEXT("Found a Logitech device (%s) connected on input %d"), *LogiName, WheelDeviceIdx);
+        free(NameBuffer); // no longer needed
     }
     else
     {
@@ -335,9 +348,27 @@ void AEgoVehicle::InitLogiWheel()
 #endif
 }
 
+void AEgoVehicle::DestroyLogiWheel(bool DestroyModule)
+{
+#if USE_LOGITECH_PLUGIN
+    if (bIsLogiConnected)
+    {
+        // stop any forces on the wheel (we only use spring force feedback)
+        LogiStopSpringForce(WheelDeviceIdx);
+
+        if (DestroyModule) // only destroy the module at the end of the game (not ego life)
+        {
+            // shutdown the entire module (dangerous bc lingering pointers)
+            LogiSteeringShutdown();
+        }
+    }
+#endif
+}
+
 void AEgoVehicle::TickLogiWheel()
 {
 #if USE_LOGITECH_PLUGIN
+    bIsLogiConnected = LogiIsConnected(WheelDeviceIdx); // get status of connected device
     if (bIsLogiConnected)
     {
         // Taking logitech inputs for steering
@@ -361,7 +392,7 @@ const std::vector<FString> VarNames = {                                         
 /// NOTE: this is a debug function used to dump all the information we can regarding
 // the Logitech wheel hardware we used since the exact buttons were not documented in
 // the repo: https://github.com/HARPLab/LogitechWheelPlugin
-void AEgoVehicle::LogLogitechPluginStruct(const DIJOYSTATE2 *Now)
+void AEgoVehicle::LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now)
 {
     if (Old == nullptr)
     {
@@ -424,9 +455,11 @@ void AEgoVehicle::LogLogitechPluginStruct(const DIJOYSTATE2 *Now)
 void AEgoVehicle::LogitechWheelUpdate()
 {
     // only execute this in Windows, the Logitech plugin is incompatible with Linux
-    LogiUpdate(); // update the logitech wheel
-    DIJOYSTATE2 *WheelState = LogiGetState(0);
-    // LogLogitechPluginStruct(WheelState);
+    if (LogiUpdate() == false) // update the logitech wheel
+        UE_LOG(LogTemp, Warning, TEXT("Logitech wheel %d failed to update!"), WheelDeviceIdx);
+    DIJOYSTATE2 *WheelState = LogiGetState(WheelDeviceIdx);
+    if (bLogLogitechWheel)
+        LogLogitechPluginStruct(WheelState);
     /// NOTE: obtained these from LogitechWheelInputDevice.cpp:~111
     // -32768 to 32767. -32768 = all the way to the left. 32767 = all the way to the right.
     const float WheelRotation = FMath::Clamp(float(WheelState->lX), -32767.0f, 32767.0f) / 32767.0f; // (-1, 1)
@@ -490,15 +523,17 @@ void AEgoVehicle::ApplyForceFeedback() const
 {
     // only execute this in Windows, the Logitech plugin is incompatible with Linux
     const float Speed = GetVelocity().Size(); // get magnitude of self (AActor's) velocity
-                                              //    UE_LOG(LogTemp, Log, TEXT("Speed value %f"), Speed);
-    const int WheelIndex = 0;                 // first (only) wheel attached
     /// TODO: move outside this function (in tick()) to avoid redundancy
-    if (LogiHasForceFeedback(WheelIndex))
+    if (bIsLogiConnected && LogiHasForceFeedback(WheelDeviceIdx))
     {
         const int OffsetPercentage = 0;      // "Specifies the center of the spring force effect"
         const int SaturationPercentage = 30; // "Level of saturation... comparable to a magnitude"
         const int CoeffPercentage = 100; // "Slope of the effect strength increase relative to deflection from Offset"
-        LogiPlaySpringForce(WheelIndex, OffsetPercentage, SaturationPercentage, CoeffPercentage);
+        LogiPlaySpringForce(WheelDeviceIdx, OffsetPercentage, SaturationPercentage, CoeffPercentage);
+    }
+    else
+    {
+        LogiStopSpringForce(WheelDeviceIdx);
     }
     /// NOTE: there are other kinds of forces as described in the LogitechWheelPlugin API:
     // https://github.com/HARPLab/LogitechWheelPlugin/blob/master/LogitechWheelPlugin/Source/LogitechWheelPlugin/Private/LogitechBWheelInputDevice.cpp

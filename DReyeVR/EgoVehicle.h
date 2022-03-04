@@ -60,6 +60,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     const UCameraComponent *GetCamera() const;
     UCameraComponent *GetCamera();
     const DReyeVR::UserInputs &GetVehicleInputs() const;
+    FVector2D ProjectGazeToScreen(const FVector &Origin, const FVector &Dir, bool bPlayerViewportRelative = true) const;
 
     // Play sounds
     void PlayGearShiftSound(const float DelayBeforePlay = 0.f) const;
@@ -188,9 +189,12 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
 
     void InitLogiWheel();
     void TickLogiWheel();
+    void DestroyLogiWheel(bool DestroyModule);
+    bool bLogLogitechWheel = false;
+    int WheelDeviceIdx = 0; // usually leaving as 0 is fine, only use 1 if 0 is taken
 #if USE_LOGITECH_PLUGIN
-    DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
-    void LogLogitechPluginStruct(const DIJOYSTATE2 *Now);
+    struct DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
+    void LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now);
     void LogitechWheelUpdate();      // for logitech wheel integration
     void ApplyForceFeedback() const; // for logitech wheel integration
 #endif
@@ -219,6 +223,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     UPROPERTY(Category = HUD, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class ADReyeVRHUD *FlatHUD;
     void DrawFlatHUD(float DeltaSeconds);
+    FVector2D ReticlePos;                // 2D reticle position from eye gaze
     int ReticleSize = 100;               // diameter of reticle (line thickness is 10% of this)
     bool bDrawFlatHud = true;            // whether to draw the flat hud at all (default true, but false in VR)
     bool bDrawFPSCounter = true;         // draw FPS counter in top left corner

@@ -2,7 +2,9 @@
 
 #include "Carla/Game/CarlaStatics.h"    // GetEpisode
 #include "DReyeVRUtils.h"               // ReadConfigValue, ComputeClosestToRayIntersection
+#include "Kismet/GameplayStatics.h"     // UGameplayStatics::ProjectWorldToScreen
 #include "Kismet/KismetMathLibrary.h"   // Sin, Cos, Normalize
+#include "Misc/DateTime.h"              // FDateTime
 #include "UObject/UObjectBaseUtility.h" // GetName
 
 #ifdef _WIN32
@@ -39,11 +41,15 @@ void AEgoSensor::ReadConfigVariables()
     ReadConfigValue("EgoSensor", "StreamSensorData", bStreamData);
     ReadConfigValue("EgoSensor", "MaxTraceLenM", MaxTraceLenM);
     ReadConfigValue("EgoSensor", "DrawDebugFocusTrace", bDrawDebugFocusTrace);
-    ReadConfigValue("EgoSensor", "RecordFrames", bCaptureFrameData);
-    ReadConfigValue("EgoSensor", "FrameWidth", FrameCapWidth);
-    ReadConfigValue("EgoSensor", "FrameHeight", FrameCapHeight);
-    ReadConfigValue("EgoSensor", "FrameDir", FrameCapLocation);
-    ReadConfigValue("EgoSensor", "FrameName", FrameCapFilename);
+
+    // variables corresponding to the action of screencapture during replay
+    ReadConfigValue("Replayer", "RecordFrames", bCaptureFrameData);
+    ReadConfigValue("Replayer", "FileFormatJPG", bFileFormatJPG);
+    ReadConfigValue("Replayer", "LinearGamma", bFrameCapForceLinearGamma);
+    ReadConfigValue("Replayer", "FrameWidth", FrameCapWidth);
+    ReadConfigValue("Replayer", "FrameHeight", FrameCapHeight);
+    ReadConfigValue("Replayer", "FrameDir", FrameCapLocation);
+    ReadConfigValue("Replayer", "FrameName", FrameCapFilename);
 }
 
 void AEgoSensor::BeginPlay()
@@ -89,7 +95,6 @@ void AEgoSensor::ManualTick(float DeltaSeconds)
                           Vehicle->GetVehicleInputs() // User inputs
         );
     }
-    TickFrameCapture();
     TickCount++;
 }
 
@@ -191,6 +196,14 @@ void AEgoSensor::TickEyeTracker()
     ComputeDummyEyeData();
 #endif
     Combined->Vergence = ComputeVergence(Left->GazeOrigin, Left->GazeDir, Right->GazeOrigin, Right->GazeDir);
+
+    // compute the projected coordinates from the left gaze direction to be tracked
+    if (Vehicle)
+    {
+        // using the left gaze bc thats what the spectator screen sees
+        EyeSensorData.ProjectedCoords = Vehicle->ProjectGazeToScreen(Left->GazeOrigin, Left->GazeDir);
+    }
+
     // FPlatformProcess::Sleep(0.00833f); // use in async thread to get 120hz
 }
 
@@ -326,8 +339,7 @@ void AEgoSensor::ConstructFrameCapture()
         // CaptureRenderTarget->OverrideFormat = EPixelFormat::PF_FloatRGB;
         CaptureRenderTarget->AddressX = TextureAddress::TA_Clamp;
         CaptureRenderTarget->AddressY = TextureAddress::TA_Clamp;
-        const bool bInForceLinearGamma = false;
-        CaptureRenderTarget->InitCustomFormat(FrameCapWidth, FrameCapHeight, PF_B8G8R8A8, bInForceLinearGamma);
+        CaptureRenderTarget->InitCustomFormat(FrameCapWidth, FrameCapHeight, PF_B8G8R8A8, bFrameCapForceLinearGamma);
         check(CaptureRenderTarget->GetSurfaceWidth() > 0 && CaptureRenderTarget->GetSurfaceHeight() > 0);
 
         FrameCap = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("FrameCap"));
@@ -356,6 +368,11 @@ void AEgoSensor::InitFrameCapture()
         // create out dir
         /// TODO: add check for absolute paths
         FrameCapLocation = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() + FrameCapLocation);
+        // The returned string has the following format: yyyy.mm.dd-hh.mm.ss
+        FString DirName = FDateTime::Now().ToString(); // timestamp directory
+        FrameCapLocation = FPaths::Combine(FrameCapLocation, DirName);
+
+        // create directory if not present
         UE_LOG(LogTemp, Log, TEXT("Outputting frame capture data to %s"), *FrameCapLocation);
         IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
         if (!PlatformFile.DirectoryExists(*FrameCapLocation))
@@ -371,17 +388,19 @@ void AEgoSensor::InitFrameCapture()
     }
 }
 
-void AEgoSensor::TickFrameCapture()
+void AEgoSensor::TakeScreenshot()
 {
-    // frame capture
     if (bCaptureFrameData && FrameCap && Camera)
     {
         FMinimalViewInfo DesiredView;
+        // using 5 digits to reach frame 99999 ~ 30m (assuming ~50fps frame capture)
+        const FString Suffix = FString::Printf(TEXT("%05d.png"), ScreenshotCount);
         Camera->GetCameraView(0, DesiredView);
         FrameCap->SetCameraView(DesiredView); // move camera to the Camera view
         FrameCap->CaptureScene();             // also available: CaptureSceneDeferred()
-        const FString Suffix = FString::Printf(TEXT("%04d.png"), TickCount);
-        SaveFrameToDisk(*CaptureRenderTarget, FPaths::Combine(FrameCapLocation, FrameCapFilename + Suffix));
+        ScreenshotCount++;                    // progress to next frame
+        SaveFrameToDisk(*CaptureRenderTarget, FPaths::Combine(FrameCapLocation, FrameCapFilename + Suffix),
+                        bFileFormatJPG);
     }
 }
 

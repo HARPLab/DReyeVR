@@ -7,6 +7,7 @@ Now that you have DReyeVR up and running, this guide will highlight some useful 
 - [Recording/replaying a scenario](Usage.md#recordingreplaying-a-scenario)
 - [Switching control from manual to AI (handoff)](Usage.md#control-handoff-to-ai)
 - [Using our config file to modify DReyeVR params](Usage.md#using-our-custom-config-file)
+- [Synchronized replay with frame capture](Usage.md#synchronized-replay-frame-capture)
 - [Other guides](Usage.md#other-guides)
 
 ![UsageSchematic](Figures/Usage/UsageSchematic.jpg)
@@ -33,7 +34,7 @@ These control schemes work both in VR and non-VR. With the main difference being
   - **Camera Adjust** - Is done in X and Y with the 4 d-pad buttons (2) on the face of the wheel, and in Z with the +/- buttons (5)
 - ![LogiWheel](Figures/Usage/g923.jpg) Image source: [Logitech g923 manual](https://www.logitech.com/assets/65932/2/g923-racing-wheel-qsg.pdf)
 
-Note that all the keyboard inputs are defined in [`DefaultInputs.ini`](../Config/DefaultInputs.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
+Note that all the keyboard inputs are defined in [`DefaultInput.ini`](../Configs/DefaultInput.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
 
 However, the logitech wheel inputs are hardcoded into the source since they are checked for on every tick (instead of through the UE4 keyboard events). To see the values and modify them, see [`EgoInputs.cpp`](../DReyeVR/EgoInputs.cpp)
   
@@ -264,6 +265,16 @@ cd $CARLA_ROOT/PythonAPI/examples/
 		./show_recorder_file_info.py -a -f /PATH/TO/RECORDER-FILE > recorder.txt 
 		```
 ## Replaying
+Note that in order for the camera to reenact the recorded head pose, you'll need to run Carla in non-VR mode (else the VR HMD takes precedence). So restart Carla like this:
+```bash
+# on Windows
+CarlaUE4.exe # no -vr flag
+
+# or on linux
+./CarlaUE4.sh # no -vr flag
+```
+
+Then, with the flat-screen `CarlaUE4` instance running, begin a replay session through the PythonAPI as follows:
 ```bash
 ./start_replaying.py # this starts the replaying session
 ```
@@ -274,6 +285,8 @@ cd $CARLA_ROOT/PythonAPI/examples/
   4. **Restart** - Is done by holding `Alt` and pressing `BackSpace`
   6. **Possess Spectator** - Is done by pressing `1` (then use `WASDEQ+mouse` to fly around)
   7. **Re-possess Vehicle** - Is done by pressing `2`
+
+To get accurate screenshots for every frame of the recording, see below with [synchronized replay frame capture](#synchronized-replay-frame-capture)
 
 ## Scenarios
 It is usually ideal to have curated experiments in the form of scenarios parsed through [ScenarioRunner](https://carla-scenariorunner.readthedocs.io/en/latest/).
@@ -373,7 +386,26 @@ Number=867.5309; Note you can also write comments!
 
 And, just like the other variables in the file, you can bunch and organize them together under the same section header.
 
-# Other Guides
+# Synchronized replay frame capture
+## Motivations
+After performing (and recording) an [experiment](../ScenarioRunner/run_experiment.py), we are provided with a log of everything that happened in the simulator that we can use for live reenactment and post-hoc analysis. It is often the case that after some postprocessing on the data, we might be interested in overlaying something on the simulator view to match what a participant was seeing/doing and what the world looked like. Unfortunately, it is difficult to get the exact image frame corresponding to an exact recording event using an asynchronous screen recorder such as OBS, therefore we baked in this functionality within the engine itself, so it can directly go to any recorded event and take a high quality screenshot. The end result is the exact frame-by-frame views corresponding to the recorded world conditions without interpolation. 
+
+To enable this feature, toggle the `RunSyncReplay` flag in [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini) under the `[Replayer]` section. This will allow for frame-by-frame reenactment (otherwise the replay will respect wall-clock-time and introduce interpolation between frames). In order to additionally perform frame capture during this replay, make sure to have the `RecordFrames` flag enabled as well. There are several other frame capture options below such as resolution and gamma parameters. 
+
+The resulting frame capture images (`.png` or `.jpg` depending on the `FileFormatJPG` flag) will be found in `Unreal/CarlaUE4/{FrameDir}/{DateTimeNow}/{FrameName}*` where `{FrameDir}` and `{FrameName}` are both determined in the [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini). The `{DateTimeNow}` string is uniquely based on your machine's local current time so you can run multiple recordings without overwriting old files. 
+
+
+With these flags enabled, any time you initiate a replay such as:
+```bash
+# in PythonAPI/examples
+./start_replaying.py -f /PATH/TO/RECORDING/FILE # unix
+
+python start_replaying.py -f /PATH/TO/RECORDING/FILE # windows
+```
+
+
+
+# Other guides
 We have written other guides as well that serve more particular needs:
 - See [`Docs/SetupVR.md`](SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Sounds.md) to see how we added custom sounds and how you can add your own custom sounds

@@ -1,7 +1,9 @@
 # DReyeVR
 ### Welcome to DReyeVR, a VR driving simulator for behavioural and interactions research.
 
-![Fig1](Docs/Figures/demo.gif)
+[![Main Figure](Docs/Figures/demo.gif)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
+
+[Submission Video Demonstration (YouTube)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
 <!-- Welcome to the DReyeVR wiki! -->
 
 This project extends the [`Carla 0.9.13`](https://carla.org/2020/12/22/release-0.9.13/) [[GitHub](https://github.com/carla-simulator/carla/tree/0.9.13)] build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
@@ -21,7 +23,8 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
   - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) 
     - Includes force-feedback with the steering wheel.
     - We used a [Logitech G923 Racing Wheel & Pedals](https://www.logitechg.com/en-us/products/driving/driving-force-racing-wheel.html)
-- Realistic rear-view mirrors (WARNING: **very** performance intensive)
+      - Full list of supported devices can be found [here](https://github.com/HARPLab/LogitechWheelPlugin/blob/master/README.md) though we can't guarantee out-of-box functionality without testing. 
+- Realistic (and parameterizable) rear & side view mirrors (WARNING: very performance intensive)
 - Vehicle dashboard
   - Speedometer
   - Gear indicator
@@ -36,8 +39,8 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
 - Fully compatible with the existing Carla [PythonAPI](https://carla.readthedocs.io/en/0.9.13/python_api/) and [ScenarioRunner](https://github.com/carla-simulator/scenario_runner/tree/v0.9.13)
   - Minor modifications were made. See [Usage.md](Docs/Usage.md) documentation.
 - Fully compatible with the Carla [Recorder and Replayer](https://carla.readthedocs.io/en/0.9.13/adv_recorder/) 
-  - Including HMD pose/orientation for first-person reenactment
-  - Ability to handoff control to Carla's AI wheeled vehicle controller
+  - Including HMD pose/orientation & sensor reenactment 
+- Ability to handoff/takeover control to/from Carla's AI wheeled vehicle controller
 ### Ego Sensor
 Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - **Eye tracking** support through [SRanipal Vive eye tracking](https://developer.vive.com/resources/vive-sense/sdk/vive-eye-and-facial-tracking-sdk/)
@@ -61,8 +64,9 @@ Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
   - Especially useful to change params without recompiling everything.
   - Uses standard c++ io management to read the file with minimal performance impact. See [DReyeVRUtils.h](DReyeVR/DReyeVRUtils.h).
 - World ambient audio
-  - Birdsong, wind, smoke, etc. (Sourced from [Unreal starter content](https://docs.unrealengine.com/4.27/en-US/Basics/Projects/Browser/Packs/))
+  - Birdsong, wind, smoke, etc. (See [Docs/Sounds.md](Docs/Sounds.md))
 - Non-ego-centric audio (Engine revving from non-ego vehicles)
+- Synchronized Replay with per-frame frame capture for post-hoc analysis 
 - Recorder/replayer media functions
   - Added in-game keyboard commands Play/Pause/Forward/Backward/etc.
 - Static in-environment directional signs for natural navigation (See [`Docs/Signs.md`](Docs/Signs.md))
@@ -107,7 +111,7 @@ If you use our work, please cite the corresponding [paper](https://arxiv.org/abs
 
 - This project builds upon and extends the [CARLA 0.9.13 simulator](https://carla.org/)
 - This repo includes some code from CARLA: Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB) & Intel Corporation.
-- This repo includes some code from Hewlett-Packard Development Company, LP. See [Tools/Diagnostics/nvidia.ph](Tools/Diagnostics/nvidia.ph). This is a modified diagnostic tool used during development. 
+- This repo includes some code from Hewlett-Packard Development Company, LP. See [nvidia.ph](Tools/Diagnostics/collectl/nvidia.ph). This is a modified diagnostic tool used during development. 
 
 ## Licenses
 - Custom DReyeVR code is distributed under the MIT License.

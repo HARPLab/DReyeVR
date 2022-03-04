@@ -8,6 +8,9 @@
 #include "CarlaRecorder.h"
 #include "Carla/Game/CarlaEpisode.h"
 
+// DReyeVR include
+#include "Carla/Sensor/DReyeVRSensor.h" // ADReyeVRSensor
+
 #include <ctime>
 #include <sstream>
 
@@ -100,6 +103,34 @@ double CarlaReplayer::GetTotalTime(void)
   File.clear();
   File.seekg(Current, std::ios::beg);
   return Frame.Elapsed;
+}
+
+// Read all the frames and collect their start times
+void CarlaReplayer::GetFrameStartTimes()
+{
+  std::streampos Current = File.tellg();
+
+  while (File)
+  {
+    if (!ReadHeader())
+    {
+      break;
+    }
+
+    switch (Header.Id)
+    {
+      case static_cast<char>(CarlaRecorderPacketId::FrameStart):
+        Frame.Read(File);
+        FrameStartTimes.push_back(Frame.Elapsed); // add this time to the global container
+        break;
+      default:
+        SkipPacket();
+        break;
+    }
+  }
+
+  File.clear();
+  File.seekg(Current, std::ios::beg); // return to original position
 }
 
 std::string CarlaReplayer::ReplayFile(std::string Filename, double TimeStart, double Duration,
@@ -719,8 +750,47 @@ void CarlaReplayer::Tick(float Delta)
   // check if there are events to process (and unpaused)
   if (Enabled && !Paused)
   {
-    ProcessToTime(Delta * TimeFactor, false);
+    if (bReplaySync)
+    {
+      ProcessFrameByFrame();
+    }
+    else // typical usage (replay as fast as possible with interpolation)
+    {
+      ProcessToTime(Delta * TimeFactor, false);
+    }
   }
+}
+
+void CarlaReplayer::ProcessFrameByFrame()
+{
+  // get the times to process if needed
+  if (FrameStartTimes.size() == 0)
+  {
+    GetFrameStartTimes();
+    ensure(FrameStartTimes.size() > 0);
+    for (auto &i : FrameStartTimes)
+    {
+      UE_LOG(LogTemp, Log, TEXT("%.3f"), i);
+    }
+  }
+
+  // process to those times
+  ensure(SyncCurrentFrameId < FrameStartTimes.size());
+  double LastTime = 0.f;
+  if (SyncCurrentFrameId > 0)
+    LastTime = FrameStartTimes[SyncCurrentFrameId - 1];
+  ProcessToTime(FrameStartTimes[SyncCurrentFrameId] - LastTime, (SyncCurrentFrameId == 0));
+  if (ADReyeVRSensor::GetDReyeVRSensor())
+    // have the vehicle camera take a screenshot to record the replay
+    ADReyeVRSensor::GetDReyeVRSensor()->TakeScreenshot();
+  else
+    UE_LOG(LogTemp, Error, TEXT("No DReyeVR sensor available!"));
+
+  // progress to the next frame
+  if (SyncCurrentFrameId < FrameStartTimes.size() - 1)
+    SyncCurrentFrameId++;
+  else
+    Stop();
 }
 
 void CarlaReplayer::PlayPause()

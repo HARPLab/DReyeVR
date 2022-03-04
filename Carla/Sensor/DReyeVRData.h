@@ -239,6 +239,7 @@ struct EyeTracker
     CombinedEyeData Combined;
     SingleEyeData Left;
     SingleEyeData Right;
+    FVector2D ProjectedCoords;
     void Read(std::ifstream &InFile)
     {
         ReadValue<int64_t>(InFile, TimestampDevice);
@@ -246,6 +247,7 @@ struct EyeTracker
         Combined.Read(InFile);
         Left.Read(InFile);
         Right.Read(InFile);
+        ReadFVector2D(InFile, ProjectedCoords);
     }
     void Write(std::ofstream &OutFile) const
     {
@@ -254,6 +256,7 @@ struct EyeTracker
         Combined.Write(OutFile);
         Left.Write(OutFile);
         Right.Write(OutFile);
+        WriteFVector2D(OutFile, ProjectedCoords);
     }
     FString ToString() const
     {
@@ -263,6 +266,7 @@ struct EyeTracker
         Print += FString::Printf(TEXT("COMBINED:{%s},"), *Combined.ToString());
         Print += FString::Printf(TEXT("LEFT:{%s},"), *Left.ToString());
         Print += FString::Printf(TEXT("RIGHT:{%s},"), *Right.ToString());
+        Print += FString::Printf(TEXT("ReticleCoords:%s,"), *ProjectedCoords.ToString());
         return Print;
     }
 };
@@ -403,6 +407,10 @@ class AggregateData // all DReyeVR sensor data is held here
         default: // need a default case for MSVC >:(
             return EyeTrackerData.Right.PupilPositionValid;
         }
+    }
+    const FVector2D &GetProjectedReticleCoords() const
+    {
+        return EyeTrackerData.ProjectedCoords;
     }
 
     // from EgoVars

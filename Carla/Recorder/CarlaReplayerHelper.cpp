@@ -24,8 +24,7 @@
 #include "Carla/MapGen/LargeMapManager.h"
 
 // DReyeVR include
-#include "Carla/Sensor/DReyeVRSensor.h"
-#include "Carla/Sensor/DReyeVRData.h"
+#include "Carla/Sensor/DReyeVRSensor.h" // ADReyeVRSensor
 
 #include <compiler/disable-ue4-macros.h>
 #include <carla/rpc/VehicleLightState.h>
@@ -469,33 +468,19 @@ bool CarlaReplayerHelper::ProcessReplayerFinish(bool bApplyAutopilot, bool bIgno
     }
   }
   // tell the DReyeVR sensor to NOT continue replaying
-  if (DReyeVRActorPtr != nullptr) {
-    ADReyeVRSensor *DReyeVRSensor = Cast<ADReyeVRSensor>(DReyeVRActorPtr);
-    DReyeVRSensor->StopReplaying();
-  }
+  if (ADReyeVRSensor::GetDReyeVRSensor())
+    ADReyeVRSensor::GetDReyeVRSensor()->StopReplaying();
+  else
+    UE_LOG(LogTemp, Error, TEXT("No DReyeVR sensor available!"));
   return true;
 }
 
 void CarlaReplayerHelper::ProcessReplayerDReyeVRData(const DReyeVRDataRecorder &DReyeVRDataInstance, const double Per)
 {
-  check(Episode != nullptr);  
-  UWorld* World = Episode->GetWorld();
-  if(World) {
-    // find the DReyeVRSensor in the world if needed
-    if (DReyeVRActorPtr == nullptr) {
-      TArray<AActor*> FoundActors;
-      UGameplayStatics::GetAllActorsOfClass(World, ADReyeVRSensor::StaticClass(), FoundActors);
-      if (FoundActors.Num() > 0) {
-        /// TODO: check if multiple DReyeVRSensors exist in the world
-        DReyeVRActorPtr = FoundActors[0]; 
-      }
-    }
-    // Update the DReyeVRSensor's replay data
-    if (DReyeVRActorPtr != nullptr) {
-      ADReyeVRSensor *DReyeVRSensor = Cast<ADReyeVRSensor>(DReyeVRActorPtr);
-      DReyeVRSensor->UpdateWithReplayData(DReyeVRDataInstance.Data, Per);
-    }
-  }
+  if (ADReyeVRSensor::GetDReyeVRSensor())
+    ADReyeVRSensor::GetDReyeVRSensor()->UpdateWithReplayData(DReyeVRDataInstance.Data, Per);
+  else
+    UE_LOG(LogTemp, Error, TEXT("No DReyeVR sensor available!"));
 }
 
 void CarlaReplayerHelper::SetActorVelocity(FCarlaActor *CarlaActor, FVector Velocity)

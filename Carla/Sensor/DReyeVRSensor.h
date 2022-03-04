@@ -46,16 +46,24 @@ class CARLA_API ADReyeVRSensor : public ASensor
     bool IsReplaying() const;
     void UpdateWithReplayData(const class DReyeVR::AggregateData &RecorderData, const double Per); // starts replaying
     void StopReplaying();
+    virtual void TakeScreenshot()
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Not implemented! Implement in EgoSensor!"));
+    };
+
+    static class ADReyeVRSensor *GetDReyeVRSensor();
 
   protected:
     void BeginPlay() override;
     void BeginDestroy() override;
     bool bIsReplaying = false; // initially not replaying
 
-    UWorld *World; // to get info about the world: time, frames, etc.
+    class UWorld *World;
+    static class UWorld *sWorld; // to get info about the world: time, frames, etc.
 
     bool bStreamData = true;
 
+    static class ADReyeVRSensor *DReyeVRSensorPtr;
     static void InterpPositionAndRotation(const FVector &Pos1, const FRotator &Rot1, const FVector &Pos2,
                                           const FRotator &Rot2, const double Per, FVector &Location,
                                           FRotator &Rotation);

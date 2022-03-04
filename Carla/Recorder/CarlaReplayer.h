@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
 
 #include <functional>
 #include "CarlaRecorderInfo.h"
@@ -97,6 +98,13 @@ public:
   void Restart();
   void Advance(const float Amnt);
   void IncrTimeFactor(const float Amnt_s);
+
+  void SetSyncMode(bool bSyncModeIn)
+  {
+    bReplaySync = bSyncModeIn;
+    if (bReplaySync)
+      UE_LOG(LogTemp, Warning, TEXT("Replay operating in frame-wise sync mode"));
+  }
   
 private:
 
@@ -156,6 +164,7 @@ private:
 
   // DReyeVR recordings
   void ProcessDReyeVRData(void);
+
   // For restarting the recording with the same params
   struct LastReplayStruct
   {
@@ -169,6 +178,12 @@ private:
   // DReyeVR sensor data
   DReyeVRDataRecorder DReyeVRDataInstance;
   void UpdateDReyeVRSensor(double Per, double DeltaTime);
+
+  bool bReplaySync = false;
+  std::vector<double> FrameStartTimes;
+  size_t SyncCurrentFrameId = 0;
+  void GetFrameStartTimes();
+  void ProcessFrameByFrame();
 
   // positions
   void UpdatePositions(double Per, double DeltaTime);

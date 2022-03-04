@@ -254,41 +254,40 @@ static float CmPerSecondToXPerHour(const bool MilesPerHour)
     return 0.036f;
 }
 
-static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString &FilePath)
+static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString &FilePath, const bool FileFormatJPG)
 {
     FTextureRenderTargetResource *RTResource = RenderTarget.GameThread_GetRenderTargetResource();
     const size_t H = RenderTarget.GetSurfaceHeight();
     const size_t W = RenderTarget.GetSurfaceWidth();
     const FIntPoint DestSize(W, H);
     TImagePixelData<FColor> PixelData(DestSize);
+
+    // Read pixels into array
+    // heavily inspired by Carla's Carla/Sensor/PixelReader.cpp:WritePixelsToArray function
     TArray<FColor> Pixels;
     Pixels.AddUninitialized(H * W);
-    FReadSurfaceDataFlags ReadPixelFlags(RCM_MinMax); // RCM_UNorm);
-    ReadPixelFlags.SetLinearToGamma(false);
-    bool Success = RTResource->ReadPixels(Pixels, ReadPixelFlags);
+    FReadSurfaceDataFlags ReadPixelFlags(RCM_UNorm);
+    ReadPixelFlags.SetLinearToGamma(true);
+    if (RTResource == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Missing render target!"));
+        return;
+    }
+    if (!RTResource->ReadPixels(Pixels, ReadPixelFlags))
+        UE_LOG(LogTemp, Error, TEXT("Unable to read pixels!"));
+
+    // dump pixel array to disk
     PixelData.Pixels = Pixels;
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
     ImageTask->PixelData = MakeUnique<TImagePixelData<FColor>>(PixelData);
     ImageTask->Filename = FilePath;
-    ImageTask->Format = EImageFormat::JPEG;
+    UE_LOG(LogTemp, Log, TEXT("Saving screenshot to %s"), *FilePath);
+    ImageTask->Format = FileFormatJPG ? EImageFormat::JPEG : EImageFormat::PNG; // lower quality, less storage
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
     ImageTask->bOverwriteFile = true;
     ImageTask->PixelPreProcessors.Add(TAsyncAlphaWrite<FColor>(255));
     FHighResScreenshotConfig &HighResScreenshotConfig = GetHighResScreenshotConfig();
     HighResScreenshotConfig.ImageWriteQueue->Enqueue(MoveTemp(ImageTask));
-
-    /// TODO: write the OutBMP to disk via some ppm faniciness??
-    // might need to buffer several images then write all at once
-
-    // std::ofstream ofs(TCHAR_TO_ANSI(*FilePath), std::ios_base::out | std::ios_base::binary);
-    // ofs << "P6" << std::endl << W << ' ' << H << std::endl << "255" << std::endl;
-
-    // for (size_t i = 0u; i < Pixels.Num(); ++i)
-    // {
-    //     const FColor &RGB = Pixels[i];
-    //     ofs << char(RGB.R) << char(RGB.G) << char(RGB.B);
-    // }
-    // ofs.close();
 }
 
 #endif
