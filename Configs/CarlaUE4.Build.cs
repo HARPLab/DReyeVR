@@ -37,18 +37,21 @@ public class CarlaUE4 : ModuleRules
 		// Edit these variables to enable/disable features of DReyeVR
 		bool UseSRanipalPlugin = true;
 		bool UseLogitechPlugin = true;
+		bool UseFoveatedRender = false; // not ready for production yet!
 		////////////////////////////////////////////////////////////////////////////////////
 
 		if (!IsWindows(Target))
 		{
 			// adjust definitions so they are OS-compatible
-			UseSRanipalPlugin = false;       // SRanipal only works on Windows
+			UseSRanipalPlugin = false; // SRanipal only works on Windows
 			UseLogitechPlugin = false; // LogitechWheelPlugin also only works on Windows
+			UseFoveatedRender = false; // Vive VRS plugin requires engine fork
 		}
 
 		// Add these preprocessor definitions to code
 		PublicDefinitions.Add("USE_SRANIPAL_PLUGIN=" + (UseSRanipalPlugin ? "true" : "false"));
 		PublicDefinitions.Add("USE_LOGITECH_PLUGIN=" + (UseLogitechPlugin ? "true" : "false"));
+		PublicDefinitions.Add("USE_FOVEATED_RENDER=" + (UseFoveatedRender ? "true" : "false"));
 
 		// Add plugin dependencies 
 		if (UseSRanipalPlugin)
@@ -60,6 +63,12 @@ public class CarlaUE4 : ModuleRules
 		if (UseLogitechPlugin)
 		{
 			PrivateDependencyModuleNames.AddRange(new string[] { "LogitechWheelPlugin" });
+		}
+
+		if (UseFoveatedRender)
+		{
+			// Add VRS plugin and and EyeTracker dependencies
+			PublicDependencyModuleNames.AddRange(new string[] { "EyeTracker", "VRSPlugin" });
 		}
 
 

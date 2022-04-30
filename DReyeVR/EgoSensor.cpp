@@ -2,10 +2,16 @@
 
 #include "Carla/Game/CarlaStatics.h"    // GetEpisode
 #include "DReyeVRUtils.h"               // ReadConfigValue, ComputeClosestToRayIntersection
+#include "EgoVehicle.h"                 // AEgoVehicle
 #include "Kismet/GameplayStatics.h"     // UGameplayStatics::ProjectWorldToScreen
 #include "Kismet/KismetMathLibrary.h"   // Sin, Cos, Normalize
 #include "Misc/DateTime.h"              // FDateTime
 #include "UObject/UObjectBaseUtility.h" // GetName
+
+#if USE_FOVEATED_RENDER
+#include "EyeTrackerTypes.h"             // FEyeTrackerStereoGazeData
+#include "VRSBlueprintFunctionLibrary.h" // VRS
+#endif
 
 #ifdef _WIN32
 #include <windows.h> // required for file IO in Windows
@@ -50,6 +56,9 @@ void AEgoSensor::ReadConfigVariables()
     ReadConfigValue("Replayer", "FrameHeight", FrameCapHeight);
     ReadConfigValue("Replayer", "FrameDir", FrameCapLocation);
     ReadConfigValue("Replayer", "FrameName", FrameCapFilename);
+
+    // foveated rendering variables
+    ReadConfigValue("FoveatedRender", "Enabled", bEnableFovRender);
 }
 
 void AEgoSensor::BeginPlay()
@@ -67,6 +76,12 @@ void AEgoSensor::BeginPlay()
 
     // Register EgoSensor with the CarlaActorRegistry
     Register();
+
+#if USE_FOVEATED_RENDER
+    // Initialize VRS plugin (using our VRS fork!)
+    UVariableRateShadingFunctionLibrary::EnableVRS(bEnableFovRender);
+    UVariableRateShadingFunctionLibrary::EnableEyeTracking(bEnableFovRender);
+#endif
 
     UE_LOG(LogTemp, Log, TEXT("Initialized DReyeVR EgoSensor"));
 }
@@ -94,6 +109,7 @@ void AEgoSensor::ManualTick(float DeltaSeconds)
                           FocusInfoData,              // FocusData
                           Vehicle->GetVehicleInputs() // User inputs
         );
+        TickFoveatedRender();
     }
     TickCount++;
 }
@@ -196,13 +212,6 @@ void AEgoSensor::TickEyeTracker()
     ComputeDummyEyeData();
 #endif
     Combined->Vergence = ComputeVergence(Left->GazeOrigin, Left->GazeDir, Right->GazeOrigin, Right->GazeDir);
-
-    // compute the projected coordinates from the left gaze direction to be tracked
-    if (Vehicle)
-    {
-        // using the left gaze bc thats what the spectator screen sees
-        EyeSensorData.ProjectedCoords = Vehicle->ProjectGazeToScreen(Left->GazeOrigin, Left->GazeDir);
-    }
 
     // FPlatformProcess::Sleep(0.00833f); // use in async thread to get 120hz
 }
@@ -308,6 +317,12 @@ void AEgoSensor::SetEgoVehicle(class AEgoVehicle *NewEgoVehicle)
     check(Vehicle);
 }
 
+void AEgoSensor::SetLevel(class ADReyeVRLevel *LevelIn)
+{
+    DReyeVRLevel = LevelIn;
+    check(DReyeVRLevel);
+}
+
 void AEgoSensor::ComputeEgoVars()
 {
     // See DReyeVRData::EgoVariables
@@ -350,6 +365,13 @@ void AEgoSensor::ConstructFrameCapture()
         FrameCap->bAlwaysPersistRenderingState = true;
         FrameCap->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 
+        // apply postprocessing effects
+        FPostProcessSettings Effects;
+        Effects.bOverride_ColorGamma = true;
+        const float TargetGamma = 1.2f; /// TODO: parametrize?
+        Effects.ColorGamma = TargetGamma * FVector4(1.f, 1.f, 1.f, 1.f);
+        FrameCap->PostProcessSettings = Effects;
+
         FrameCap->Deactivate();
         FrameCap->TextureTarget = CaptureRenderTarget;
         FrameCap->UpdateContent();
@@ -377,12 +399,12 @@ void AEgoSensor::InitFrameCapture()
         IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
         if (!PlatformFile.DirectoryExists(*FrameCapLocation))
         {
-#ifndef _WIN32
-            // this only seems to work on Unix systems, else CreateDirectoryW is not linked?
-            PlatformFile.CreateDirectory(*FrameCapLocation);
-#else
+#ifdef CreateDirectory
             // using Windows system calls
             CreateDirectory(*FrameCapLocation, NULL);
+#else
+            // this only seems to work on Unix systems, else CreateDirectoryW is not linked?
+            PlatformFile.CreateDirectory(*FrameCapLocation);
 #endif
         }
     }
@@ -402,6 +424,50 @@ void AEgoSensor::TakeScreenshot()
         SaveFrameToDisk(*CaptureRenderTarget, FPaths::Combine(FrameCapLocation, FrameCapFilename + Suffix),
                         bFileFormatJPG);
     }
+}
+
+/// ========================================== ///
+/// ------------:FOVEATEDRENDER:-------------- ///
+/// ========================================== ///
+
+void AEgoSensor::ConvertToEyeTrackerSpace(FVector &inVec) const
+{
+    FVector temp = inVec;
+    inVec.X = -1 * temp.Y;
+    inVec.Y = temp.Z;
+    inVec.Z = temp.X;
+}
+
+void AEgoSensor::TickFoveatedRender()
+{
+#if USE_FOVEATED_RENDER
+    FEyeTrackerStereoGazeData F;
+    F.LeftEyeOrigin = GetData()->GetGazeOrigin(DReyeVR::Gaze::LEFT);
+    F.LeftEyeDirection = GetData()->GetGazeDir(DReyeVR::Gaze::LEFT);
+    ConvertToEyeTrackerSpace(F.LeftEyeDirection);
+    F.RightEyeOrigin = GetData()->GetGazeOrigin(DReyeVR::Gaze::RIGHT);
+    ConvertToEyeTrackerSpace(F.RightEyeDirection);
+    F.RightEyeDirection = GetData()->GetGazeDir(DReyeVR::Gaze::RIGHT);
+    F.FixationPoint = GetData()->GetFocusActorPoint();
+    F.ConfidenceValue = 0.99f;
+    UVariableRateShadingFunctionLibrary::UpdateStereoGazeDataToFoveatedRendering(F);
+#endif
+}
+
+/// ========================================== ///
+/// ----------------:REPLAY:------------------ ///
+/// ========================================== ///
+
+void AEgoSensor::UpdateData(const DReyeVR::AggregateData &RecorderData, const double Per)
+{
+    // call the parent function
+    ADReyeVRSensor::UpdateData(RecorderData, Per);
+}
+
+void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per)
+{
+    if (DReyeVRLevel)
+        DReyeVRLevel->ReplayCustomActor(RecorderData, Per);
 }
 
 /// ========================================== ///

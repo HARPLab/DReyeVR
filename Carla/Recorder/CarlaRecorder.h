@@ -29,9 +29,12 @@
 #include "CarlaRecorderPosition.h"
 #include "CarlaRecorderQuery.h"
 #include "CarlaRecorderState.h"
+#include "CarlaRecorderWeather.h"
 #include "CarlaReplayer.h"
-// DReyeVR packet
+
+// DReyeVR includes
 #include "DReyeVRRecorder.h"
+#include "Carla/Sensor/DReyeVRData.h"
 
 #include "CarlaRecorder.generated.h"
 
@@ -41,6 +44,9 @@ class ACarlaWheeledVehicle;
 class UCarlaLight;
 class ATrafficSignBase;
 class ATrafficLightBase;
+
+#define DREYEVR_PACKET_ID 139
+#define DREYEVR_CUSTOM_ACTOR_PACKET_ID 140
 
 enum class CarlaRecorderPacketId : uint8_t
 {
@@ -62,8 +68,10 @@ enum class CarlaRecorderPacketId : uint8_t
   PhysicsControl,
   TrafficLightTime,
   TriggerVolume,
+  Weather,
   // "We suggest to use id over 100 for user custom packets, because this list will keep growing in the future"
-  DReyeVR = 139 // out custom DReyeVR packet
+  DReyeVR = DREYEVR_PACKET_ID,                        // our custom DReyeVR packet (for raw sensor data)
+  DReyeVRCustomActor = DREYEVR_CUSTOM_ACTOR_PACKET_ID // custom DReyeVR actors (not raw sensor data)
 };
 
 /// Recorder for the simulation
@@ -125,6 +133,8 @@ public:
   void AddPhysicsControl(const ACarlaWheeledVehicle& Vehicle);
 
   void AddTrafficLightTime(const ATrafficLightBase& TrafficLight);
+
+  void AddWeather(const FWeatherParameters& WeatherParams);
 
   // set episode
   void SetEpisode(UCarlaEpisode *ThisEpisode)
@@ -199,8 +209,9 @@ private:
   CarlaRecorderPlatformTime PlatformTime;
   CarlaRecorderPhysicsControls PhysicsControls;
   CarlaRecorderTrafficLightTimes TrafficLightTimes;
-  DReyeVRDataRecorders DReyeVRData;
-
+  CarlaRecorderWeathers Weathers;
+  DReyeVRDataRecorders<DReyeVR::AggregateData, DREYEVR_PACKET_ID> DReyeVRAggData;
+  DReyeVRDataRecorders<DReyeVR::CustomActorData, DREYEVR_CUSTOM_ACTOR_PACKET_ID> DReyeVRCustomActorData;
 
   // replayer
   CarlaReplayer Replayer;
@@ -209,6 +220,7 @@ private:
   CarlaRecorderQuery Query;
 
   void AddExistingActors(void);
+  void AddStartingWeather(void);
   void AddActorPosition(FCarlaActor *CarlaActor);
   void AddWalkerAnimation(FCarlaActor *CarlaActor);
   void AddVehicleAnimation(FCarlaActor *CarlaActor);

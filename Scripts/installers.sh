@@ -20,6 +20,7 @@ carla_install() {
     # content
     mkdir -p $ROOT/Unreal/CarlaUE4/Content/DReyeVR/ # new DReyeVR content folder
     cp -v -r Content/DReyeVR_Signs $ROOT/Unreal/CarlaUE4/Content/DReyeVR/
+    cp -v -r Content/Custom $ROOT/Unreal/CarlaUE4/Content/DReyeVR/
     cp -v Content/Default.Package.json $ROOT/Unreal/CarlaUE4/Content/Carla/Config/
     # maps
     cp -v Maps/* $ROOT/Unreal/CarlaUE4/Content/Carla/Maps/
@@ -38,6 +39,7 @@ carla_install() {
     cp -v Carla/Traffic/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Traffic/
     cp -v Carla/Actor/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Actor/
     cp -v Carla/Recorder/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Recorder/
+    cp -v Carla/Weather/* $ROOT/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Weather/
     # BuildTools
     cp -v Tools/BuildTools/*.sh $ROOT/Util/BuildTools/
     cp -v Tools/BuildTools/test_streaming.cpp $ROOT/LibCarla/source/test/common/
