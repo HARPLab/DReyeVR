@@ -97,13 +97,12 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 ## Citation
 If you use our work, please cite the corresponding [paper](https://arxiv.org/abs/2201.01931):
 ```bibtex
-@misc{silvera2022dreyevr,
-      title={DReyeVR: Democratizing Virtual Reality Driving Simulation for Behavioural & Interaction Research}, 
-      author={Gustavo Silvera and Abhijat Biswas and Henny Admoni},
-      year={2022},
-      eprint={2201.01931},
-      archivePrefix={arXiv},
-      primaryClass={cs.HC}
+@inproceedings{silvera2022dreyevr,
+  title={DReyeVR: Democratizing Virtual Reality Driving Simulation for Behavioural \& Interaction Research},
+  author={Silvera, Gustavo and Biswas, Abhijat and Admoni, Henny},
+  booktitle={Proceedings of the 2022 ACM/IEEE International Conference on Human-Robot Interaction},
+  pages={639--643},
+  year={2022}
 }
 ```
 
