@@ -1,0 +1,12 @@
+.vscode/
+cache/
+Backups*
+Scripts/__pycache__
+Tools/Diagnostics/python/data/
+Tools/Diagnostics/results/
+Tools/LOD/WindowsLODs/
+Tools/LOD/WindowsLODs.zip
+Tools/LOD/LinuxLODs/
+Tools/LOD/LinuxLODs.zip
+Tools/LOD/OriginalLODs/
+Tools/LOD/OriginalLODs.zip

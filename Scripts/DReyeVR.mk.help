@@ -9,20 +9,39 @@ Use the following commands:
 
         Display this help message.
 
-    carla | install:
+    DReyeVR | install:
 
-        Install necessary DReyeVR files to a working compatible CARLA installation.
-        Requires a Carla path, use CARLA=/PATH/TO/CARLA
+        Install necessary DReyeVR files to a working compatible CARLA/ScenarioRunner installation.
+        Can specify Carla path with CARLA=/PATH/TO/CARLA
+        Can specify ScenarioRunner path with SR=/PATH/TO/SCENARIO_RUNNER
 
-    sr | scenario-runner
+    check:
 
-        Install necessary DReyeVR files to a working compatible ScenarioRunner installation.
-        Requires a ScenarioRunner path, use SR=/PATH/TO/SCENARIO_RUNNER
+        Check a Carla/ScenarioRunner directory for the expected files in Scripts/Paths.
+        Can specify Carla path with CARLA=/PATH/TO/CARLA
+        Can specify ScenarioRunner path with SR=/PATH/TO/SCENARIO_RUNNER
+
+    clean:
+
+        Clean a Carla/ScenarioRunner directory by replacing overwritten files with those in Backups/
+        Also provides the option to hard-clean (use git to reset/clean) if desired.
+        Can specify Carla path with CARLA=/PATH/TO/CARLA
+        Can specify ScenarioRunner path with SR=/PATH/TO/SCENARIO_RUNNER
 
     patch-sranipal:
 
         Apply the patches required for building the SRanipal plugin in UE4. 
         Requires a Carla path, use CARLA=/PATH/TO/CARLA
+
+    rev | r-install:
+
+        Copy files from the Carla/ScenarioRunner directory into DReyeVR. Useful for DReyeVR development.
+        Can specify Carla path with CARLA=/PATH/TO/CARLA
+        Can specify ScenarioRunner path with SR=/PATH/TO/SCENARIO_RUNNER
+
+    test:
+
+        Run the DReyeVR script unit tests
 
     all:
 

@@ -1,0 +1,62 @@
+Build
+Dist
+Doxygen
+Deprecated/PythonClient/dist
+TrafficManager/build
+Util/Build
+Install
+Plugins
+# added by DReyeVR so only Carla plugins are tracked
+!Unreal/CarlaUE4/Plugins/Carla*
+
+# added by DReyeVR so old builds can be ignored
+Build*
+
+# added by DReyeVR so the frame captures are ignored
+Unreal/CarlaUE4/FrameCap
+
+# added by DReyeVR to MacOS builds don't track the .xcworkspace
+Unreal/CarlaUE4/CarlaUE4.xcworkspace
+
+# added by DReyeVR to ignore this auto-generated file
+Unreal/CarlaUE4/Config/OptionalModules.ini
+
+/ExportedMaps
+/Import/*
+!/Import/README.md
+
+*.VC.db
+*.VC.opendb
+*.a
+*.egg-info
+*.kdev4
+*.log
+*.o
+*.pb.cc
+*.pb.h
+*.pid
+*.pri
+*.pro
+*.py[cod]
+*.sln
+*.so
+*.stackdump
+*.sublime-workspace
+*.workspace
+*CodeCompletionFolders.txt
+*CodeLitePreProcessor.txt
+.aria2c.input
+.codelite
+.gdb_history
+.gtest
+.idea
+.tags*
+.vs
+.vscode
+__pycache__
+_benchmarks_results
+_images*
+_out*
+_site
+core
+profiler.csv

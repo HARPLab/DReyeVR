@@ -68,20 +68,26 @@ git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13
 #####################################################
 git clone https://github.com/HARPLab/DReyeVR
 cd DReyeVR
-make all CARLA=../carla SR=../scenario_runner 
-# or equivalently
-make carla CARLA=../carla 
-make sr SR=../scenario_runner 
-make patch-sranipal CARLA=../carla
+# the CARLA= and SR= variables are optional
+make install CARLA=../carla SR=../scenario_runner
+# or
+make install CARLA=../carla
+make install SR=../scenario_runner
+
+make patch-sranipal CARLA=../carla # only applies if you use SRanipal
+
+# run filesystem checks after installing
+make check CARLA=../carla
 cd ..
 
 #####################################################
 ################## build everything #################
 #####################################################
 cd carla
-make launch # launch in editor
-make package # create an optimized package
-make check # run Carla unit tests
+make PythonAPI  # build the PythonAPI (and LibCarla) again
+make launch     # launch in editor
+make package    # create an optimized package
+make check      # run Carla unit tests
 ```
 </details>
 
@@ -239,21 +245,57 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
 ## Installing `DReyeVR`
 (Once you are done with this step, you should have a carla repo that looks just like this [Carla fork](https://github.com/HARPLab/carla/tree/DReyeVR-0.9.13) we created with the installation (and other minor things) pre-applied.)
 
-- Note that `bash` is a requirement, so it would be ideal to use [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) if on Windows.
-- The script requires that `git` is installed and available on your shell.
+- **IMPORTANT** The installation requires that `python` and `git` are available on your shell.
 - You only need to install to a CARLA directory, ScenarioRunner is optional 
 
 ```bash
-# all modules at once
-make all CARLA=../carla SR=../scenario_runner 
+# the CARLA= and SR= variables are optional
+make install CARLA=../carla SR=../scenario_runner
+# or
+make install CARLA=../carla
+make install SR=../scenario_runner
 
-# or equivalently
-make carla CARLA=../carla 
-make sr SR=../scenario_runner 
+# run filesystem checks after installing
+make check CARLA=../carla
 make patch-sranipal CARLA=../carla # only applies if you use SRanipal
 ```
+**NOTE:** to learn more about how the DReyeVR `make` system works, see [`Scripts/README.md`](../Scripts/README.md)
 
-The [install.sh](../Scripts/install.sh) script will first check if each directory matches the expected version (`0.9.13` for Carla and `v0.9.13` for ScenarioRunner) using `git` and then proceed with the installation. 
+## Upgrading `DReyeVR`
+If you currently have an older version of `DReyeVR` installed and want to upgrade to a newer version, the recommended strategy is as follows:
+
+**IMPORTANT:** the `DReyeVR` clean script will overwrite and reset the Carla repository you specify, so make your backups now if you have any unstaged code. (`git reset --hard HEAD` and `git clean -fd` will be invoked, so if you commit your local changes they will be safe)
+
+```bash
+# first go to CARLA and clean it so no old DReyeVR builds linger
+cd /PATH/TO/Carla/
+make clean
+
+# it is a good idea to clean the Content/ directory which is not tracked by Carla's git system
+rm -rf Unreeal/CarlaUE4/Content/
+./Update.sh # re-install the Content fresh from Carla's servers (use .bat on Windows)
+
+# next, go to DReyeVR and get the latest updates
+cd /PATH/TO/DReyeVR/
+git pull origin main # or dev, or whatever branch
+
+
+# next, run the DReyeVR-cleaner to automatically hard-reset the Carla repo
+# accept the prompt to hard-clean CARLA, note that this will reset tracked and remove untracked files
+make clean CARLA=/PATH/TO/CARLA SR=/PATH/TO/SR # both args are optional
+
+# now, you can cleanly install DReyeVR over Carla again
+make install CARLA=/PATH/TO/CARLA SR=/PATH/TO/SR # both args are optional
+
+# its a good idea to check that the Carla repository has all the expected files
+make check CARLA=/PATH/TO/CARLA SR=/PATH/TO/SR # both args are optional
+
+# finally, you can go back to Carla and rebuild
+cd /PATH/TO/Carla
+make PythonAPI
+make launch
+make package
+```
 
 As long as you have no errors in the previous sections, you should be able to just build the `Carla` project with our `DReyeVR` files as follows:
 
@@ -264,13 +306,16 @@ As long as you have no errors in the previous sections, you should be able to ju
     // Edit these variables to enable/disable features of DReyeVR
     bool UseSRanipalPlugin = true;
     bool UseLogitechPlugin = true;
+    ...
     //////////////////////////////////////////////////////////////
     ```
 - Open the project directory in any terminal (Linux) or `Windows x64 Native Tools Command Prompt for VS 2019` (Windows)
 ```bash
-make PythonAPI && make launch # build the UE4 game in editor
+make PythonAPI  # build the PythonAPI & LibCarla
 
-make package # build the optimized UE4 packaged game 
+make launch     # build the UE4 game in editor
+
+make package    # build the optimized UE4 packaged game
 ```
 
 With the package built, run the Carla executable in VR mode with:
