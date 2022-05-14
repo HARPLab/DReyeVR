@@ -13,9 +13,10 @@ make install SR=../scenario_runner
 make install CARLA=../carla SR=../scenario_runner
 ```
 
+Additionally, a backup of all overwritten files is created in `Backups/` which should look like this:
+
 <details>
 
-Additionally, a backup of all overwritten files is created in `Backups/` which should look like this:
 <summary> Show expected file tree for first-time backup</summary>
 
 ```

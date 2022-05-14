@@ -34,4 +34,4 @@ Adding new mappings is simple and code-agnostic, simply add a new entry to the b
 
 Notice that we use the [`DReyeVR.csv`](DReyeVR.csv) file for installing over a `CARLA` directory, and we use a [`ScenarioRunner.csv`](ScenarioRunner.csv) file for installing (different files) over a `ScenarioRunner` directory. 
 
-You will need to edit the appropriate file to match your desired installation type (`make install` vs `make sr`)
+You will need to edit the appropriate file to match your desired installation type (`make install CARLA=...` vs `make install SR=...`)

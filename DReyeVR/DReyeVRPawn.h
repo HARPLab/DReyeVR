@@ -66,7 +66,6 @@ class ADReyeVRPawn : public APawn
     UPROPERTY(Category = Camera, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UCameraComponent *FirstPersonCam;
     void ConstructCamera();
-    void InitSteamVR(); // Initialize the Head Mounted Display
     FPostProcessSettings CreatePostProcessingParams() const;
     float FieldOfView = 90.f; // in degrees
     float ScreenPercentage = 100.f;
@@ -77,8 +76,10 @@ class ADReyeVRPawn : public APawn
     float GrainIntensity = 0.f;
     float MotionBlurIntensity = 0.f;
 
-    ////////////////:SPECTATOR:////////////////
-    void InitSpectator();
+    ////////////////:STEAMVR:////////////////
+    void InitSteamVR();         // Initialize the Head Mounted Display
+    void InitSpectator();       // Initialize the VR spectator
+    void TickSteamVR();         // Ensure SteamVR is active on every tick
     void InitReticleTexture();  // initializes the spectator-reticle texture
     UTexture2D *ReticleTexture; // UE4 texture for eye reticle
     float HUDScaleVR;           // How much to scale the HUD in VR

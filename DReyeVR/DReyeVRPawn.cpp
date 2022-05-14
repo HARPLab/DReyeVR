@@ -64,25 +64,6 @@ void ADReyeVRPawn::ConstructCamera()
     FirstPersonCam->SetupAttachment(RootComponent);
 }
 
-void ADReyeVRPawn::InitSteamVR()
-{
-    bIsHMDConnected = UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled();
-    if (bIsHMDConnected)
-    {
-        FString HMD_Name = UHeadMountedDisplayFunctionLibrary::GetHMDDeviceName().ToString();
-        FString HMD_Version = UHeadMountedDisplayFunctionLibrary::GetVersionString();
-        UE_LOG(LogTemp, Log, TEXT("HMD enabled: %s, version %s"), *HMD_Name, *HMD_Version);
-        // Now we'll begin with setting up the VR Origin logic
-        // this tracking origin is what moves the HMD camera to the right position
-        UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Eye); // Also have Floor & Stage Level
-        InitSpectator();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No head mounted device enabled!"));
-    }
-}
-
 FPostProcessSettings ADReyeVRPawn::CreatePostProcessingParams() const
 {
     // modifying from here: https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/FPostProcessSettings/
@@ -116,19 +97,6 @@ void ADReyeVRPawn::BeginPlay()
 
     World = GetWorld();
     ensure(World != nullptr);
-
-    // Initialize logitech steering wheel
-    InitLogiWheel();
-
-    // detect whether or not a VR HMD is currently enabled
-    if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
-    {
-        UE_LOG(LogTemp, Log, TEXT("HMD detected"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No HMD detected"));
-    }
 }
 
 void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerController *PlayerIn)
@@ -165,75 +133,49 @@ void ADReyeVRPawn::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
+    // Tick SteamVR
+    TickSteamVR();
+
     // Tick the logitech wheel
     TickLogiWheel();
+}
 
+/// ========================================== ///
+/// ----------------:STEAMVR:----------------- ///
+/// ========================================== ///
+
+void ADReyeVRPawn::InitSteamVR()
+{
+    bIsHMDConnected = UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled();
+    if (bIsHMDConnected)
+    {
+        FString HMD_Name = UHeadMountedDisplayFunctionLibrary::GetHMDDeviceName().ToString();
+        FString HMD_Version = UHeadMountedDisplayFunctionLibrary::GetVersionString();
+        UE_LOG(LogTemp, Log, TEXT("HMD enabled: %s, version %s"), *HMD_Name, *HMD_Version);
+        // Now we'll begin with setting up the VR Origin logic
+        // this tracking origin is what moves the HMD camera to the right position
+        UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Eye); // Also have Floor & Stage Level
+        InitSpectator();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No head mounted device enabled!"));
+    }
+}
+
+void ADReyeVRPawn::TickSteamVR()
+{
+    /// NOTE: this exists because UE4's package mode has a slight warm-up time for the SteamVR
+    // plugin so it is not available to run UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled
+    // on BeginPlay. UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayConnected() is a weaker
+    // function that determines if a VR headset is connected at all (not connected + enabled) so we use
+    // that here to try to enable the SteamVR plugin on every tick UNTIL it is enabled (bIsHMDConnected == true)
     if (!bIsHMDConnected && UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayConnected())
     {
         // try reinitializing steamvr if the headset is connected but not active
         InitSteamVR();
     }
 }
-
-/// ========================================== ///
-/// ----------------:FLATHUD:----------------- ///
-/// ========================================== ///
-
-void ADReyeVRPawn::InitFlatHUD(APlayerController *P)
-{
-    check(P);
-    AHUD *Raw_HUD = P->GetHUD();
-    FlatHUD = Cast<ADReyeVRHUD>(Raw_HUD);
-    if (FlatHUD)
-        FlatHUD->SetPlayer(P);
-    else
-        UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
-    // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
-    if (bIsHMDConnected)
-    {
-        bDrawFlatHud = false;
-    }
-}
-
-void ADReyeVRPawn::DrawFlatHUD(float DeltaSeconds, const FVector &GazeOrigin, const FVector &GazeDir)
-{
-    if (FlatHUD == nullptr || Player == nullptr || bDrawFlatHud == false || bIsHMDConnected == true)
-        return;
-
-    const FVector &WorldPos = GetCamera()->GetComponentLocation();
-    const FRotator &WorldRot = GetCamera()->GetComponentRotation();
-    const float RayLengthScale = 10.f * 100.f; // 10m ray length
-    const FVector TargetStart = WorldPos + WorldRot.RotateVector(GazeOrigin);
-    const FVector TargetEnd = TargetStart + RayLengthScale * WorldRot.RotateVector(GazeDir);
-
-    // calculate View size (of open window). Note this is not the same as resolution
-    FIntPoint ViewSize;
-    Player->GetViewportSize(ViewSize.X, ViewSize.Y);
-    // Get eye tracker variables
-
-    // Draw elements of the HUD
-    if (bDrawFlatReticle) // Draw reticle on flat-screen HUD
-    {
-        const float Diameter = ReticleSize;
-        const float Thickness = (ReticleSize / 2.f) / 10.f; // 10 % of radius
-        // FlatHUD->DrawDynamicSquare(GazeEnd, Diameter, FColor(255, 0, 0, 255), Thickness);
-        FlatHUD->DrawDynamicCrosshair(TargetEnd, Diameter, FColor(255, 0, 0, 255), true, Thickness);
-    }
-    if (bDrawFPSCounter)
-    {
-        FlatHUD->DrawDynamicText(FString::FromInt(int(1.f / DeltaSeconds)), FVector2D(ViewSize.X - 100, 50),
-                                 FColor(0, 255, 0, 213), 2);
-    }
-    if (bDrawGaze)
-    {
-        // Draw line components in FlatHUD
-        FlatHUD->DrawDynamicLine(TargetStart, TargetEnd, FColor::Red, 3.0f);
-    }
-}
-
-/// ========================================== ///
-/// ---------------:SPECTATOR:---------------- ///
-/// ========================================== ///
 
 void ADReyeVRPawn::InitReticleTexture()
 {
@@ -315,6 +257,62 @@ void ADReyeVRPawn::DrawSpectatorScreen(const FVector &GazeOrigin, const FVector 
 }
 
 /// ========================================== ///
+/// ----------------:FLATHUD:----------------- ///
+/// ========================================== ///
+
+void ADReyeVRPawn::InitFlatHUD(APlayerController *P)
+{
+    check(P);
+    AHUD *Raw_HUD = P->GetHUD();
+    FlatHUD = Cast<ADReyeVRHUD>(Raw_HUD);
+    if (FlatHUD)
+        FlatHUD->SetPlayer(P);
+    else
+        UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
+    // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
+    if (bIsHMDConnected)
+    {
+        bDrawFlatHud = false;
+    }
+}
+
+void ADReyeVRPawn::DrawFlatHUD(float DeltaSeconds, const FVector &GazeOrigin, const FVector &GazeDir)
+{
+    if (FlatHUD == nullptr || Player == nullptr || bDrawFlatHud == false || bIsHMDConnected == true)
+        return;
+
+    const FVector &WorldPos = GetCamera()->GetComponentLocation();
+    const FRotator &WorldRot = GetCamera()->GetComponentRotation();
+    const float RayLengthScale = 10.f * 100.f; // 10m ray length
+    const FVector TargetStart = WorldPos + WorldRot.RotateVector(GazeOrigin);
+    const FVector TargetEnd = TargetStart + RayLengthScale * WorldRot.RotateVector(GazeDir);
+
+    // calculate View size (of open window). Note this is not the same as resolution
+    FIntPoint ViewSize;
+    Player->GetViewportSize(ViewSize.X, ViewSize.Y);
+    // Get eye tracker variables
+
+    // Draw elements of the HUD
+    if (bDrawFlatReticle) // Draw reticle on flat-screen HUD
+    {
+        const float Diameter = ReticleSize;
+        const float Thickness = (ReticleSize / 2.f) / 10.f; // 10 % of radius
+        // FlatHUD->DrawDynamicSquare(GazeEnd, Diameter, FColor(255, 0, 0, 255), Thickness);
+        FlatHUD->DrawDynamicCrosshair(TargetEnd, Diameter, FColor(255, 0, 0, 255), true, Thickness);
+    }
+    if (bDrawFPSCounter)
+    {
+        FlatHUD->DrawDynamicText(FString::FromInt(int(1.f / DeltaSeconds)), FVector2D(ViewSize.X - 100, 50),
+                                 FColor(0, 255, 0, 213), 2);
+    }
+    if (bDrawGaze)
+    {
+        // Draw line components in FlatHUD
+        FlatHUD->DrawDynamicLine(TargetStart, TargetEnd, FColor::Red, 3.0f);
+    }
+}
+
+/// ========================================== ///
 /// ---------------:LOGITECH:----------------- ///
 /// ========================================== ///
 
@@ -341,12 +339,13 @@ void ADReyeVRPawn::InitLogiWheel()
     else
     {
         const FString LogiError = "Could not find Logitech device connected on input 0";
-        const bool PrintToLog = false;
+        const bool PrintToLog = false; // kinda annoying when flooding the logs with warning messages
         const bool PrintToScreen = true;
         const float ScreenDurationSec = 20.f;
         const FLinearColor MsgColour = FLinearColor(1, 0, 0, 1); // RED
         UKismetSystemLibrary::PrintString(World, LogiError, PrintToScreen, PrintToLog, MsgColour, ScreenDurationSec);
-        UE_LOG(LogTemp, Error, TEXT("%s"), *LogiError); // Error is RED
+        if (PrintToLog)
+            UE_LOG(LogTemp, Warning, TEXT("%s"), *LogiError); // Error is RED
     }
 #endif
 }
@@ -372,6 +371,11 @@ void ADReyeVRPawn::TickLogiWheel()
 {
     if (EgoVehicle == nullptr)
         return;
+    // first try to initialize the Logi hardware if not currently active
+    if (!bIsLogiConnected)
+    {
+        InitLogiWheel();
+    }
 #if USE_LOGITECH_PLUGIN
     bIsLogiConnected = LogiIsConnected(WheelDeviceIdx); // get status of connected device
     if (bIsLogiConnected && bOverrideInputsWithKbd == false)

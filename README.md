@@ -6,7 +6,7 @@
 [Submission Video Demonstration (YouTube)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
 <!-- Welcome to the DReyeVR wiki! -->
 
-This project extends the [`Carla 0.9.13`](https://carla.org/2020/12/22/release-0.9.13/) [[GitHub](https://github.com/carla-simulator/carla/tree/0.9.13)] build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
+This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
 <!-- we should add a video/gif here (youtube/gdrive?) -->
 
 ## Highlights
@@ -93,9 +93,11 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - Also, although MacOS is not officially supported by CARLA, we have development happening on an Apple Silicon machine and have active forks of CARLA + UE4.26 with MacOS 12+ support. Note that this is primarily for development, as it is the most limited system by far. 
 
 ## Documentation & Guides
+- See [`Docs/FAQ.md`](Docs/FAQ.md) to check out our Frequently-Asked-Questions page.
 - See [`Docs/Usage.md`](Docs/Usage.md) to learn how to use several key DReyeVR features
 - See [`Docs/SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla
-- See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
+- See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own 
+- See [`Docs/CustomActor.md`](Docs/CustomActor.md) to use our CustomActor API and spawn "floating" actors
 - See [`Docs/Model.md`](Docs/Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/Signs.md`](Docs/Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
 - See [`Docs/LODs.md`](Docs/LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
@@ -115,7 +117,7 @@ If you use our work, please cite the corresponding [paper](https://arxiv.org/abs
 
 ## Acknowledgements
 
-- This project builds upon and extends the [CARLA 0.9.13 simulator](https://carla.org/)
+- This project builds upon and extends the [CARLA simulator](https://carla.org/)
 - This repo includes some code from CARLA: Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB) & Intel Corporation.
 - This repo includes some code from Hewlett-Packard Development Company, LP. See [nvidia.ph](Tools/Diagnostics/collectl/nvidia.ph). This is a modified diagnostic tool used during development. 
 

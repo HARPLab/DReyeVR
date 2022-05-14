@@ -1,6 +1,5 @@
 import argparse
 import csv
-import distutils.dir_util
 import glob
 import os
 import shutil
@@ -149,6 +148,9 @@ def copy_file(src: str, dest: str, verbose: Optional[bool] = False) -> None:
 
 
 def copy_dir(src: str, dest: str, verbose: Optional[bool] = True) -> None:
+    raise NotImplementedError("Not using copy_dir, instead copying files recursively")
+    import distutils.dir_util
+
     print_cp(src, dest)
     # shutil.copytree(src, dest) # raises exception if dest exists!
     if os.path.exists(dest):

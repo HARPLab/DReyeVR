@@ -3,20 +3,25 @@
 ## What?
 We are often interested in spawning arbitrary "AR-like" (Augmented reality) elements in the simulator at runtime that can be completely recorded and reenacted without hassle. 
 
-## Why?
-1. Having each "CustomActor" be its own entity (not necessarily tied to the EgoVehicle/EgoSensor) allows it to be recorded with the CARLA recorder easily and without modifying the core DReyeVR data. This is important when we want to change the API of the recorder (which happens quite often) but don't want to lose data from previous experiments that have data recordings (in binary format) that we can't modify easily. 
-2. Abstracting the "CustomActor"s gives us plenty of flexibility for manipulating the actors in the simulator at runtime and allows for new interesting scenarios to be performed easily.
-
-## Example: 3D Bounding Boxes
-- With a translucent (Opacity < 1) material we can simply create a rescaled Cube actor and overlay it over any extent as a simple BBOX indicator.
+### Example: 3D Bounding Boxes
+- With a translucent (Opacity < 1) material we can simply create an elongated Cube actor and overlay it over any extent as a simple BBOX indicator.
     - We can have the actor track the extent, so it can follow a vehicle/pedestrian/anything and not interfere with physics at all (physics simulation is disabled).
+    - Psst! this is actually already mostly implemented (but disabled) in the code, check out the [example at the bottom](CustomActor.md#bounding-box-example)
 
-## Example: Gaze lines
+### Example: Gaze lines
 - If you want to draw the eye gaze rays in realtime (without using `DrawDebugLine`, which is editor-only), you can simply use an elongated cube as a "ray" from the user gaze origin to the world-space gaze target.
+
+### Example: Debug trails
+- Similar to the debug path in Carla, spawning a trail of dynamic spheres can be useful to draw AR-like guidelines in the world and help direct drivers through the map.
+
+## Why?
+1. Having each "CustomActor" be its own entity (not necessarily tied to the EgoVehicle/EgoSensor) allows it to be recorded with the CARLA recorder easily and without modifying the core DReyeVR data. This is important when we want to change the API of the recorder (which happens quite often) but don't want to lose data from previous experiments that have data recordings (in binary format) that we can't modify easily.
+2. Abstracting the "CustomActor"s gives us plenty of flexibility for manipulating the actors in the simulator at runtime and allows for new interesting scenarios to be performed easily without worry of recording/replay.
+
 
 # Usage
 
-Using these CustomActors is designed to be straightforward and cooperate with UE4/Carla's notion of Actors. You can see how we define all the core data for these actors (and what gets recorded/replayed) in [`DReyeVRData.h`](../Carla/Sensor/DReyeVRData.h)`::CustomActorData`
+Using these CustomActors is designed to be straightforward and cooperate with UE4/Carla's notion of [AActors](https://docs.unrealengine.com/5.0/en-US/API/Runtime/Engine/GameFramework/AActor/). You can see how we define all the core data for these actors (and what gets recorded/replayed) in [`DReyeVRData.h`](../Carla/Sensor/DReyeVRData.h)`::CustomActorData`
 
 We have several basic 3D shapes ready for simple CustomActor usage. Theoretically you can use any static mesh. To access these types (or add your own) you should check out the references in [`DReyeVRCustomActor.h`](../Carla/Actor/DReyeVRCustomActor.h):
 ```c++
@@ -91,4 +96,10 @@ Note that in order to use the `Opacity` property, the material needs to have a t
 | --- | --- |
 | ![OpaqueMaterial](Figures/Actor/OpaqueParamMaterial.jpg) | ![OpaqueMaterial](Figures/Actor/TranslucentParamMaterial.jpg) |
 
+## Bounding Box Example
+
 As an example of the CustomActor bounding boxes in action, checkout [`LevelScript.cpp::DrawBBoxes`](../DReyeVR/LevelScript.cpp) where some simple logic for drawing translucent bounding boxes is held (coloured based on distance to EgoVehicle). To enable this function, you'll need to manually enable it by removing the `#if 0` and corresponding `#endif` around the function body.
+
+Here is what it might look like in action:
+
+![BboxExample](Figures/Actor/Bbox.jpg)

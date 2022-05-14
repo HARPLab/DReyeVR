@@ -346,6 +346,21 @@ cd $CARLA_ROOT/PythonAPI/examples # go to carla PythonAPI
 ./DReyeVR_AI.py -n 0 # spawn no other vehicles, enable autopilot on EgoVehicle
 ```
 
+Internally, the AI system is using the Carla vehicle autopilot system, so this can be enabled in your custom PythonAPI scripts without the use of `DReyeVR_AI.py` by performing:
+```python
+from DReyeVR_utils import find_ego_vehicle
+...
+
+world = client.get_world()
+traffic_manager = client.get_trafficmanager(args.tm_port)
+...
+
+DReyeVR_vehicle = find_ego_vehicle(world)
+if DReyeVR_vehicle is not None:
+    DReyeVR_vehicle.set_autopilot(True, traffic_manager.get_port())
+    print("Successfully set autopilot on ego vehicle")
+```
+
 Currently we only support manual handoff by pressing `3` on the keyboard. This gives input priority to the Carla [WheeledVehicleAIController](https://github.com/carla-simulator/carla/blob/0.9.13/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/WheeledVehicleAIController.cpp) which will follow some route defined by Carla's TrafficManager.
 
 In order to re-possess the vehicle (handoff control back to the player), simply press `1`. Keyboard inputs are automatically higher priority than the autopilot.
@@ -353,6 +368,12 @@ In order to re-possess the vehicle (handoff control back to the player), simply 
 [OPTIONAL]Using this same approach, there is a third option where you can press `2` to possess a "spectator" that can no-clip and fly around the map using `WASDEQ+mouse` controls. 
 
 You can press any of the control options: `1`(human driver), `2`(spectator), `3`(AI driver) at any time.
+Summary: 
+
+| Press `1` | Press `2` | Press `3` |
+| --- | --- | --- |
+| Human driving | Spectator mode | AI driving |
+
 
 # Using our custom config file
 Throughout development, we found that modifying even small things in DReyeVR have a LONG cycle time for recompilation/re-linking/re-cooking/etc. so we wanted an approach that could greatly ease this burden while still providing flexibility.

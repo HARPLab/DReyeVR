@@ -3,8 +3,7 @@ Configs/CarlaUE4.Build.cs,Unreal/CarlaUE4/Source/CarlaUE4
 Configs/Default*.ini,Unreal/CarlaUE4/Config/
 Configs/DReyeVRConfig.ini,Unreal/CarlaUE4/Config/
 Configs/CarlaUE4.uproject,Unreal/CarlaUE4/
-Blueprints/Vehicles,Unreal/CarlaUE4/Content/Carla/Blueprints/
-Blueprints/Game,Unreal/CarlaUE4/Content/Carla/Blueprints/
+Blueprints/*,Unreal/CarlaUE4/Content/Carla/Blueprints/
 Content/DReyeVR_Signs/*,Unreal/CarlaUE4/Content/DReyeVR/DReyeVR_Signs/
 Content/Custom/*,Unreal/CarlaUE4/Content/DReyeVR/Custom/
 Content/Default.Package.json,Unreal/CarlaUE4/Content/Carla/Config/
@@ -14,14 +13,7 @@ LibCarla/Sensor/s11n/*,LibCarla/source/carla/sensor/s11n/
 LibCarla/SensorRegistry.h,LibCarla/source/carla/sensor/
 LibCarla/SensorData.cpp,PythonAPI/carla/source/libcarla/
 PythonAPI/*,PythonAPI/examples/
-Carla/Vehicle/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/
-Carla/Sensor/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/
-Carla/Game/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Game/
-Carla/Settings/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Settings/
-Carla/Traffic/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Traffic/
-Carla/Actor/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Actor/
-Carla/Recorder/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Recorder/
-Carla/Weather/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Weather/
+Carla/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/
 Tools/BuildTools/*.sh,Util/BuildTools/
 Tools/BuildTools/test_streaming.cpp,LibCarla/source/test/common/
 Scripts/Other/.gitignore,/
