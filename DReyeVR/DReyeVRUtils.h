@@ -118,6 +118,21 @@ static void ReadConfigValue(const FString &Section, const FString &Variable, FVe
     else
         UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
 }
+static void ReadConfigValue(const FString &Section, const FString &Variable, FVector2D &Value)
+{
+    EnsureConfigsUpdated();
+    std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) != Params.end())
+    {
+        if (Value.InitFromString(Params[VariableName]) == false)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Unable to construct FVector2D for %s from %s"), *FString(VariableName.c_str()),
+                   *(Params[VariableName]));
+        }
+    }
+    else
+        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
+}
 static void ReadConfigValue(const FString &Section, const FString &Variable, FRotator &Value)
 {
     EnsureConfigsUpdated();
@@ -241,6 +256,26 @@ static void GenerateCrosshairImage(TArray<FColor> &Src, const float Size, const 
             Src.Add(PixelColour);
         }
     }
+}
+
+static FVector2D ProjectGazeToScreen(const APlayerController *Player, const UCameraComponent *Camera,
+                                     const FVector &InOrigin, const FVector &InDir, bool bPlayerViewportRelative = true)
+{
+    if (Player == nullptr)
+        return FVector2D::ZeroVector;
+
+    // compute the 3D world point of the InOrigin + InDir
+    const FVector &WorldPos = Camera->GetComponentLocation();
+    const FRotator &WorldRot = Camera->GetComponentRotation();
+    const FVector Origin = WorldPos + WorldRot.RotateVector(InOrigin);
+    const FVector GazeDir = 100.f * WorldRot.RotateVector(InDir);
+    const FVector WorldPoint = Origin + GazeDir;
+
+    FVector2D ProjectedCoords;
+    // first project the 3D point to 2D using the player's viewport
+    UGameplayStatics::ProjectWorldToScreen(Player, WorldPoint, ProjectedCoords, bPlayerViewportRelative);
+
+    return ProjectedCoords;
 }
 
 static float CmPerSecondToXPerHour(const bool MilesPerHour)

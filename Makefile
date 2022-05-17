@@ -3,23 +3,26 @@ default: help
 help:
 	@less Scripts/DReyeVR.mk.help
 
-carla: install
+DReyeVR: install
 
 install:
-	@Scripts/install.sh --carla ${CARLA}
+	python Scripts/install.py --carla ${CARLA} --scenario-runner ${SR}
 
-# clean: # TODO: clean? (git reset --hard? git clean -fd?)
-# 	@Scripts/clean.sh
+clean:
+	python Scripts/clean.py --carla ${CARLA} --scenario-runner ${SR} --verbose
 
-# check: # TODO: make DReyeVR unit tests!
-# 	@Scripts/check.sh
+test:
+	python Scripts/tests.py
 
-sr: scenario-runner
-
-scenario-runner:
-	@Scripts/install.sh --scenario-runner ${SR}
+check: # TODO: make better DReyeVR unit tests!
+	python Scripts/check_install.py --carla ${CARLA} --scenario-runner ${SR} --verbose
 
 patch-sranipal:
-	@Scripts/patch_sranipal.sh ${CARLA}
+	python Scripts/patch_sranipal.py --carla ${CARLA}
 
-all: carla scenario-runner patch-sranipal
+rev: r-install
+
+r-install:
+	python Scripts/r-install.py --carla ${CARLA} --scenario-runner ${SR}
+
+all: install patch-sranipal check

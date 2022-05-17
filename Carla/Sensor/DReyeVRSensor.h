@@ -4,9 +4,10 @@
 #include "Carla/Actor/ActorDescription.h" // FActorDescription
 #include "Carla/Game/CarlaEpisode.h"      // UCarlaEpisode
 #include "Carla/Sensor/Sensor.h"          // ASensor
-#include "DReyeVRData.h"                  // AggregateData struct
+#include "DReyeVRData.h"                  // AggregateData, CustomActorData
 #include <cstdint>                        // int64_t
 #include <string>
+#include <vector>
 
 #include "DReyeVRSensor.generated.h"
 
@@ -44,19 +45,21 @@ class CARLA_API ADReyeVRSensor : public ASensor
     }
 
     bool IsReplaying() const;
-    void UpdateWithReplayData(const class DReyeVR::AggregateData &RecorderData, const double Per); // starts replaying
+    virtual void UpdateData(const class DReyeVR::AggregateData &RecorderData, const double Per); // starts replaying
+    virtual void UpdateData(const class DReyeVR::CustomActorData &RecorderData, const double Per);
     void StopReplaying();
     virtual void TakeScreenshot()
     {
+        /// TODO: make this a pure virtual function (abstract class)
         UE_LOG(LogTemp, Warning, TEXT("Not implemented! Implement in EgoSensor!"));
     };
 
-    static class ADReyeVRSensor *GetDReyeVRSensor();
+    static class ADReyeVRSensor *GetDReyeVRSensor(class UWorld *World = nullptr);
+    static bool bIsReplaying;
 
   protected:
     void BeginPlay() override;
     void BeginDestroy() override;
-    bool bIsReplaying = false; // initially not replaying
 
     class UWorld *World;
     static class UWorld *sWorld; // to get info about the world: time, frames, etc.

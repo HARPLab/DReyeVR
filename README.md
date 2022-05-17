@@ -6,18 +6,20 @@
 [Submission Video Demonstration (YouTube)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
 <!-- Welcome to the DReyeVR wiki! -->
 
-This project extends the [`Carla 0.9.13`](https://carla.org/2020/12/22/release-0.9.13/) [[GitHub](https://github.com/carla-simulator/carla/tree/0.9.13)] build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
+This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
 <!-- we should add a video/gif here (youtube/gdrive?) -->
+
+If you have questions, hopefully our [F.A.Q. wiki page](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) can answer some of them.
 
 ## Highlights
 ### Ego Vehicle
 Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](https://github.com/ValveSoftware/steamvr_unreal_plugin/tree/4.23) (see [EgoVehicle.h](DReyeVR/EgoVehicle.h))
 - SteamVR HMD head tracking (orientation & position)
   - We have tested with the following devices:
-    | Device | VR Supported | Eye tracking |
-    | --- | --- | --- |
-    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | YES | YES ([SRanipal](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/) 1.3.1.1) | 
-    | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | YES | NO |
+    | Device | VR Supported | Eye tracking | OS |
+    | --- | --- | --- | --- |
+    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | :heavy_check_mark: | :heavy_check_mark: ([SRanipal](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/) >=1.3.1.1) | Windows, Linux |
+    | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | :heavy_check_mark: | :x: | Windows |
 - Vehicle controls 
   - Generic keyboard WASD + mouse
   - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) 
@@ -44,7 +46,7 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
 ### Ego Sensor
 Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - **Eye tracking** support through [SRanipal Vive eye tracking](https://developer.vive.com/resources/vive-sense/sdk/vive-eye-and-facial-tracking-sdk/)
-  - Note this requires use of the [HTC Vive Pro Eye](https://enterprise.vive.com/us/product/vive-pro-eye-office/) VR headset
+  - Note this requires use of thea [HTC Vive Pro Eye](https://enterprise.vive.com/us/product/vive-pro-eye-office/) VR headset
   - Eye tracker data includes:
     - Timing information (based off headset, world, and eye-tracker)
     - 3D Eye gaze ray (left, right, & combined)
@@ -66,10 +68,14 @@ Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - World ambient audio
   - Birdsong, wind, smoke, etc. (See [Docs/Sounds.md](Docs/Sounds.md))
 - Non-ego-centric audio (Engine revving from non-ego vehicles)
-- Synchronized Replay with per-frame frame capture for post-hoc analysis 
+- Synchronized Replay with per-frame frame capture for post-hoc analysis (See [Docs/Usage.md](Docs/Usage.md))
 - Recorder/replayer media functions
   - Added in-game keyboard commands Play/Pause/Forward/Backward/etc.
 - Static in-environment directional signs for natural navigation (See [`Docs/Signs.md`](Docs/Signs.md))
+- Adding weather to the Carla recorder/replayer/query (See this [Carla PR](https://github.com/carla-simulator/carla/pull/5235))
+- Custom dynamic 3D actors with full recording support (eg. HUD indicators for direction, AR bounding boxes, visual targets, etc.). See [CustomActor.md](Docs/CustomActor.md) for more.
+- Empty room for "blank slate" eye tracking experiments without cognitive overhead of driving
+- (DEBUG ONLY) Foveated rendering for improved performance with gaze-aware (or fixed) variable rate shading
 
 ## Install
 See [`Docs/Install.md`](Docs/Install.md) to either:
@@ -77,19 +83,23 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - Use our [Carla fork](https://github.com/HARPLab/carla/tree/DReyeVR-0.9.13) with `DReyeVR` pre-installed.
 
 ## OS compatibility
-| OS | VR | Eye tracking | Audio | Keyboard+Mouse | Racing wheel |
-| --- | --- | --- | --- | --- | --- |
-| Windows | Y | Y | Y | Y | Y |
-| Linux | Y | N | Y | Y | N |
+| OS | VR | Eye tracking | Audio | Keyboard+Mouse | Racing wheel | Foveated Rendering (WIP) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Windows | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Linux | :heavy_check_mark: | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
+| MacOS | :x: | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
 - While Windows (10) is recommended for optimized VR support, all our work translates to Linux systems except for the eye tracking and hardware integration which have Windows-only dependencies.
   - Unfortunately the eye-tracking firmware is proprietary & does not work on Linux
     - This is (currently) only supported on Windows because of some proprietary dependencies between [HTC SRanipal SDK](https://developer.vive.com/resources/knowledgebase/vive-sranipal-sdk/) and Tobii's SDK. Those interested in the Linux discussion for HTC's Vive Pro Eye Tracking can follow the subject [here (Vive)](https://forum.vive.com/topic/6994-eye-tracking-in-linux/), [here (Vive)](https://forum.vive.com/topic/7012-vive-pro-eye-on-ubuntu-16-or-18/), and [here (Tobii)](https://developer.tobii.com/community/forums/topic/vive-pro-eye-with-stream-engine/).
   - Additionally, the [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) we use only has Windows support currently. Though it should be possible to use the G923 on Linux as per the [Arch Wiki](https://wiki.archlinux.org/title/Logitech_Racing_Wheel).
+- Also, although MacOS is not officially supported by CARLA, we have development happening on an Apple Silicon machine and have active forks of CARLA + UE4.26 with MacOS 12+ support. Note that this is primarily for development, as it is the most limited system by far. 
 
 ## Documentation & Guides
+- See [`F.A.Q. wiki`](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) for our Frequently Asked Questions wiki page.
 - See [`Docs/Usage.md`](Docs/Usage.md) to learn how to use several key DReyeVR features
 - See [`Docs/SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla
-- See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
+- See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own 
+- See [`Docs/CustomActor.md`](Docs/CustomActor.md) to use our CustomActor API and spawn "floating" actors
 - See [`Docs/Model.md`](Docs/Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/Signs.md`](Docs/Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
 - See [`Docs/LODs.md`](Docs/LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
@@ -108,7 +118,7 @@ If you use our work, please cite the corresponding [paper](https://arxiv.org/abs
 
 ## Acknowledgements
 
-- This project builds upon and extends the [CARLA 0.9.13 simulator](https://carla.org/)
+- This project builds upon and extends the [CARLA simulator](https://carla.org/)
 - This repo includes some code from CARLA: Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB) & Intel Corporation.
 - This repo includes some code from Hewlett-Packard Development Company, LP. See [nvidia.ph](Tools/Diagnostics/collectl/nvidia.ph). This is a modified diagnostic tool used during development. 
 

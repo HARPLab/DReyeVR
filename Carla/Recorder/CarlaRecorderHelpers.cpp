@@ -56,6 +56,15 @@ void WriteFVector2D(std::ofstream &OutFile, const FVector2D &InObj)
   WriteValue<float>(OutFile, InObj.Y);
 }
 
+// write binary data to FLinearColor
+void WriteFLinearColor(std::ofstream &InFile, const FLinearColor &InObj)
+{
+  WriteValue<float>(InFile, InObj.A);
+  WriteValue<float>(InFile, InObj.B);
+  WriteValue<float>(InFile, InObj.G);
+  WriteValue<float>(InFile, InObj.R);
+}
+
 // write binary data from FTransform
 // void WriteFTransform(std::ofstream &OutFile, const FTransform &InObj){
 // WriteFVector(OutFile, InObj.GetTranslation());
@@ -98,6 +107,15 @@ void ReadFVector2D(std::ifstream &InFile, FVector2D &OutObj)
 {
   ReadValue<float>(InFile, OutObj.X);
   ReadValue<float>(InFile, OutObj.Y);
+}
+
+// read binary data to FLinearColor
+void ReadFLinearColor(std::ifstream &InFile, FLinearColor &OutObj)
+{
+  ReadValue<float>(InFile, OutObj.A);
+  ReadValue<float>(InFile, OutObj.B);
+  ReadValue<float>(InFile, OutObj.G);
+  ReadValue<float>(InFile, OutObj.R);
 }
 
 // read binary data to FTransform

@@ -9,7 +9,8 @@
 #include "Carla/Game/CarlaEpisode.h"
 
 // DReyeVR include
-#include "Carla/Sensor/DReyeVRSensor.h" // ADReyeVRSensor
+#include "Carla/Actor/DReyeVRCustomActor.h" // ADReyeVRCustomActor::ActiveCustomActors
+#include "Carla/Sensor/DReyeVRSensor.h"     // ADReyeVRSensor
 
 #include <ctime>
 #include <sstream>
@@ -395,10 +396,23 @@ void CarlaReplayer::ProcessToTime(double Time, bool IsFirstTime)
           SkipPacket();
         break;
 
+      // weather state
+      case static_cast<char>(CarlaRecorderPacketId::Weather):
+        ProcessWeather();
+        break;
+
       // DReyeVR eye logging data
       case static_cast<char>(CarlaRecorderPacketId::DReyeVR):
         if (bFrameFound)
-          ProcessDReyeVRData();
+          ProcessDReyeVRData<DReyeVRDataRecorder<DReyeVR::AggregateData>>(Per, Time, true);
+        else
+          SkipPacket();
+        break;
+
+      // DReyeVR eye logging data
+      case static_cast<char>(CarlaRecorderPacketId::DReyeVRCustomActor):
+        if (bFrameFound)
+          ProcessDReyeVRData<DReyeVRDataRecorder<DReyeVR::CustomActorData>>(Per, Time, false);
         else
           SkipPacket();
         break;
@@ -423,9 +437,6 @@ void CarlaReplayer::ProcessToTime(double Time, bool IsFirstTime)
   {
     UpdatePositions(Per, Time);
   }
-
-  // Update the DReyeVR sensor after all moves have been made
-  UpdateDReyeVRSensor(Per, Time);
 
   // save current time
   CurrentTime = NewTime;
@@ -622,18 +633,60 @@ void CarlaReplayer::ProcessLightScene(void)
   }
 }
 
-void CarlaReplayer::ProcessDReyeVRData()
+void CarlaReplayer::ProcessWeather(void)
+{
+  uint16_t Total;
+  CarlaRecorderWeather Weather;
+
+  // read Total light events
+  ReadValue<uint16_t>(File, Total);
+  for (uint16_t i = 0; i < Total; ++i)
+  {
+    Weather.Read(File);
+    Helper.ProcessReplayerWeather(Weather);
+  }
+}
+
+template <typename T> void CarlaReplayer::ProcessDReyeVRData(double Per, double DeltaTime, bool bShouldBeOnlyOne)
 {
   uint16_t Total;
   // custom DReyeVR packets
 
-  // read Total DReyeVRevents
-  ReadValue<uint16_t>(File, Total);
-  // UE_LOG(LogCarla, Log, TEXT("Reading from file, total size of: %d"), Total);
-  check(Total == 1); // there should only ever be one recorded DReyeVR sensor
+  // read Total DReyeVR events
+  ReadValue<uint16_t>(File, Total); // read number of events
+
+  Visited.clear();
   for (uint16_t i = 0; i < Total; ++i)
   {
+    T DReyeVRDataInstance;
     DReyeVRDataInstance.Read(File);
+    Helper.ProcessReplayerDReyeVRData<T>(DReyeVRDataInstance, Per);
+    if (!bShouldBeOnlyOne)
+    {
+      auto Name = DReyeVRDataInstance.GetUniqueName();
+      Visited.insert(Name);
+    }
+  }
+  if (bShouldBeOnlyOne)
+  {
+    check(Total == 1);
+  }
+  else
+  {
+    for (auto It = ADReyeVRCustomActor::ActiveCustomActors.begin(); It != ADReyeVRCustomActor::ActiveCustomActors.end();){
+      const std::string &ActiveActorName = It->first;
+      if (Visited.find(ActiveActorName) == Visited.end()) // currently alive actor who was not visited... time to disable
+      {
+        // now this has to be garbage collected
+        auto Next = std::next(It, 1); // iterator following the last removed element
+        It->second->Deactivate();
+        It = Next;
+      }
+      else
+      {
+        ++It; // increment iterator if not erased
+      }
+    }
   }
 }
 
@@ -668,12 +721,6 @@ void CarlaReplayer::ProcessPositions(bool IsFirstTime)
   {
     PrevPos.clear();
   }
-}
-
-void CarlaReplayer::UpdateDReyeVRSensor(double Per, double DeltaTime)
-{
-  // apply these operations to the sensor
-  Helper.ProcessReplayerDReyeVRData(DReyeVRDataInstance, Per);
 }
 
 void CarlaReplayer::UpdatePositions(double Per, double DeltaTime)
@@ -768,10 +815,6 @@ void CarlaReplayer::ProcessFrameByFrame()
   {
     GetFrameStartTimes();
     ensure(FrameStartTimes.size() > 0);
-    for (auto &i : FrameStartTimes)
-    {
-      UE_LOG(LogTemp, Log, TEXT("%.3f"), i);
-    }
   }
 
   // process to those times
@@ -780,7 +823,7 @@ void CarlaReplayer::ProcessFrameByFrame()
   if (SyncCurrentFrameId > 0)
     LastTime = FrameStartTimes[SyncCurrentFrameId - 1];
   ProcessToTime(FrameStartTimes[SyncCurrentFrameId] - LastTime, (SyncCurrentFrameId == 0));
-  if (ADReyeVRSensor::GetDReyeVRSensor())
+  if (ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld()))
     // have the vehicle camera take a screenshot to record the replay
     ADReyeVRSensor::GetDReyeVRSensor()->TakeScreenshot();
   else

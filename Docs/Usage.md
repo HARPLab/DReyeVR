@@ -116,53 +116,75 @@ Then, in your script, you can follow the technique we used in `schematic_mode.py
 Now you can proceed to use `self.sensor.ego_sensor` as a standard [`carla.libcarla.Sensor`](https://github.com/carla-simulator/carla/blob/master/Docs/python_api.md#carlasensor) object and `self.hero_actor` as a standard [`carla.libcarla.Vehicle`](https://github.com/carla-simulator/carla/blob/master/Docs/python_api.md#carlavehicle) object. 
 
 # Adding custom data to the ego-sensor
-- The first file you'll want to look at is interested in is `Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/`[`DReyeVRData.h`](../Carla/Sensor/DReyeVRData.h) which contains the data structures that compose the ego sensor. Here you'll define the variable and its serializers (read/write/print). 
+- The first file you'll want to look at is interested in is `Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/`[`DReyeVRData.h`](../Carla/Sensor/DReyeVRData.h) which contains the data structures that compose the contents of the ego sensor. Here you'll define the variable and its serialization methods (read/write/print). 
   ```c++
+  /// DReyeVRData.h
   class AggregateData // all DReyeVR sensor data is held here
   {
     public:
       ... // existing code
-      float GetNewVariable() const
-      {
-          return NewVariable;
-      }
+      float GetNewVariable() const;
       ////////////////////:SETTERS://////////////////////
 
       ...
-      void SetNewVariable(const float NewVariableIn)
-      {
-        NewVariable = NewVariableIn;
-      }
+      void SetNewVariable(const float NewVariableIn);
 
       ////////////////////:SERIALIZATION://////////////////////
-      void Read(std::ifstream &InFile)
-      {
-          /// CAUTION: make sure the order of writes/reads is the same
-          ... // existing code
-          ReadValue<float>(InFile, NewVariable);
-      }
+      void Read(std::ifstream &InFile);
 
-      void Write(std::ofstream &OutFile) const
-      {
-          /// CAUTION: make sure the order of writes/reads is the same
-          ... // existing code
-          WriteValue<int64_t>(OutFile, GetNewVariable());
-      }
+      void Write(std::ofstream &OutFile) const;
 
-      FString ToString() const // this printing is used when showing recorder info
-      {
-          FString print;
-          ... // existing code
-          print += FString::Printf(TEXT("[DReyeVR]NewVariable:%.3f,\n"), GetNewVariable());
-          return print;
-      }
+      FString ToString() const; // this printing is used when showing recorder info
 
     private:
     ... // existing code
     float NewVariable; // <-- Your new variable
   };
   ```
+
+  Then, you'll want to write the implementation in `Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Sensor/`[`DReyeVRData.inl`](../Carla/Sensor/DReyeVRData.inl) as inline funcitons. 
+  ```c++
+  /// DReyeVRData.inl
+  ...
+  inline float AggregateData::GetNewVariable() const
+  {
+      return NewVariable;
+  }
+
+  ...
+  inline void AggregateData::SetNewVariable(const float NewVariableIn)
+  {
+    NewVariable = NewVariableIn;
+  }
+
+  inline void AggregateData::Read(std::ifstream &InFile)
+  {
+      /// CAUTION: make sure the order of writes/reads is the same
+      ... // existing code
+      ReadValue<float>(InFile, NewVariable);
+  }
+
+  inline void AggregateData::Write(std::ofstream &OutFile) const
+  {
+      /// CAUTION: make sure the order of writes/reads is the same
+      ... // existing code
+      WriteValue<int64_t>(OutFile, GetNewVariable());
+  }
+
+  inline FString AggregateData::ToString() const // this printing is used when showing recorder info
+  {
+      FString print;
+      ... // existing code
+      print += FString::Printf(TEXT("[DReyeVR]NewVariable:%.3f,\n"), GetNewVariable());
+      return print;
+  }
+  ...
+  ```
+
   **NOTE** It is nice syntactically to contain bunches of variables in structures so they can be better organized, and this is especially true with our AggregateData instance, where almost all our existing data fields are packed into other structs. The basic template is the same as described above. 
+
+
+  **NOTE** The above is an example of adding a new variable directly to `DReyeVR::AggregateData`. This is often not recommended since it'd probably be cleaner to use a simple class abstraction like most of our variables are in. But thats up to you!
 
   With this step complete, you are free to read/write to this variable by getting the single global (`static`) instance of the `DReyeVR::AggregateData` class using the `GetData()` function of the EgoSensor as follows:
   ```c++
@@ -265,17 +287,9 @@ cd $CARLA_ROOT/PythonAPI/examples/
 		./show_recorder_file_info.py -a -f /PATH/TO/RECORDER-FILE > recorder.txt 
 		```
 ## Replaying
-Note that in order for the camera to reenact the recorded head pose, you'll need to run Carla in non-VR mode (else the VR HMD takes precedence). So restart Carla like this:
+Begin a replay session through the PythonAPI as follows:
 ```bash
-# on Windows
-CarlaUE4.exe # no -vr flag
-
-# or on linux
-./CarlaUE4.sh # no -vr flag
-```
-
-Then, with the flat-screen `CarlaUE4` instance running, begin a replay session through the PythonAPI as follows:
-```bash
+# note this does not rely on being in VR mode or not. 
 ./start_replaying.py # this starts the replaying session
 ```
 - Note that in the replaying mode, all user inputs will be ignored in favour of the replay inputs. However, you may still use the following level controls:
@@ -332,13 +346,34 @@ cd $CARLA_ROOT/PythonAPI/examples # go to carla PythonAPI
 ./DReyeVR_AI.py -n 0 # spawn no other vehicles, enable autopilot on EgoVehicle
 ```
 
-Currently we only support manual handoff by pressing `3` on the keyboard. This essentially unpossesses the player controller in favour of the Carla [WheeledVehicleAIController](https://github.com/carla-simulator/carla/blob/0.9.13/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/WheeledVehicleAIController.cpp) which will follow some route defined by Carla's TrafficManager.
+Internally, the AI system is using the Carla vehicle autopilot system, so this can be enabled in your custom PythonAPI scripts without the use of `DReyeVR_AI.py` by performing:
+```python
+from DReyeVR_utils import find_ego_vehicle
+...
 
-In order to re-possess the vehicle (handoff control back to the player), simply press `2`. We are working on a better approach for this where any user input will override the AI input. 
+world = client.get_world()
+traffic_manager = client.get_trafficmanager(args.tm_port)
+...
 
-[OPTIONAL]Using this same approach, there is a third option where you can press `1` to possess a "spectator" that can no-clip and fly around the map using `WASDEQ+mouse` controls. 
+DReyeVR_vehicle = find_ego_vehicle(world)
+if DReyeVR_vehicle is not None:
+    DReyeVR_vehicle.set_autopilot(True, traffic_manager.get_port())
+    print("Successfully set autopilot on ego vehicle")
+```
 
-You can press any of the control options: `1`(spectator), `2`(human driver), `3`(AI driver) at any time and these will also be respected in Carla recordings. 
+Currently we only support manual handoff by pressing `3` on the keyboard. This gives input priority to the Carla [WheeledVehicleAIController](https://github.com/carla-simulator/carla/blob/0.9.13/Unreal/CarlaUE4/Plugins/Carla/Source/Carla/Vehicle/WheeledVehicleAIController.cpp) which will follow some route defined by Carla's TrafficManager.
+
+In order to re-possess the vehicle (handoff control back to the player), simply press `1`. Keyboard inputs are automatically higher priority than the autopilot.
+
+[OPTIONAL]Using this same approach, there is a third option where you can press `2` to possess a "spectator" that can no-clip and fly around the map using `WASDEQ+mouse` controls. 
+
+You can press any of the control options: `1`(human driver), `2`(spectator), `3`(AI driver) at any time.
+Summary: 
+
+| Press `1` | Press `2` | Press `3` |
+| --- | --- | --- |
+| Human driving | Spectator mode | AI driving |
+
 
 # Using our custom config file
 Throughout development, we found that modifying even small things in DReyeVR have a LONG cycle time for recompilation/re-linking/re-cooking/etc. so we wanted an approach that could greatly ease this burden while still providing flexibility.
@@ -407,9 +442,11 @@ python start_replaying.py -f /PATH/TO/RECORDING/FILE # windows
 
 # Other guides
 We have written other guides as well that serve more particular needs:
+- See [`F.A.Q. wiki`](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) for our Frequently Asked Questions wiki page.
 - See [`Docs/SetupVR.md`](SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
 - See [`Docs/Signs.md`](Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
+- See [`Docs/CustomActor.md`](CustomActor.md) to use our CustomActor classes to use fully-recordable 3D dynamic elements in your scene
 - See [`Docs/Model.md`](Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/LODs.md`](LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
 

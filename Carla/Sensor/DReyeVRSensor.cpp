@@ -1,6 +1,7 @@
 #include "Carla/Sensor/DReyeVRSensor.h"                // ADReyeVRSensor
 #include "Carla.h"                                     // all carla things
 #include "Carla/Actor/ActorBlueprintFunctionLibrary.h" // MakeGenericSensorDefinition
+#include "Carla/Actor/DReyeVRCustomActor.h"            // ADReyeVRCustomActor
 #include "Carla/Game/CarlaStatics.h"                   // GetGameInstance
 
 #include <sstream>
@@ -12,6 +13,7 @@
 #include "carla/sensor/s11n/DReyeVRSerializer.h" // DReyeVRSerializer::Data
 
 class DReyeVR::AggregateData *ADReyeVRSensor::Data = nullptr;
+bool ADReyeVRSensor::bIsReplaying = false; // initially not replaying
 
 ADReyeVRSensor::ADReyeVRSensor(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -142,11 +144,10 @@ void ADReyeVRSensor::PostPhysTick(UWorld *W, ELevelTick TickType, float DeltaSec
                 });
 }
 
-/// NOTE: this to define the static variables that are set by the replayer
-void ADReyeVRSensor::UpdateWithReplayData(const DReyeVR::AggregateData &RecorderData, const double Per)
+void ADReyeVRSensor::UpdateData(const DReyeVR::AggregateData &RecorderData, const double Per)
 {
     // update global values
-    bIsReplaying = true; // Replay has started
+    ADReyeVRSensor::bIsReplaying = true; // Replay has started
     if (ADReyeVRSensor::Data != nullptr)
     {
         // update local values but first interpolate camera and vehicle pose (Location & Rotation)
@@ -160,6 +161,14 @@ void ADReyeVRSensor::UpdateWithReplayData(const DReyeVR::AggregateData &Recorder
                                       RecorderData.GetCameraLocation(),          // new location
                                       RecorderData.GetCameraRotation(),          // new rotation
                                       Per, NewCameraLoc, NewCameraRot);
+            // interp Camera (absolute)
+            FVector NewCameraLocAbs;
+            FRotator NewCameraRotAbs;
+            InterpPositionAndRotation(ADReyeVRSensor::Data->GetCameraLocationAbs(), // old location
+                                      ADReyeVRSensor::Data->GetCameraRotationAbs(), // old rotation
+                                      RecorderData.GetCameraLocationAbs(),          // new location
+                                      RecorderData.GetCameraRotationAbs(),          // new rotation
+                                      Per, NewCameraLocAbs, NewCameraRotAbs);
             // interp vehicle
             FVector NewVehicleLoc;
             FRotator NewVehicleRot;
@@ -171,6 +180,7 @@ void ADReyeVRSensor::UpdateWithReplayData(const DReyeVR::AggregateData &Recorder
             (*ADReyeVRSensor::Data) = RecorderData;
             // update camera positions to the interpolated ones
             ADReyeVRSensor::Data->UpdateCamera(NewCameraLoc, NewCameraRot);
+            ADReyeVRSensor::Data->UpdateCameraAbs(NewCameraLocAbs, NewCameraRotAbs);
             ADReyeVRSensor::Data->UpdateVehicle(NewVehicleLoc, NewVehicleRot);
         }
         else
@@ -181,14 +191,19 @@ void ADReyeVRSensor::UpdateWithReplayData(const DReyeVR::AggregateData &Recorder
     }
 }
 
+void ADReyeVRSensor::UpdateData(const class DReyeVR::CustomActorData &RecorderData, const double Per)
+{
+    // should be implemented in the child class impl
+}
+
 void ADReyeVRSensor::StopReplaying()
 {
-    bIsReplaying = false;
+    ADReyeVRSensor::bIsReplaying = false;
 }
 
 bool ADReyeVRSensor::IsReplaying() const
 {
-    return bIsReplaying;
+    return ADReyeVRSensor::bIsReplaying;
 }
 
 // smoothly interpolate with Per
@@ -209,11 +224,21 @@ void ADReyeVRSensor::InterpPositionAndRotation(const FVector &Pos1, const FRotat
 }
 
 // static function to get the DReyeVR sensor
-class UWorld *ADReyeVRSensor::sWorld = nullptr;                   // static world ptr
-class ADReyeVRSensor *ADReyeVRSensor::DReyeVRSensorPtr = nullptr; // static "singleton" ptr
-class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor()          // static getter
+class UWorld *ADReyeVRSensor::sWorld = nullptr;                             // static world ptr
+class ADReyeVRSensor *ADReyeVRSensor::DReyeVRSensorPtr = nullptr;           // static "singleton" ptr
+class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor(class UWorld *World) // static getter
 {
-    if (DReyeVRSensorPtr == nullptr) // if need to look for DReyeVR sensor in world
+    // pass in GetWorld() whenever you want the check to be the most up-to-date
+    if (World != nullptr && World != ADReyeVRSensor::sWorld)
+    {
+        // check if the world has been reloaded and we need to refresh our internal pointers
+        UE_LOG(LogTemp, Warning, TEXT("Detected world change! Invalidating cached data"));
+        ADReyeVRSensor::sWorld = World;
+        ADReyeVRSensor::DReyeVRSensorPtr = nullptr;
+        ADReyeVRCustomActor::ActiveCustomActors.clear();
+    }
+
+    if (ADReyeVRSensor::DReyeVRSensorPtr == nullptr) // if need to look for DReyeVR sensor in world
     {
         // need to find the DReyeVR sensor
         TArray<AActor *> FoundActors;
@@ -224,8 +249,8 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor()          // static gett
         if (FoundActors.Num() > 0)
         {
             /// TODO: check if multiple DReyeVRSensors exist in the world
-            DReyeVRSensorPtr = CastChecked<ADReyeVRSensor>(FoundActors[0]);
-            ensure(DReyeVRSensorPtr != nullptr);
+            ADReyeVRSensor::DReyeVRSensorPtr = CastChecked<ADReyeVRSensor>(FoundActors[0]);
+            ensure(ADReyeVRSensor::DReyeVRSensorPtr != nullptr);
         }
         if (FoundActors.Num() > 1)
         {
@@ -234,7 +259,7 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor()          // static gett
     }
 
     // check if DReyeVR sensor was found
-    if (DReyeVRSensorPtr == nullptr)
+    if (ADReyeVRSensor::DReyeVRSensorPtr == nullptr)
     {
         UE_LOG(LogTemp, Error, TEXT("No DReyeVRSensor found in the world!"));
     }

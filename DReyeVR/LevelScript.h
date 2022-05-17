@@ -1,11 +1,14 @@
 #pragma once
 
-#include "EgoVehicle.h"              // DReyeVR ego vehicle ptr
-#include "Engine/LevelScriptActor.h" // ALevelScriptActor
+#include "Carla/Actor/DReyeVRCustomActor.h" // ADReyeVRCustomActor
+#include "Carla/Sensor/DReyeVRData.h"       // DReyeVR::
+#include "Engine/LevelScriptActor.h"        // ALevelScriptActor
+#include <unordered_map>                    // std::unordered_map
 
 #include "LevelScript.generated.h"
 
 class AEgoVehicle;
+class ADReyeVRPawn;
 
 UCLASS()
 class ADReyeVRLevel : public ALevelScriptActor
@@ -52,10 +55,16 @@ class ADReyeVRLevel : public ALevelScriptActor
     void SetVolume();
     FTransform GetSpawnPoint(int SpawnPointIndex = 0) const;
 
+    // Custom actors
+    void ReplayCustomActor(const DReyeVR::CustomActorData &RecorderData, const double Per);
+    void DrawBBoxes();
+    std::unordered_map<std::string, ADReyeVRCustomActor *> BBoxes;
+
   private:
     // for handling inputs and possessions
     APlayerController *Player = nullptr;
-    AController *AI_Player = nullptr;
+    void StartDReyeVRPawn();
+    ADReyeVRPawn *DReyeVR_Pawn = nullptr;
 
     // for toggling bw spectator mode
     bool bIsSpectating = true;
