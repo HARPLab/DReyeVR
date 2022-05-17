@@ -442,6 +442,7 @@ python start_replaying.py -f /PATH/TO/RECORDING/FILE # windows
 
 # Other guides
 We have written other guides as well that serve more particular needs:
+- See [`F.A.Q. wiki`](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) for our Frequently Asked Questions wiki page.
 - See [`Docs/SetupVR.md`](SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
 - See [`Docs/Signs.md`](Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime

@@ -9,6 +9,8 @@
 This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
 <!-- we should add a video/gif here (youtube/gdrive?) -->
 
+If you have questions, hopefully our [F.A.Q. wiki page](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) can answer some of them.
+
 ## Highlights
 ### Ego Vehicle
 Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](https://github.com/ValveSoftware/steamvr_unreal_plugin/tree/4.23) (see [EgoVehicle.h](DReyeVR/EgoVehicle.h))
@@ -16,8 +18,8 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
   - We have tested with the following devices:
     | Device | VR Supported | Eye tracking | OS |
     | --- | --- | --- | --- |
-    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | YES | YES ([SRanipal](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/) >=1.3.1.1) | Windows, Linux |
-    | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | YES | NO | Windows |
+    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | :heavy_check_mark: | :heavy_check_mark: ([SRanipal](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/) >=1.3.1.1) | Windows, Linux |
+    | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | :heavy_check_mark: | :x: | Windows |
 - Vehicle controls 
   - Generic keyboard WASD + mouse
   - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) 
@@ -83,9 +85,9 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 ## OS compatibility
 | OS | VR | Eye tracking | Audio | Keyboard+Mouse | Racing wheel | Foveated Rendering (WIP) |
 | --- | --- | --- | --- | --- | --- | --- |
-| Windows | Y | Y | Y | Y | Y | Y |
-| Linux | Y | N | Y | Y | N | N |
-| MacOS | N | N | Y | Y | N | N |
+| Windows | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Linux | :heavy_check_mark: | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
+| MacOS | :x: | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |
 - While Windows (10) is recommended for optimized VR support, all our work translates to Linux systems except for the eye tracking and hardware integration which have Windows-only dependencies.
   - Unfortunately the eye-tracking firmware is proprietary & does not work on Linux
     - This is (currently) only supported on Windows because of some proprietary dependencies between [HTC SRanipal SDK](https://developer.vive.com/resources/knowledgebase/vive-sranipal-sdk/) and Tobii's SDK. Those interested in the Linux discussion for HTC's Vive Pro Eye Tracking can follow the subject [here (Vive)](https://forum.vive.com/topic/6994-eye-tracking-in-linux/), [here (Vive)](https://forum.vive.com/topic/7012-vive-pro-eye-on-ubuntu-16-or-18/), and [here (Tobii)](https://developer.tobii.com/community/forums/topic/vive-pro-eye-with-stream-engine/).
@@ -93,7 +95,7 @@ See [`Docs/Install.md`](Docs/Install.md) to either:
 - Also, although MacOS is not officially supported by CARLA, we have development happening on an Apple Silicon machine and have active forks of CARLA + UE4.26 with MacOS 12+ support. Note that this is primarily for development, as it is the most limited system by far. 
 
 ## Documentation & Guides
-- See [`Docs/FAQ.md`](Docs/FAQ.md) to check out our Frequently-Asked-Questions page.
+- See [`F.A.Q. wiki`](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) for our Frequently Asked Questions wiki page.
 - See [`Docs/Usage.md`](Docs/Usage.md) to learn how to use several key DReyeVR features
 - See [`Docs/SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Docs/Sounds.md) to see how we added custom sounds and how you can add your own 
