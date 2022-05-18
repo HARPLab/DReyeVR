@@ -2,6 +2,9 @@
 #include "DReyeVRUtils.h"                      // ProjectGazeToScreen
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
+#include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
+#include "UObject/UObjectGlobals.h"            // LoadObject, NewObject
+#include <carla/image/CityScapesPalette.h>     // CityScapesPalette
 
 ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -33,6 +36,7 @@ void ADReyeVRPawn::ReadConfigVariables()
     ReadConfigValue("Camera", "LensFlareIntensity", LensFlareIntensity);
     ReadConfigValue("Camera", "GrainIntensity", GrainIntensity);
     ReadConfigValue("Camera", "MotionBlurIntensity", MotionBlurIntensity);
+    ReadConfigValue("Camera", "EnableSemanticSegmentation", bEnableSemanticSegmentation);
 
     // input scaling
     ReadConfigValue("VehicleInputs", "InvertMouseY", InvertMouseY);
@@ -62,6 +66,46 @@ void ADReyeVRPawn::ConstructCamera()
     FirstPersonCam->bLockToHmd = true;               // lock orientation and position to HMD
     FirstPersonCam->FieldOfView = FieldOfView;       // editable
     FirstPersonCam->SetupAttachment(RootComponent);
+
+    if (bEnableSemanticSegmentation)
+    {
+        auto Shader = InitSemanticSegmentationShader();
+        // add this post-processing effect to the given camera
+        FirstPersonCam->PostProcessSettings.AddBlendable(Shader, 1.0);
+    }
+}
+
+UMaterialInstanceDynamic *ADReyeVRPawn::InitSemanticSegmentationShader()
+{
+    const FString Path =
+        "Material'/Carla/PostProcessingMaterials/DReyeVR_SemanticSegmentation.DReyeVR_SemanticSegmentation'";
+    UMaterial *MaterialFound = LoadObject<UMaterial>(nullptr, *Path);
+    check(MaterialFound != nullptr);
+    UMaterialInstanceDynamic *SemanticSegmentationMaterial =
+        UMaterialInstanceDynamic::Create(MaterialFound, this, FName(TEXT("DReyeVR_SemanticSegmentation")));
+
+    TArray<FColor> TextureSrc;
+    const size_t NumTags = carla::image::CityScapesPalette::GetNumberOfTags();
+    const int TexSize = 256; // making this array a 16x16=256 length 2d array that holds the raw colours
+    TextureSrc.Reserve(TexSize);
+    for (int i = 0; i < TexSize; i++)
+    {
+        if (i < NumTags) // fill the first n (NumTags) with the tags directly
+        {
+            auto Colour = carla::image::CityScapesPalette::GetColor(i);
+            TextureSrc.Add(FColor(Colour[0], Colour[1], Colour[2], 255));
+        }
+        else // fill the overflow with black
+            TextureSrc.Add(FColor::Black);
+    }
+
+    UTexture2D *TagColourTexture = CreateTexture2DFromArray(TextureSrc);
+
+    // update the tagger-colour matrix param so all the sampled colours are from the CITYSCAPES_PALETTE_MAP
+    // defined in LibCarla/source/carla/image/CityScapesPalette.h
+    SemanticSegmentationMaterial->SetTextureParameterValue("TagColours", TagColourTexture);
+
+    return SemanticSegmentationMaterial;
 }
 
 FPostProcessSettings ADReyeVRPawn::CreatePostProcessingParams() const
@@ -193,15 +237,7 @@ void ADReyeVRPawn::InitReticleTexture()
     {
         GenerateCrosshairImage(ReticleSrc, ReticleSize, FColor(255, 0, 0, 128));
     }
-    ReticleTexture = UTexture2D::CreateTransient(ReticleSize, ReticleSize, PF_B8G8R8A8);
-    void *TextureData = ReticleTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-    FMemory::Memcpy(TextureData, ReticleSrc.GetData(), 4 * ReticleSize * ReticleSize);
-    ReticleTexture->PlatformData->Mips[0].BulkData.Unlock();
-    ReticleTexture->UpdateResource();
-    // ReticleTexture = FImageUtils::CreateTexture2D(ReticleSize, ReticleSize, ReticleSrc, GetWorld(),
-    //                                               "EyeReticleTexture", EObjectFlags::RF_Transient, params);
-
-    check(ReticleTexture);
+    ReticleTexture = CreateTexture2DFromArray(ReticleSrc);
     check(ReticleTexture->Resource);
 }
 

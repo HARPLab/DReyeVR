@@ -17,3 +17,4 @@ Carla/*,Unreal/CarlaUE4/Plugins/Carla/Source/Carla/
 Tools/BuildTools/*.sh,Util/BuildTools/
 Tools/BuildTools/test_streaming.cpp,LibCarla/source/test/common/
 Scripts/Other/.gitignore,/
+Shaders/*.uasset,Unreal/CarlaUE4/Plugins/Carla/Content/PostProcessingMaterials/

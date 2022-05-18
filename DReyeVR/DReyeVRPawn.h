@@ -67,6 +67,7 @@ class ADReyeVRPawn : public APawn
     class UCameraComponent *FirstPersonCam;
     void ConstructCamera();
     FPostProcessSettings CreatePostProcessingParams() const;
+    UMaterialInstanceDynamic *InitSemanticSegmentationShader();
     float FieldOfView = 90.f; // in degrees
     float ScreenPercentage = 100.f;
     float VignetteIntensity = 0.f;
@@ -75,6 +76,7 @@ class ADReyeVRPawn : public APawn
     float LensFlareIntensity = 0.f;
     float GrainIntensity = 0.f;
     float MotionBlurIntensity = 0.f;
+    bool bEnableSemanticSegmentation = false;
 
     ////////////////:STEAMVR:////////////////
     void InitSteamVR();         // Initialize the Head Mounted Display
