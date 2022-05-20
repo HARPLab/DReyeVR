@@ -54,6 +54,8 @@ def run_is_dir_tests() -> bool:
         (os.sep, True),
         (os.path.join(os.sep, "dir", "file.txt"), False),
         (os.path.join(os.sep, "dir", "dir2" + os.sep), True),
+        # often directories in DReyeVR are labeled with '/' sep
+        (os.path.join("testing", "linuxsep/"), True),
     ]
     for name, expected in name_and_exp:
         if advanced_is_dir(name) != expected:
