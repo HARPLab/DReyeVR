@@ -188,7 +188,7 @@ def advanced_is_dir(name: str) -> bool:
     # if not, we'll need to just analyze the string itself
     # check if the last character is the os separator
     # https://docs.python.org/3/library/os.html#os.sep
-    return name[-1] == os.sep
+    return name[-1] == os.sep or name[-1] == "/"  # check OS sep or linux sep
 
 
 def advanced_create(
