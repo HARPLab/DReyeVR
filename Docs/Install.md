@@ -289,7 +289,7 @@ cd /PATH/TO/Carla/
 make clean
 
 # it is a good idea to clean the Content/ directory which is not tracked by Carla's git system
-rm -rf Unreeal/CarlaUE4/Content/
+rm -rf Unreal/CarlaUE4/Content/
 ./Update.sh # re-install the Content fresh from Carla's servers (use .bat on Windows)
 
 # next, go to DReyeVR and get the latest updates
