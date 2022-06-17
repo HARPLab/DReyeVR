@@ -418,6 +418,7 @@ void AEgoSensor::TakeScreenshot()
         // using 5 digits to reach frame 99999 ~ 30m (assuming ~50fps frame capture)
         const FString Suffix = FString::Printf(TEXT("%05d.png"), ScreenshotCount);
         Camera->GetCameraView(0, DesiredView);
+        FrameCap->PostProcessSettings = Camera->PostProcessSettings;
         FrameCap->SetCameraView(DesiredView); // move camera to the Camera view
         FrameCap->CaptureScene();             // also available: CaptureSceneDeferred()
         ScreenshotCount++;                    // progress to next frame

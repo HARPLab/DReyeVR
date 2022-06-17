@@ -446,6 +446,7 @@ We have written other guides as well that serve more particular needs:
 - See [`Docs/SetupVR.md`](SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
 - See [`Docs/Signs.md`](Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
+- See [`Shaders/README.md`](../Shaders/README.md) to view our post-processing shaders and learn how to use them
 - See [`Docs/CustomActor.md`](CustomActor.md) to use our CustomActor classes to use fully-recordable 3D dynamic elements in your scene
 - See [`Docs/Model.md`](Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/LODs.md`](LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience

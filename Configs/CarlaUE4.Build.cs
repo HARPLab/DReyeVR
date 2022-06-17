@@ -1,5 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+using System;
+using System.IO;
 using UnrealBuildTool;
 
 public class CarlaUE4 : ModuleRules
@@ -12,6 +14,11 @@ public class CarlaUE4 : ModuleRules
 	{
 		PrivatePCHHeaderFile = "CarlaUE4.h";
 		ShadowVariableWarningLevel = WarningLevel.Off; // -Wno-shadow
+
+		// include LibCarla so we can #include <carla/x/y/z> headers
+		string LibCarlaIncludePath = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "..", "..", "LibCarla", "source"));
+		PublicIncludePaths.Add(LibCarlaIncludePath);
+		PrivateIncludePaths.Add(LibCarlaIncludePath);
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
 

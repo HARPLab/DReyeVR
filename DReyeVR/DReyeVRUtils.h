@@ -2,6 +2,7 @@
 #define DREYEVR_UTIL
 
 #include "CoreMinimal.h"
+#include "Engine/Texture2D.h"  // UTexture2D
 #include "HighResScreenshot.h" // FHighResScreenshotConfig
 #include "ImageWriteQueue.h"   // TImagePixelData
 #include "ImageWriteTask.h"    // FImageWriteTask
@@ -323,6 +324,19 @@ static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString 
     ImageTask->PixelPreProcessors.Add(TAsyncAlphaWrite<FColor>(255));
     FHighResScreenshotConfig &HighResScreenshotConfig = GetHighResScreenshotConfig();
     HighResScreenshotConfig.ImageWriteQueue->Enqueue(MoveTemp(ImageTask));
+}
+
+static UTexture2D *CreateTexture2DFromArray(const TArray<FColor> &Contents)
+{
+    const size_t Size = std::sqrt(Contents.Num());
+    ensure(Size * Size == Contents.Num());
+    UTexture2D *Texture = UTexture2D::CreateTransient(Size, Size, PF_B8G8R8A8);
+    void *TextureData = Texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+    FMemory::Memcpy(TextureData, Contents.GetData(), 4 * Contents.Num());
+    Texture->PlatformData->Mips[0].BulkData.Unlock();
+    Texture->UpdateResource();
+    check(Texture);
+    return Texture;
 }
 
 #endif
