@@ -11,4 +11,6 @@ Without getting too much into the details, the post-processing effect materials 
 | For example, Carla's `GTMaterial.uasset` shader is used to encode custom stencil information into the **red** channel of the output images, producing an image such as this (colours exaggerated for viewing). Then in the PythonAPI client, the LibCarla definitions for [City Palettes](https://github.com/carla-simulator/carla/blob/master/LibCarla/source/carla/image/CityScapesPalette.h) is applied to convert the image to user-desired colours by index. | ![red_encode](../Docs/Figures/Shaders/red_encode.jpg) |
 | By contrast, our `DReyeVR_SemanticSegmentation` shader builds on the fundamentals of the Carla GTMaterial but directly indexes the array of colours in the shader itself, so you can effortlessly obtain semantic colour information straight into the first-person-camera. | ![rgb_encode](../Docs/Figures/Shaders/semantic_seg.jpg) |
 
-To enable our semantic segmentation shader, turn on the flag `EnableSemanticSegmentation` (in `[Camera]`) in [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini)
+We are interested in including the various shader outputs in our replay functionality. 
+
+To demo the shaders we include in DReyeVR in real time, press `.` (period) for the next and `,` (comma) for the previous shaders. 

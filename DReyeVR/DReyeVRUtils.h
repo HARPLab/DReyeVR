@@ -1,13 +1,15 @@
 #ifndef DREYEVR_UTIL
 #define DREYEVR_UTIL
 
+#include "Carla/Sensor/ShaderBasedSensor.h" // FSensorShader
 #include "CoreMinimal.h"
-#include "Engine/Texture2D.h"  // UTexture2D
-#include "HighResScreenshot.h" // FHighResScreenshotConfig
-#include "ImageWriteQueue.h"   // TImagePixelData
-#include "ImageWriteTask.h"    // FImageWriteTask
-#include <fstream>             // std::ifstream
-#include <sstream>             // std::istringstream
+#include "Engine/Texture2D.h"              // UTexture2D
+#include "HighResScreenshot.h"             // FHighResScreenshotConfig
+#include "ImageWriteQueue.h"               // TImagePixelData
+#include "ImageWriteTask.h"                // FImageWriteTask
+#include <carla/image/CityScapesPalette.h> // CityScapesPalette
+#include <fstream>                         // std::ifstream
+#include <sstream>                         // std::istringstream
 #include <string>
 #include <unordered_map>
 
@@ -337,6 +339,140 @@ static UTexture2D *CreateTexture2DFromArray(const TArray<FColor> &Contents)
     Texture->UpdateResource();
     check(Texture);
     return Texture;
+}
+
+/// ========================================== ///
+/// ----------------:SHADER:------------------ ///
+/// ========================================== ///
+
+static FSensorShader InitSemanticSegmentationShader(class UObject *Parent = nullptr)
+{
+    const FString Path =
+        "Material'/Carla/PostProcessingMaterials/DReyeVR_SemanticSegmentation.DReyeVR_SemanticSegmentation'";
+    UMaterial *MaterialFound = LoadObject<UMaterial>(nullptr, *Path);
+    check(MaterialFound != nullptr);
+    UMaterialInstanceDynamic *SemanticSegmentationMaterial =
+        UMaterialInstanceDynamic::Create(MaterialFound, Parent, FName(TEXT("DReyeVR_SemanticSegmentationShader")));
+
+    // create the array used for tag-colour segmentation
+    TArray<FColor> TextureSrc;
+    const size_t NumTags = carla::image::CityScapesPalette::GetNumberOfTags();
+    const int TexSize = 256; // making this array a 16x16=256 length 2d array that holds the raw colours
+    TextureSrc.Reserve(TexSize);
+    for (int i = 0; i < TexSize; i++)
+    {
+        if (i < NumTags) // fill the first n (NumTags) with the tags directly
+        {
+            auto Colour = carla::image::CityScapesPalette::GetColor(i);
+            TextureSrc.Add(FColor(Colour[0], Colour[1], Colour[2], 255));
+        }
+        else // fill the overflow with black
+            TextureSrc.Add(FColor::Black);
+    }
+
+    UTexture2D *TagColourTexture = CreateTexture2DFromArray(TextureSrc);
+
+    // update the tagger-colour matrix param so all the sampled colours are from the CITYSCAPES_PALETTE_MAP
+    // defined in LibCarla/source/carla/image/CityScapesPalette.h
+    SemanticSegmentationMaterial->SetTextureParameterValue("TagColours", TagColourTexture);
+    return FSensorShader{SemanticSegmentationMaterial, 1.f};
+}
+
+static FSensorShader InitDepthShader(class UObject *Parent = nullptr)
+{
+    const FString Path = "Material'/Carla/PostProcessingMaterials/DReyeVR_DepthEffect.DReyeVR_DepthEffect'";
+    UMaterial *MaterialFound = LoadObject<UMaterial>(nullptr, *Path);
+    check(MaterialFound != nullptr);
+    UMaterialInstanceDynamic *DepthMaterial =
+        UMaterialInstanceDynamic::Create(MaterialFound, Parent, FName(TEXT("DReyeVR_DepthShader")));
+    return FSensorShader{DepthMaterial, 1.f};
+}
+
+/// ========================================== ///
+/// ------------:POSTPROCESSING:-------------- ///
+/// ========================================== ///
+
+// collection of shader factory functions so shaders can be easily regenerated at runtime (useful when GC'd)
+static std::vector<std::function<FPostProcessSettings()>> ShaderFactory = {};
+
+static size_t GetNumberOfShaders()
+{
+    return ShaderFactory.size();
+}
+
+static FPostProcessSettings CreatePostProcessingParams(const std::vector<FSensorShader> &Shaders)
+{
+    // modifying from here: https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/FPostProcessSettings/
+    float TmpParam;
+    FPostProcessSettings PP;
+    PP.bOverride_VignetteIntensity = true;
+    ReadConfigValue("CameraParams", "VignetteIntensity", TmpParam);
+    PP.VignetteIntensity = TmpParam;
+
+    PP.bOverride_ScreenPercentage = true;
+    ReadConfigValue("CameraParams", "ScreenPercentage", TmpParam);
+    PP.ScreenPercentage = TmpParam;
+
+    PP.bOverride_BloomIntensity = true;
+    ReadConfigValue("CameraParams", "BloomIntensity", TmpParam);
+    PP.BloomIntensity = TmpParam;
+
+    PP.bOverride_SceneFringeIntensity = true;
+    ReadConfigValue("CameraParams", "SceneFringeIntensity", TmpParam);
+    PP.SceneFringeIntensity = TmpParam;
+
+    PP.bOverride_LensFlareIntensity = true;
+    ReadConfigValue("CameraParams", "LensFlareIntensity", TmpParam);
+    PP.LensFlareIntensity = TmpParam;
+
+    PP.bOverride_GrainIntensity = true;
+    ReadConfigValue("CameraParams", "GrainIntensity", TmpParam);
+    PP.GrainIntensity = TmpParam;
+
+    PP.bOverride_MotionBlurAmount = true;
+    ReadConfigValue("CameraParams", "MotionBlurIntensity", TmpParam);
+    PP.MotionBlurAmount = TmpParam;
+
+    // append shaders to this postprocess effect
+    for (const FSensorShader &ShaderInfo : Shaders)
+    {
+        ensure(ShaderInfo.PostProcessMaterial != nullptr);
+        PP.AddBlendable(ShaderInfo.PostProcessMaterial, ShaderInfo.Weight);
+    }
+
+    return PP;
+}
+
+static void InitShaderFactory()
+{
+    // initializes the static (global) ShaderFactory container with the factory functions
+    // to generate the shaders defined here.
+
+    ShaderFactory.clear(); // clear all old shaders
+    ShaderFactory = {};
+// helper lambda #define to reduce boilerplate code
+#define SHADER_LAMBDA(x) []() { return CreatePostProcessingParams(x); }
+    // denote the order of the shaders that we will use as lambdas to create their shader
+    ShaderFactory.push_back(SHADER_LAMBDA({}));                                 // rgb (no postprocessing)
+    ShaderFactory.push_back(SHADER_LAMBDA({InitSemanticSegmentationShader()})); // semantics
+    ShaderFactory.push_back(SHADER_LAMBDA({InitDepthShader()}));                // depth
+
+    /// TODO: add more shaders here
+    /// TODO: use enum for shaders
+}
+
+static FPostProcessSettings CreatePostProcessingEffect(size_t Idx)
+{
+    if (GetNumberOfShaders() == 0)
+    {
+        InitShaderFactory();
+        ensure(GetNumberOfShaders() > 0);
+    }
+    // check the index is valid, and call the shader factory function to be used immediately
+    Idx = std::min(Idx, GetNumberOfShaders() - 1);
+    /// NOTE: this can be slow (as it needs to load objects (shaders) from disk and potentially recompile them),
+    // so be wary of using this in a performance-critical section
+    return ShaderFactory[Idx]();
 }
 
 #endif

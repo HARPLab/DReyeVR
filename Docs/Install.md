@@ -7,9 +7,12 @@
   - You have [Unreal Engine 4.26 (Carla)](https://github.com/carlaunreal/unrealengine) installed from source
     - Note, if the link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github)
   - You are running a **Windows 10** or **Linux** x86-64 machine or **MacOS** m1 arm64 machine
+    - If on **Windows 10** you will *need* `Make-3.81` as per [Carla documentation](https://carla.readthedocs.io/en/latest/build_windows/#system-requirements)
   - You have a fully functional vanilla [Carla 0.9.13 build](https://carla.readthedocs.io/en/0.9.13/#building-carla) installed
     - This requires the `-b 0.9.13` when cloning (`git clone https://github.com/carla-simulator/carla -b 0.9.13`) from their [GitHub repo](https://github.com/carla-simulator/carla)
     - Use [Building on Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/) or [Building on Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/) to follow their instructions on building CARLA 0.9.13. 
+  - If you want to use our PythonAPI patches, you'll need to remove any prior PythonAPI installations
+    - This means if you [installed carla via pip](https://pypi.org/project/carla/), you'll **need to uninstall** it to proceed.
   - (Optional) You have a fully functional default [Carla Scenario Runner v0.9.13 build](https://github.com/carla-simulator/scenario_runner/tree/v0.9.13)
     - Simply clone `git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13` and verify it works with your carla build
 - **Tl;dr**:Make sure you compile Carla 0.9.13 and ensure it is working as expected. 
