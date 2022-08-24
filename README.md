@@ -43,6 +43,7 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
 - Fully compatible with the Carla [Recorder and Replayer](https://carla.readthedocs.io/en/0.9.13/adv_recorder/) 
   - Including HMD pose/orientation & sensor reenactment 
 - Ability to handoff/takeover control to/from Carla's AI wheeled vehicle controller
+- Carla-based semantic segmentation camera (see [`Shaders/README.md`](Shaders/README.md))
 ### Ego Sensor
 Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - **Eye tracking** support through [SRanipal Vive eye tracking](https://developer.vive.com/resources/vive-sense/sdk/vive-eye-and-facial-tracking-sdk/)

@@ -21,10 +21,9 @@ These control schemes work both in VR and non-VR. With the main difference being
   - **Brake** - Is done by pressing and holding `S`
   - **Toggle Reverse** - Is done by pressing `LAlt`
   - **Turn Signals** - Are both done by pressing `Q` (left) or `E` (right)
-  - **Possess Spectator** - Is done by pressing `1` (then use `WASDEQ+mouse` to fly around)
-  - **Re-possess Vehicle** - Is done by pressing `2`
-  - **Handoff to AI** - Is done by pressing `3` (then the vehicle's AI mode takes over if running)
-  - **Camera Adjust** - Is done in X and Y with the arrow keys (up, down, left, right) and in Z with the pg-ip/pg-down buttons 
+  - **Camera Adjust** - Is done in X and Y with the arrow keys (`up`, `down`, `left`, `right`) and in Z with the `pg-up`/`pg-down` buttons
+  - **Change Camera View Position** - Is done with `Tab` to switch to the next camera position defined in `DReyeVRParams.ini`. Press `Shift+Tab` to switch back to the previous camera position
+  - **Change Camera Shader** - Is done with `.` (period) to switch to the next shader and `,` (comma) to the previous shader
 - Logitech control scheme:
   - **Throttle** - Is done by pushing down on the accelerator pedal
   - **Steering** - Is done by turning the steering wheel 
@@ -36,7 +35,7 @@ These control schemes work both in VR and non-VR. With the main difference being
 
 Note that all the keyboard inputs are defined in [`DefaultInput.ini`](../Configs/DefaultInput.ini) where all DReyeVR-specific controls have been suffixed with "`_DReyeVR`". Feel free to change any of the controls if you'd like.
 
-However, the logitech wheel inputs are hardcoded into the source since they are checked for on every tick (instead of through the UE4 keyboard events). To see the values and modify them, see [`EgoInputs.cpp`](../DReyeVR/EgoInputs.cpp)
+However, the logitech wheel inputs are hardcoded into the source since they are checked for on every tick (instead of through the UE4 keyboard events). To see the values and modify them, see [`DReyeVRPawn.cpp`](../DReyeVR/DReyeVRPawn.cpp)
   
 # Using the PythonAPI
 With the main Carla server running you should now be able to run all Carla provided `PythonAPI` scripts.
@@ -446,6 +445,7 @@ We have written other guides as well that serve more particular needs:
 - See [`Docs/SetupVR.md`](SetupVR.md) to learn how to quickly and minimally set up VR with Carla
 - See [`Docs/Sounds.md`](Sounds.md) to see how we added custom sounds and how you can add your own custom sounds
 - See [`Docs/Signs.md`](Signs.md) to add custom in-world directional signs and dynamically spawn them into the world at runtime
+- See [`Shaders/README.md`](../Shaders/README.md) to view our post-processing shaders and learn how to use them
 - See [`Docs/CustomActor.md`](CustomActor.md) to use our CustomActor classes to use fully-recordable 3D dynamic elements in your scene
 - See [`Docs/Model.md`](Model.md) to see how we added a responsive steering wheel to the vehicle mesh
 - See [`Docs/LODs.md`](LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience

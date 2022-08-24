@@ -1,7 +1,9 @@
 #include "DReyeVRPawn.h"
-#include "DReyeVRUtils.h"                      // ProjectGazeToScreen
+#include "DReyeVRUtils.h"                      // ProjectGazeToScreen, CreatePostProcessingEffect
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
+#include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
+#include "UObject/UObjectGlobals.h"            // LoadObject, NewObject
 
 ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -25,14 +27,8 @@ ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(
 void ADReyeVRPawn::ReadConfigVariables()
 {
     // camera
-    ReadConfigValue("Camera", "FieldOfView", FieldOfView);
-    ReadConfigValue("Camera", "ScreenPercentage", ScreenPercentage);
-    ReadConfigValue("Camera", "VignetteIntensity", VignetteIntensity);
-    ReadConfigValue("Camera", "BloomIntensity", BloomIntensity);
-    ReadConfigValue("Camera", "SceneFringeIntensity", SceneFringeIntensity);
-    ReadConfigValue("Camera", "LensFlareIntensity", LensFlareIntensity);
-    ReadConfigValue("Camera", "GrainIntensity", GrainIntensity);
-    ReadConfigValue("Camera", "MotionBlurIntensity", MotionBlurIntensity);
+    ReadConfigValue("CameraParams", "FieldOfView", FieldOfView);
+    /// NOTE: all the postprocessing params are used in DReyeVRUtils::CreatePostProcessingParams
 
     // input scaling
     ReadConfigValue("VehicleInputs", "InvertMouseY", InvertMouseY);
@@ -57,38 +53,13 @@ void ADReyeVRPawn::ConstructCamera()
 {
     // Create a camera and attach to root component
     FirstPersonCam = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCam"));
-    FirstPersonCam->PostProcessSettings = CreatePostProcessingParams();
-    FirstPersonCam->bUsePawnControlRotation = false; // free for VR movement
-    FirstPersonCam->bLockToHmd = true;               // lock orientation and position to HMD
-    FirstPersonCam->FieldOfView = FieldOfView;       // editable
+
+    // the default shader behaviour will be to use RGB (no shader)
+    FirstPersonCam->PostProcessSettings = CreatePostProcessingEffect(0); // default (0) is RGB
+    FirstPersonCam->bUsePawnControlRotation = false;                     // free for VR movement
+    FirstPersonCam->bLockToHmd = true;                                   // lock orientation and position to HMD
+    FirstPersonCam->FieldOfView = FieldOfView;                           // editable
     FirstPersonCam->SetupAttachment(RootComponent);
-}
-
-FPostProcessSettings ADReyeVRPawn::CreatePostProcessingParams() const
-{
-    // modifying from here: https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/FPostProcessSettings/
-    FPostProcessSettings PP;
-    PP.bOverride_VignetteIntensity = true;
-    PP.VignetteIntensity = VignetteIntensity;
-
-    PP.bOverride_ScreenPercentage = true;
-    PP.ScreenPercentage = ScreenPercentage;
-
-    PP.bOverride_BloomIntensity = true;
-    PP.BloomIntensity = BloomIntensity;
-
-    PP.bOverride_SceneFringeIntensity = true;
-    PP.SceneFringeIntensity = SceneFringeIntensity;
-
-    PP.bOverride_LensFlareIntensity = true;
-    PP.LensFlareIntensity = LensFlareIntensity;
-
-    PP.bOverride_GrainIntensity = true;
-    PP.GrainIntensity = GrainIntensity;
-
-    PP.bOverride_MotionBlurAmount = true;
-    PP.MotionBlurAmount = MotionBlurIntensity;
-    return PP;
 }
 
 void ADReyeVRPawn::BeginPlay()
@@ -193,15 +164,7 @@ void ADReyeVRPawn::InitReticleTexture()
     {
         GenerateCrosshairImage(ReticleSrc, ReticleSize, FColor(255, 0, 0, 128));
     }
-    ReticleTexture = UTexture2D::CreateTransient(ReticleSize, ReticleSize, PF_B8G8R8A8);
-    void *TextureData = ReticleTexture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
-    FMemory::Memcpy(TextureData, ReticleSrc.GetData(), 4 * ReticleSize * ReticleSize);
-    ReticleTexture->PlatformData->Mips[0].BulkData.Unlock();
-    ReticleTexture->UpdateResource();
-    // ReticleTexture = FImageUtils::CreateTexture2D(ReticleSize, ReticleSize, ReticleSrc, GetWorld(),
-    //                                               "EyeReticleTexture", EObjectFlags::RF_Transient, params);
-
-    check(ReticleTexture);
+    ReticleTexture = CreateTexture2DFromArray(ReticleSrc);
     check(ReticleTexture->Resource);
 }
 
@@ -622,14 +585,22 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     check(EV != nullptr);
     // button actions (press & release)
     PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressReverse);
-    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressTurnSignalR);
-    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressTurnSignalL);
     PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseReverse);
-    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseTurnSignalR);
+    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressTurnSignalR);
     PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseTurnSignalL);
+    PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressTurnSignalL);
+    PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseTurnSignalR);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressHandbrake);
     PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseHandbrake);
-    // Camera position adjustments
+    // camera view adjustments
+    PlayerInputComponent->BindAction("NextCameraView_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressNextCameraView);
+    PlayerInputComponent->BindAction("NextCameraView_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseNextCameraView);
+    PlayerInputComponent->BindAction("PrevCameraView_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressPrevCameraView);
+    PlayerInputComponent->BindAction("PrevCameraView_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleasePrevCameraView);
+    // camera shader adjustments
+    PlayerInputComponent->BindAction("NextShader_DReyeVR", IE_Pressed, this, &ADReyeVRPawn::NextShader);
+    PlayerInputComponent->BindAction("PrevShader_DReyeVR", IE_Pressed, this, &ADReyeVRPawn::PrevShader);
+    // camera position adjustments
     PlayerInputComponent->BindAction("CameraFwd_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraFwd);
     PlayerInputComponent->BindAction("CameraBack_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraBack);
     PlayerInputComponent->BindAction("CameraLeft_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraLeft);
@@ -675,6 +646,28 @@ void ADReyeVRPawn::SetSteeringKbd(const float SteeringInput)
         ensure(EgoVehicle != nullptr);
         EgoVehicle->VehicleInputs.Steering = 0;
     }
+}
+
+/// ========================================== ///
+/// -----------------:INPUT:------------------ ///
+/// ========================================== ///
+
+void ADReyeVRPawn::NextShader()
+{
+    /// NOTE: the shader/postprocessing functions are defined in DReyeVRUtils.h
+    CurrentShaderIdx = (CurrentShaderIdx + 1) % GetNumberOfShaders();
+    // update the camera's postprocessing effects
+    FirstPersonCam->PostProcessSettings = CreatePostProcessingEffect(CurrentShaderIdx);
+}
+
+void ADReyeVRPawn::PrevShader()
+{
+    /// NOTE: the shader/postprocessing functions are defined in DReyeVRUtils.h
+    if (CurrentShaderIdx == 0)
+        CurrentShaderIdx = GetNumberOfShaders();
+    CurrentShaderIdx--;
+    // update the camera's postprocessing effects
+    FirstPersonCam->PostProcessSettings = CreatePostProcessingEffect(CurrentShaderIdx);
 }
 
 /// ========================================== ///
