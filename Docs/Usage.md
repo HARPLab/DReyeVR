@@ -203,7 +203,7 @@ Now you can proceed to use `self.sensor.ego_sensor` as a standard [`carla.libcar
         - Eye tracking logic (SRanipal), ego vehicle tracking, etc. 
   
 - [OPTIONAL]Streaming data to a PythonAPI client:
-  - In order to see the new data from a PythonAPI client, you'll need to duplicate the code to the LibCarla serializer. This requires looking at `LibCarla/Sensor/s11n/`[`DReyeVRSerializer.h`](../LibCarla/Sensor/s11n/DReyeVRSerializer.h) and following the same template as all the other variables:
+  - In order to see the new data from a PythonAPI client, you'll need to duplicate the code to the LibCarla serializer. This requires looking at `LibCarla/source/carla/sensor/s11n`[`DReyeVRSerializer.h`](../LibCarla/Sensor/s11n/DReyeVRSerializer.h) and following the same template as all the other variables:
     ```c++
     class DReyeVRSerializer
     {
