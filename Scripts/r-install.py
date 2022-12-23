@@ -27,7 +27,10 @@ DOC_STRING = "Simple script to update the DReyeVR repository (reverse-install) w
 def r_install(src: str, dest: str, ROOT: str, verbose: Optional[bool] = False) -> None:
     # copy from dest into src (reverse install)
     leafname = get_leaf_from_path(src)
-    if ROOT not in dest:
+    if not os.path.exists(src):
+        raise Exception(f"Unable to locate src: \"{src}\"")
+    dest_is_root: bool = dest == os.path.dirname(dest)
+    if (not os.path.exists(dest) or dest_is_root) and ROOT not in dest:
         dest: str = advanced_join([ROOT, dest, leafname])
     if os.path.exists(dest):
         if verbose:
@@ -46,7 +49,7 @@ def r_install(src: str, dest: str, ROOT: str, verbose: Optional[bool] = False) -
             return
         elif os.path.isdir(dest):
             dest = os.path.join(dest, "*")
-        advanced_cp(dest, src)
+        advanced_cp(dest, src, verbose=verbose)
     else:
         print(f"{dest} -- not found")
 

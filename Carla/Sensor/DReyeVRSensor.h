@@ -41,7 +41,7 @@ class CARLA_API ADReyeVRSensor : public ASensor
     const class DReyeVR::AggregateData *GetData() const
     {
         // read-only variant of GetData
-        return ADReyeVRSensor::Data;
+        return const_cast<const class DReyeVR::AggregateData *>(ADReyeVRSensor::Data);
     }
 
     bool IsReplaying() const;

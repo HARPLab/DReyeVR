@@ -49,6 +49,12 @@ ADReyeVRCustomActor::ADReyeVRCustomActor(const FObjectInitializer &ObjectInitial
     Internals.Scale3D = this->GetActorScale3D();
 }
 
+ADReyeVRCustomActor::~ADReyeVRCustomActor()
+{
+    this->Deactivate();
+    this->Destroy(); // UE4 Destroy method
+}
+
 bool ADReyeVRCustomActor::AssignSM(const FString &Path, UWorld *World)
 {
     UStaticMesh *SM = LoadObject<UStaticMesh>(nullptr, *Path);
@@ -99,7 +105,7 @@ void ADReyeVRCustomActor::Initialize(const FString &Name)
 {
     Internals.Name = Name;
     ADReyeVRCustomActor::ActiveCustomActors[TCHAR_TO_UTF8(*Name)] = this;
-    UE_LOG(LogTemp, Log, TEXT("Initialized custom actor: %s"), *Name);
+    // UE_LOG(LogTemp, Log, TEXT("Initialized custom actor: %s"), *Name);
 }
 
 void ADReyeVRCustomActor::BeginPlay()

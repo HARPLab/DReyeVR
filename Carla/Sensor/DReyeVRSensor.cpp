@@ -86,7 +86,7 @@ void ADReyeVRSensor::PostPhysTick(UWorld *W, ELevelTick TickType, float DeltaSec
         };
         carla::geom::Vector3D operator()(const FRotator &In)
         {
-            return carla::geom::Vector3D{In.Pitch, In.Roll, In.Yaw};
+            return carla::geom::Vector3D{In.Pitch, In.Yaw, In.Roll};
         };
         carla::geom::Vector2D operator()(const FVector2D &In)
         {

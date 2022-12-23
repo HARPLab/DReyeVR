@@ -23,6 +23,9 @@ class CARLA_API ADReyeVRCustomActor : public AActor // abstract class
     GENERATED_BODY()
 
   public:
+    ADReyeVRCustomActor(const FObjectInitializer &ObjectInitializer);
+    ~ADReyeVRCustomActor();
+
     /// factory function to create a new instance of a given type
     static ADReyeVRCustomActor *CreateNew(const FString &SM_Path, const FString &Mat_Path, UWorld *World,
                                           const FString &Name);
@@ -49,7 +52,6 @@ class CARLA_API ADReyeVRCustomActor : public AActor // abstract class
     struct DReyeVR::CustomActorData::MaterialParamsStruct MaterialParams;
 
   private:
-    ADReyeVRCustomActor(const FObjectInitializer &ObjectInitializer);
     void BeginPlay() override;
     void BeginDestroy() override;
     bool bIsActive = false; // initially deactivated

@@ -136,6 +136,21 @@ static void ReadConfigValue(const FString &Section, const FString &Variable, FVe
     else
         UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
 }
+static void ReadConfigValue(const FString &Section, const FString &Variable, FLinearColor &Value)
+{
+    EnsureConfigsUpdated();
+    std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) != Params.end())
+    {
+        if (Value.InitFromString(Params[VariableName]) == false)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Unable to construct FLinearColor for %s from %s"), *FString(VariableName.c_str()),
+                   *(Params[VariableName]));
+        }
+    }
+    else
+        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
+}
 static void ReadConfigValue(const FString &Section, const FString &Variable, FRotator &Value)
 {
     EnsureConfigsUpdated();
@@ -159,6 +174,13 @@ static void ReadConfigValue(const FString &Section, const FString &Variable, FSt
         Value = Params[VariableName];
     else
         UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
+}
+
+static void ReadConfigValue(const FString &Section, const FString &Variable, FName &Value)
+{
+    FString TmpValueString;
+    ReadConfigValue(Section, Variable, TmpValueString);
+    Value = FName(*TmpValueString);
 }
 
 static FVector ComputeClosestToRayIntersection(const FVector &L0, const FVector &LDir, const FVector &R0,
@@ -473,6 +495,27 @@ static FPostProcessSettings CreatePostProcessingEffect(size_t Idx)
     /// NOTE: this can be slow (as it needs to load objects (shaders) from disk and potentially recompile them),
     // so be wary of using this in a performance-critical section
     return ShaderFactory[Idx]();
+}
+
+static FHitResult SimpleRayTrace(const UWorld *World, const FVector &Start, const FVector &End,
+                                 const std::vector<const AActor *> &Ignored = {})
+{
+    // run a trace from the start to the end to sample visibility channel
+    FCollisionQueryParams TraceParam;
+    TraceParam = FCollisionQueryParams(FName("RayTrace"), true);
+    for (const AActor *A : Ignored)
+    {
+        TraceParam.AddIgnoredActor(A);
+    }
+    TraceParam.bTraceComplex = true;
+    TraceParam.bReturnPhysicalMaterial = false;
+    FHitResult Hit(EForceInit::ForceInit);
+    World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParam);
+    DrawDebugLine(World,
+                  Start, // start line
+                  End,   // end line
+                  FColor::Green, false, -1, 0, 1);
+    return Hit;
 }
 
 #endif
