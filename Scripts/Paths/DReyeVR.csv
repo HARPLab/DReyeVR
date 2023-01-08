@@ -1,4 +1,5 @@
 DReyeVR,Unreal/CarlaUE4/Source/CarlaUE4/
+CarlaUE4,Unreal/CarlaUE4/Source/
 Configs/CarlaUE4.Build.cs,Unreal/CarlaUE4/Source/CarlaUE4
 Configs/Default*.ini,Unreal/CarlaUE4/Config/
 Configs/DReyeVRConfig.ini,Unreal/CarlaUE4/Config/

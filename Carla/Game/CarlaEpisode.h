@@ -152,6 +152,7 @@ public:
     ActorDefinition.Id = ActorDescription.Id;
     ActorDefinition.Class = ActorDescription.Class;
     ActorDefinition.Tags = Tags; // list of comma-separated tags
+    ensure(ActorDispatcher != nullptr);
     ActorDispatcher->Bind(ActorDefinition, FindFunctor);
     // take the UId from the ActorDefinition which has just been updated in ActorDispatcher.cpp:BindAndReturnUId
     ActorDescription.UId = ActorDispatcher->GetActorDefinitions().Last().UId;

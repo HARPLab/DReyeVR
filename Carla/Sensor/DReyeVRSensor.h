@@ -51,7 +51,7 @@ class CARLA_API ADReyeVRSensor : public ASensor
     virtual void TakeScreenshot()
     {
         /// TODO: make this a pure virtual function (abstract class)
-        UE_LOG(LogTemp, Warning, TEXT("Not implemented! Implement in EgoSensor!"));
+        DReyeVR_LOG_WARN("Not implemented! Implement in EgoSensor!");
     };
 
     static class ADReyeVRSensor *GetDReyeVRSensor(class UWorld *World = nullptr);

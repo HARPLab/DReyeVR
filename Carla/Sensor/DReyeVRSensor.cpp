@@ -232,7 +232,7 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor(class UWorld *World) // s
     if (World != nullptr && World != ADReyeVRSensor::sWorld)
     {
         // check if the world has been reloaded and we need to refresh our internal pointers
-        UE_LOG(LogTemp, Warning, TEXT("Detected world change! Invalidating cached data"));
+        DReyeVR_LOG_WARN("Detected world change! Invalidating cached data");
         ADReyeVRSensor::sWorld = World;
         ADReyeVRSensor::DReyeVRSensorPtr = nullptr;
         ADReyeVRCustomActor::ActiveCustomActors.clear();
@@ -254,14 +254,14 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor(class UWorld *World) // s
         }
         if (FoundActors.Num() > 1)
         {
-            UE_LOG(LogTemp, Error, TEXT("Multiple DReyeVR sensors active in the world! Not supported."));
+            DReyeVR_LOG_ERROR("Multiple DReyeVR sensors active in the world! Not supported.");
         }
     }
 
     // check if DReyeVR sensor was found
     if (ADReyeVRSensor::DReyeVRSensorPtr == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("No DReyeVRSensor found in the world!"));
+        DReyeVR_LOG_ERROR("No DReyeVRSensor found in the world!");
     }
 
     return DReyeVRSensorPtr;

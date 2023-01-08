@@ -22,6 +22,9 @@ ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(
 
     // spawn and construct the first person camera
     ConstructCamera();
+
+    // log
+    LOG("Spawning DReyeVR pawn for player0");
 }
 
 void ADReyeVRPawn::ReadConfigVariables()
@@ -126,7 +129,7 @@ void ADReyeVRPawn::InitSteamVR()
     {
         FString HMD_Name = UHeadMountedDisplayFunctionLibrary::GetHMDDeviceName().ToString();
         FString HMD_Version = UHeadMountedDisplayFunctionLibrary::GetVersionString();
-        UE_LOG(LogTemp, Log, TEXT("HMD enabled: %s, version %s"), *HMD_Name, *HMD_Version);
+        LOG("SteamVR HMD enabled: %s, version %s", *HMD_Name, *HMD_Version);
         // Now we'll begin with setting up the VR Origin logic
         // this tracking origin is what moves the HMD camera to the right position
         UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Eye); // Also have Floor & Stage Level
@@ -134,7 +137,7 @@ void ADReyeVRPawn::InitSteamVR()
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("No head mounted device enabled!"));
+        LOG_WARN("No SteamVR head mounted device enabled!");
     }
 }
 
@@ -245,7 +248,7 @@ void ADReyeVRPawn::InitFlatHUD()
     if (FlatHUD)
         FlatHUD->SetPlayer(Player);
     else
-        UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
+        LOG_WARN("Unable to initialize DReyeVR HUD!");
     // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
     if (bIsHMDConnected)
     {
@@ -304,13 +307,13 @@ void ADReyeVRPawn::InitLogiWheel()
         wchar_t *NameBuffer = (wchar_t *)malloc(n * sizeof(wchar_t));
         if (LogiGetFriendlyProductName(WheelDeviceIdx, NameBuffer, n) == false)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Unable to get Logi friendly name!"));
+            LOG_WARN("Unable to get Logi friendly name!");
             NameBuffer = L"Unknown";
         }
         std::wstring wNameStr(NameBuffer, n);
         std::string NameStr(wNameStr.begin(), wNameStr.end());
         FString LogiName(NameStr.c_str());
-        UE_LOG(LogTemp, Log, TEXT("Found a Logitech device (%s) connected on input %d"), *LogiName, WheelDeviceIdx);
+        LOG("Found a Logitech device (%s) connected on input %d", *LogiName, WheelDeviceIdx);
         free(NameBuffer); // no longer needed
     }
     else
@@ -322,7 +325,7 @@ void ADReyeVRPawn::InitLogiWheel()
         const FLinearColor MsgColour = FLinearColor(1, 0, 0, 1); // RED
         UKismetSystemLibrary::PrintString(World, LogiError, PrintToScreen, PrintToLog, MsgColour, ScreenDurationSec);
         if (PrintToLog)
-            UE_LOG(LogTemp, Warning, TEXT("%s"), *LogiError); // Error is RED
+            LOG_ERROR("%s", *LogiError); // Error is RED
     }
 #endif
 }
@@ -413,10 +416,10 @@ void ADReyeVRPawn::LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now)
         {
             if (!isDiff) // only gets triggered at MOST once
             {
-                UE_LOG(LogTemp, Log, TEXT("Logging joystick at t=%.3f"), UGameplayStatics::GetRealTimeSeconds(World));
+                LOG("Logging joystick at t=%.3f", UGameplayStatics::GetRealTimeSeconds(World));
                 isDiff = true;
             }
-            UE_LOG(LogTemp, Log, TEXT("Triggered \"%s\" from %d to %d"), *(VarNames[i]), OldVals[i], NowVals[i]);
+            LOG("Triggered \"%s\" from %d to %d", *(VarNames[i]), OldVals[i], NowVals[i]);
         }
     }
 
@@ -427,11 +430,10 @@ void ADReyeVRPawn::LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now)
         {
             if (!isDiff) // only gets triggered at MOST once
             {
-                UE_LOG(LogTemp, Log, TEXT("Logging joystick at t=%.3f"), UGameplayStatics::GetRealTimeSeconds(World));
+                LOG("Logging joystick at t=%.3f", UGameplayStatics::GetRealTimeSeconds(World));
                 isDiff = true;
             }
-            UE_LOG(LogTemp, Log, TEXT("Triggered \"rgbButtons[%d]\" from %d to %d"), int(i), int(OldVals[i]),
-                   int(NowVals[i]));
+            LOG("Triggered \"rgbButtons[%d]\" from %d to %d", int(i), int(OldVals[i]), int(NowVals[i]));
         }
     }
 
@@ -446,7 +448,7 @@ void ADReyeVRPawn::LogitechWheelUpdate()
 
     // only execute this in Windows, the Logitech plugin is incompatible with Linux
     if (LogiUpdate() == false) // update the logitech wheel
-        UE_LOG(LogTemp, Warning, TEXT("Logitech wheel %d failed to update!"), WheelDeviceIdx);
+        LOG_WARN("Logitech wheel %d failed to update!", WheelDeviceIdx);
     DIJOYSTATE2 *WheelState = LogiGetState(WheelDeviceIdx);
     if (bLogLogitechWheel)
         LogLogitechPluginStruct(WheelState);
@@ -593,7 +595,7 @@ void ADReyeVRPawn::SetupPlayerInputComponent(UInputComponent *PlayerInputCompone
 
 void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputComponent, AEgoVehicle *EV)
 {
-    UE_LOG(LogTemp, Log, TEXT("Initializing EgoVehicle relay mechanisms"));
+    LOG("Initializing EgoVehicle relay mechanisms");
     // this function sets up the direct relay mechanisms to call EgoVehicle input functions
     check(PlayerInputComponent != nullptr);
     check(EV != nullptr);
@@ -627,7 +629,7 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     if (EgoVehicle)                                                                                                    \
         FUNCTION;                                                                                                      \
     else                                                                                                               \
-        UE_LOG(LogTemp, Error, TEXT("EgoVehicle is NULL!"));
+        LOG_ERROR("EgoVehicle is NULL!");
 
 void ADReyeVRPawn::SetThrottleKbd(const float ThrottleInput)
 {

@@ -87,8 +87,7 @@ void AEgoVehicle::ReleasePrevCameraView()
 void AEgoVehicle::NextCameraView()
 {
     CurrentCameraTransformIdx = (CurrentCameraTransformIdx + 1) % (CameraTransforms.size());
-    UE_LOG(LogTemp, Log, TEXT("Switching to next camera view: \"%s\""),
-           *CameraTransforms[CurrentCameraTransformIdx].first);
+    LOG("Switching to next camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
@@ -97,8 +96,7 @@ void AEgoVehicle::PrevCameraView()
     if (CurrentCameraTransformIdx == 0)
         CurrentCameraTransformIdx = CameraTransforms.size();
     CurrentCameraTransformIdx--;
-    UE_LOG(LogTemp, Log, TEXT("Switching to prev camera view: \"%s\""),
-           *CameraTransforms[CurrentCameraTransformIdx].first);
+    LOG("Switching to prev camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
@@ -157,7 +155,7 @@ void AEgoVehicle::PressReverse()
     Lights.Reverse = this->bReverse;
     this->SetVehicleLightState(Lights);
 
-    UE_LOG(LogTemp, Log, TEXT("Toggle Reverse"));
+    LOG("Toggle Reverse");
     // assign to input struct
     VehicleInputs.ToggledReverse = true;
 

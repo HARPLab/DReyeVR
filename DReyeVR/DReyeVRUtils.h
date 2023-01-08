@@ -30,7 +30,7 @@ struct ParamString
         // basically any UE4 type that has a ::InitFromString method
         T Ret;
         if (Ret.InitFromString(DataStr) == false)
-            UE_LOG(LogTemp, Error, TEXT("Unable to decipher \"%s\" to a type"), *DataStr);
+            LOG_ERROR("Unable to decipher \"%s\" to a type", *DataStr);
         return Ret;
     }
 
@@ -74,7 +74,7 @@ static std::string CreateVariableName(const FString &Section, const FString &Var
 static void ReadDReyeVRConfig()
 {
     /// TODO: add feature to "hot-reload" new params during runtime
-    UE_LOG(LogTemp, Warning, TEXT("Reading config from %s"), *ConfigFilePath);
+    LOG_WARN("Reading config from %s", *ConfigFilePath);
     /// performs a single pass over the config file to collect all variables into Params
     std::ifstream ConfigFile(TCHAR_TO_ANSI(*ConfigFilePath));
     if (ConfigFile)
@@ -107,10 +107,10 @@ static void ReadDReyeVRConfig()
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to open the config file %s"), *ConfigFilePath);
+        LOG_ERROR("Unable to open the config file %s", *ConfigFilePath);
     }
     // for (auto &e : Params){
-    //     UE_LOG(LogTemp, Warning, TEXT("%s: %s"), *FString(e.first.c_str()), *e.second);
+    //     LOG_WARN("%s: %s", *FString(e.first.c_str()), *e.second);
     // }
 }
 
@@ -127,7 +127,7 @@ template <typename T> static void ReadConfigValue(const FString &Section, const 
     const std::string VariableName = CreateVariableName(Section, Variable);
     if (Params.find(VariableName) == Params.end())
     {
-        UE_LOG(LogTemp, Error, TEXT("No variable matching \"%s\" found for type"), *FString(VariableName.c_str()));
+        LOG_ERROR("No variable matching \"%s\" found for type", *FString(VariableName.c_str()));
         return;
     }
     auto &Param = Params[VariableName];
@@ -135,7 +135,7 @@ template <typename T> static void ReadConfigValue(const FString &Section, const 
 
     if (Param.bIsDirty)
     {
-        UE_LOG(LogTemp, Log, TEXT("Read \"%s\" => %s"), *FString(VariableName.c_str()), *Param.DataStr);
+        LOG("Read \"%s\" => %s", *FString(VariableName.c_str()), *Param.DataStr);
     }
     Param.bIsDirty = false; // has just been read
 }
@@ -287,18 +287,18 @@ static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString 
     ReadPixelFlags.SetLinearToGamma(true);
     if (RTResource == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("Missing render target!"));
+        LOG_ERROR("Missing render target!");
         return;
     }
     if (!RTResource->ReadPixels(Pixels, ReadPixelFlags))
-        UE_LOG(LogTemp, Error, TEXT("Unable to read pixels!"));
+        LOG_ERROR("Unable to read pixels!");
 
     // dump pixel array to disk
     PixelData.Pixels = Pixels;
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
     ImageTask->PixelData = MakeUnique<TImagePixelData<FColor>>(PixelData);
     ImageTask->Filename = FilePath;
-    UE_LOG(LogTemp, Log, TEXT("Saving screenshot to %s"), *FilePath);
+    LOG("Saving screenshot to %s", *FilePath);
     ImageTask->Format = FileFormatJPG ? EImageFormat::JPEG : EImageFormat::PNG; // lower quality, less storage
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
     ImageTask->bOverwriteFile = true;

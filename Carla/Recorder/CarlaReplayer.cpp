@@ -827,7 +827,7 @@ void CarlaReplayer::ProcessFrameByFrame()
     // have the vehicle camera take a screenshot to record the replay
     ADReyeVRSensor::GetDReyeVRSensor()->TakeScreenshot();
   else
-    UE_LOG(LogTemp, Error, TEXT("No DReyeVR sensor available!"));
+    DReyeVR_LOG_ERROR("No DReyeVR sensor available!");
 
   // progress to the next frame
   if (SyncCurrentFrameId < FrameStartTimes.size() - 1)

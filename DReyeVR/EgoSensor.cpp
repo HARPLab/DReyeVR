@@ -82,7 +82,7 @@ void AEgoSensor::BeginPlay()
     UVariableRateShadingFunctionLibrary::EnableEyeTracking(bEnableFovRender);
 #endif
 
-    UE_LOG(LogTemp, Log, TEXT("Initialized DReyeVR EgoSensor"));
+    LOG("Initialized DReyeVR EgoSensor");
 }
 
 void AEgoSensor::BeginDestroy()
@@ -122,7 +122,7 @@ void AEgoSensor::InitEyeTracker()
 #if USE_SRANIPAL_PLUGIN
     bSRanipalEnabled = false;
     // initialize SRanipal framework for eye tracking
-    UE_LOG(LogTemp, Warning, TEXT("Attempting to use SRanipal eye tracking"));
+    LOG("Attempting to use SRanipal eye tracking");
     // Initialize the SRanipal eye tracker (WINDOWS ONLY)
     SRanipalFramework = SRanipalEye_Framework::Instance();
     SRanipal = SRanipalEye_Core::Instance();
@@ -132,16 +132,16 @@ void AEgoSensor::InitEyeTracker()
     if (Status == SRanipalEye_Framework::FrameworkStatus::ERROR_SRANIPAL || // matches the patch_sranipal.sh script
         Status == SRanipalEye_Framework::FrameworkStatus::NOT_SUPPORT)
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to start SRanipal framework!"));
+        LOG_ERROR("Unable to start SRanipal framework!");
         return;
     }
     // SRanipal->SetEyeParameter_() // can set the eye gaze jitter parameter
     // see SRanipal_Eyes_Enums.h
     // Get the reference timing to synchronize the SRanipal timer with Carla
-    UE_LOG(LogTemp, Log, TEXT("Successfully started SRanipal framework"));
+    LOG("Successfully started SRanipal framework");
     bSRanipalEnabled = true;
 #else
-    UE_LOG(LogTemp, Warning, TEXT("Not using SRanipal eye tracking"));
+    LOG("Not using SRanipal eye tracking");
 #endif
 }
 
@@ -419,7 +419,7 @@ void AEgoSensor::InitFrameCapture()
         FrameCapLocation = FPaths::Combine(FrameCapLocation, DirName);
 
         // create directory if not present
-        UE_LOG(LogTemp, Log, TEXT("Outputting frame capture data to %s"), *FrameCapLocation);
+        LOG("Outputting frame capture data to %s", *FrameCapLocation);
         IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
         if (!PlatformFile.DirectoryExists(*FrameCapLocation))
         {

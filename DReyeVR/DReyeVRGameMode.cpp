@@ -107,12 +107,12 @@ void ADReyeVRGameMode::SetupDReyeVRPawn()
     // if you want to manually possess then you can do Player->Possess(DReyeVR_Pawn);
     if (DReyeVR_Pawn == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to spawn DReyeVR pawn!"));
+        LOG_ERROR("Unable to spawn DReyeVR pawn!")
     }
     else
     {
         DReyeVR_Pawn->BeginPlayer(Player);
-        UE_LOG(LogTemp, Log, TEXT("Successfully spawned DReyeVR pawn"));
+        LOG("Successfully spawned DReyeVR pawn");
     }
 }
 
@@ -120,10 +120,10 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
 {
     if (EgoVehiclePtr != nullptr || bDoSpawnEgoVehicle == false)
     {
-        UE_LOG(LogTemp, Log, TEXT("Not spawning new EgoVehicle"));
+        LOG("Not spawning new EgoVehicle");
         if (EgoVehiclePtr == nullptr)
         {
-            UE_LOG(LogTemp, Log, TEXT("EgoVehicle unavailable, possessing spectator by default"));
+            LOG("EgoVehicle unavailable, possessing spectator by default")
             PossessSpectator(); // NOTE: need to call SetupSpectator before this!
         }
         return true;
@@ -136,7 +136,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     {
         for (AActor *Vehicle : FoundEgoVehicles)
         {
-            UE_LOG(LogTemp, Log, TEXT("Found EgoVehicle in world: %s"), *(Vehicle->GetName()));
+            LOG("Found EgoVehicle in world: %s", *(Vehicle->GetName()));
             EgoVehiclePtr = CastChecked<AEgoVehicle>(Vehicle);
             /// TODO: handle multiple ego-vehcles? (we should only ever have one!)
             break;
@@ -144,7 +144,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     }
     else
     {
-        UE_LOG(LogTemp, Log, TEXT("Did not find EgoVehicle in map... spawning..."));
+        LOG("Did not find EgoVehicle in map... spawning...");
         auto World = GetWorld();
         check(World != nullptr);
         FActorSpawnParameters SpawnParams;
@@ -152,7 +152,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         // use the provided transform if requested, else generate a spawn point
         FTransform SpawnPt = bDoSpawnEgoVehicleTransform ? SpawnEgoVehicleTransform : GetSpawnPoint();
-        UE_LOG(LogTemp, Log, TEXT("Spawning EgoVehicle at: %s (%d)"), *SpawnPt.ToString(), bDoSpawnEgoVehicleTransform);
+        LOG("Spawning EgoVehicle at: %s (%d)", *SpawnPt.ToString(), bDoSpawnEgoVehicleTransform);
         ensure(EgoVehicleBPClass != nullptr);
         EgoVehiclePtr =
             World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnPt.GetLocation(), SpawnPt.Rotator(), SpawnParams);
@@ -165,7 +165,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     {
         // need to assign ego vehicle before possess!
         DReyeVR_Pawn->BeginEgoVehicle(EgoVehiclePtr, GetWorld());
-        UE_LOG(LogTemp, Log, TEXT("Created DReyeVR controller pawn"));
+        LOG("Created DReyeVR controller pawn");
     }
     return (EgoVehiclePtr != nullptr);
 }
@@ -185,11 +185,11 @@ void ADReyeVRGameMode::SetupSpectator()
     // spawn if necessary
     if (SpectatorPtr != nullptr)
     {
-        UE_LOG(LogTemp, Log, TEXT("Found available spectator in world"));
+        LOG("Found available spectator in world");
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("No available spectator actor in world... spawning one"));
+        LOG_WARN("No available spectator actor in world... spawning one");
         FVector SpawnLocn;
         FRotator SpawnRotn;
         if (EgoVehiclePtr != nullptr)
@@ -211,14 +211,14 @@ void ADReyeVRGameMode::SetupSpectator()
         SpectatorPtr->SetActorHiddenInGame(true);                // make spectator invisible
         SpectatorPtr->GetRootComponent()->DestroyPhysicsState(); // no physics (just no-clip)
         SpectatorPtr->SetActorEnableCollision(false);            // no collisions
-        UE_LOG(LogTemp, Log, TEXT("Successfully initiated spectator actor"));
+        LOG("Successfully initiated spectator actor");
     }
 }
 
 void ADReyeVRGameMode::BeginDestroy()
 {
     Super::BeginDestroy();
-    UE_LOG(LogTemp, Log, TEXT("Finished Game"));
+    LOG("Finished Game");
 }
 
 void ADReyeVRGameMode::Tick(float DeltaSeconds)
@@ -258,17 +258,17 @@ void ADReyeVRGameMode::PossessEgoVehicle()
 {
     if (EgoVehiclePtr == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("No EgoVehicle to possess!"));
+        LOG_WARN("No EgoVehicle to possess!");
         return;
     }
 
     if (DReyeVR_Pawn == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("No DReyeVR pawn to possess EgoVehicle! Attempting to remedy..."));
+        LOG_WARN("No DReyeVR pawn to possess EgoVehicle! Attempting to remedy...");
         SetupDReyeVRPawn();
         if (DReyeVR_Pawn == nullptr)
         {
-            UE_LOG(LogTemp, Error, TEXT("Remedy failed, unable to possess EgoVehicle"));
+            LOG_ERROR("Remedy failed, unable to possess EgoVehicle");
             return;
         }
         return;
@@ -280,7 +280,7 @@ void ADReyeVRGameMode::PossessEgoVehicle()
             return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("Possessing DReyeVR EgoVehicle"));
+    LOG("Possessing DReyeVR EgoVehicle");
     Player->Possess(DReyeVR_Pawn);
     EgoVehiclePtr->SetAutopilot(false);
 }
@@ -289,11 +289,11 @@ void ADReyeVRGameMode::PossessSpectator()
 {
     if (SpectatorPtr == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("No spectator to possess! Attempting to remedy..."));
+        LOG_WARN("No spectator to possess! Attempting to remedy...");
         SetupSpectator();
         if (SpectatorPtr == nullptr)
         {
-            UE_LOG(LogTemp, Error, TEXT("Remedy failed, unable to possess spectator"));
+            LOG_ERROR("Remedy failed, unable to possess spectator");
             return;
         }
     }
@@ -313,14 +313,14 @@ void ADReyeVRGameMode::PossessSpectator()
     }
     // repossess the ego vehicle
     Player->Possess(SpectatorPtr);
-    UE_LOG(LogTemp, Log, TEXT("Possessing spectator player"));
+    LOG("Possessing spectator player");
 }
 
 void ADReyeVRGameMode::HandoffDriverToAI()
 {
     if (EgoVehiclePtr == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("No EgoVehicle to handoff AI control"));
+        LOG_ERROR("No EgoVehicle to handoff AI control");
         return;
     }
 
@@ -329,7 +329,7 @@ void ADReyeVRGameMode::HandoffDriverToAI()
             return;
     }
     EgoVehiclePtr->SetAutopilot(true);
-    UE_LOG(LogTemp, Log, TEXT("Enabling EgoVehicle Autopilot"));
+    LOG("Enabling EgoVehicle Autopilot");
 }
 
 void ADReyeVRGameMode::ReplayPlayPause()
@@ -337,7 +337,7 @@ void ADReyeVRGameMode::ReplayPlayPause()
     auto *Replayer = UCarlaStatics::GetReplayer(GetWorld());
     if (Replayer != nullptr && Replayer->IsEnabled())
     {
-        UE_LOG(LogTemp, Log, TEXT("Toggle Replayer Play-Pause"));
+        LOG("Toggle Replayer Play-Pause");
         Replayer->PlayPause();
     }
 }
@@ -358,7 +358,7 @@ void ADReyeVRGameMode::ReplayFastForward()
     auto *Recorder = GetLiveRecorder(GetWorld());
     if (Recorder)
     {
-        UE_LOG(LogTemp, Log, TEXT("Advance replay by +1.0s"));
+        LOG("Advance replay by +1.0s");
         Recorder->ReplayJumpAmnt(1.0);
     }
 }
@@ -368,7 +368,7 @@ void ADReyeVRGameMode::ReplayRewind()
     auto *Recorder = GetLiveRecorder(GetWorld());
     if (Recorder)
     {
-        UE_LOG(LogTemp, Log, TEXT("Advance replay by -1.0s"));
+        LOG("Advance replay by -1.0s");
         Recorder->ReplayJumpAmnt(-1.0);
     }
 }
@@ -378,7 +378,7 @@ void ADReyeVRGameMode::ReplayRestart()
     auto *Recorder = GetLiveRecorder(GetWorld());
     if (Recorder)
     {
-        UE_LOG(LogTemp, Log, TEXT("Restarting recording replay..."));
+        LOG("Restarting recording replay...");
         Recorder->RestartReplay();
     }
 }
@@ -394,13 +394,12 @@ void ADReyeVRGameMode::ChangeTimestep(UWorld *World, double AmntChangeSeconds)
         {
             if (NewFactor < ReplayTimeFactorMax)
             {
-                UE_LOG(LogTemp, Log, TEXT("Increase replay time factor: %.3fx -> %.3fx"), ReplayTimeFactor, NewFactor);
+                LOG("Increase replay time factor: %.3fx -> %.3fx", ReplayTimeFactor, NewFactor);
                 Replayer->SetTimeFactor(NewFactor);
             }
             else
             {
-                UE_LOG(LogTemp, Log, TEXT("Unable to increase replay time factor (%.3f) beyond %.3fx"),
-                       ReplayTimeFactor, ReplayTimeFactorMax);
+                LOG("Unable to increase replay time factor (%.3f) beyond %.3fx", ReplayTimeFactor, ReplayTimeFactorMax);
                 Replayer->SetTimeFactor(ReplayTimeFactorMax);
             }
         }
@@ -408,13 +407,12 @@ void ADReyeVRGameMode::ChangeTimestep(UWorld *World, double AmntChangeSeconds)
         {
             if (NewFactor > ReplayTimeFactorMin)
             {
-                UE_LOG(LogTemp, Log, TEXT("Decrease replay time factor: %.3fx -> %.3fx"), ReplayTimeFactor, NewFactor);
+                LOG("Decrease replay time factor: %.3fx -> %.3fx", ReplayTimeFactor, NewFactor);
                 Replayer->SetTimeFactor(NewFactor);
             }
             else
             {
-                UE_LOG(LogTemp, Log, TEXT("Unable to decrease replay time factor (%.3f) below %.3fx"), ReplayTimeFactor,
-                       ReplayTimeFactorMin);
+                LOG("Unable to decrease replay time factor (%.3f) below %.3fx", ReplayTimeFactor, ReplayTimeFactorMin);
                 Replayer->SetTimeFactor(ReplayTimeFactorMin);
             }
         }
@@ -440,8 +438,7 @@ void ADReyeVRGameMode::SetupReplayer()
         Replayer->SetSyncMode(bReplaySync);
         if (bReplaySync)
         {
-            UE_LOG(LogTemp, Warning,
-                   TEXT("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)"));
+            LOG_WARN("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)");
         }
         bRecorderInitiated = true;
     }
@@ -482,7 +479,7 @@ void ADReyeVRGameMode::DrawBBoxes()
             FVector Origin;
             FVector BoxExtent;
             A->GetActorBounds(true, Origin, BoxExtent, false);
-            // UE_LOG(LogTemp, Log, TEXT("Origin: %s Extent %s"), *Origin.ToString(), *BoxExtent.ToString());
+            // LOG("Origin: %s Extent %s"), *Origin.ToString(), *BoxExtent.ToString());
             // divide by 100 to get from m to cm, multiply by 2 bc the cube is scaled in both X and Y
             BBox->SetActorScale3D(2 * BoxExtent / 100.f);
             BBox->SetActorLocation(Origin);

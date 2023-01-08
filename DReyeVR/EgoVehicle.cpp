@@ -17,6 +17,8 @@
 // Sets default values
 AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
 {
+    LOG("Spawning Ego Vehicle: %s", *FString(this->GetName()));
+
     ReadConfigVariables();
 
     // this actor ticks AFTER the physics simulation is done
@@ -40,6 +42,8 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
 
     // Initialize the steering wheel
     ConstructSteeringWheel();
+
+    LOG("Finished spawning %s", *FString(this->GetName()));
 }
 
 void AEgoVehicle::ReadConfigVariables()
@@ -96,7 +100,7 @@ void AEgoVehicle::BeginPlay()
     // Register Ego Vehicle with ActorRegistry
     Register();
 
-    UE_LOG(LogTemp, Log, TEXT("Initialized DReyeVR EgoVehicle"));
+    LOG("Initialized DReyeVR EgoVehicle");
 }
 
 void AEgoVehicle::BeginDestroy()
@@ -218,7 +222,7 @@ void AEgoVehicle::SetCameraRootPose(const FTransform &CameraPoseTransform)
 {
     // sets the base posision of the Camera root (where the camera is at "rest")
     this->CameraPose = CameraPoseTransform;
-    UE_LOG(LogTemp, Log, TEXT("Setting camera pose to: %s"), *(CameraPose + CameraPoseOffset).ToString());
+    LOG("Setting camera pose to: %s", *(CameraPose + CameraPoseOffset).ToString());
 
     // First, set the root of the camera to the driver's seat head pos
     VRCameraRoot->SetRelativeLocation(CameraPose.GetLocation() + CameraPoseOffset.GetLocation());
@@ -384,7 +388,7 @@ void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
     ensure(EgoSensor != nullptr);
     if (EgoSensor == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("EgoSensor initialization failed!"));
+        LOG_WARN("EgoSensor initialization failed!");
         return;
     }
 
@@ -422,7 +426,7 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
                                            class UPlanarReflectionComponent *Reflection,
                                            class USkeletalMeshComponent *VehicleMesh)
 {
-    UE_LOG(LogTemp, Log, TEXT("Initializing %s mirror"), *Name)
+    LOG("Initializing %s mirror", *Name)
 
     check(MirrorSM != nullptr);
     MirrorSM->SetupAttachment(VehicleMesh);
