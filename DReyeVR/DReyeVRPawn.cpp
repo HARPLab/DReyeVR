@@ -70,7 +70,16 @@ void ADReyeVRPawn::BeginPlay()
     ensure(World != nullptr);
 }
 
-void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerController *PlayerIn)
+void ADReyeVRPawn::BeginPlayer(APlayerController *PlayerIn)
+{
+    Player = PlayerIn;
+    ensure(Player != nullptr);
+
+    // Setup the HUD
+    InitFlatHUD();
+}
+
+void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World)
 {
     /// NOTE: this should be run very early!
     // before anything that needs the EgoVehicle pointer (since this initializes it!)
@@ -79,17 +88,12 @@ void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerC
     ensure(EgoVehicle != nullptr);
     EgoVehicle->SetPawn(this);
 
-    Player = PlayerIn;
-    ensure(Player != nullptr);
-
     // register inputs that require EgoVehicle
     ensure(InputComponent != nullptr);
     SetupEgoVehicleInputComponent(InputComponent, EgoVehicle);
 
+    check(World != nullptr);
     FirstPersonCam->RegisterComponentWithWorld(World);
-
-    // Setup the HUD
-    InitFlatHUD(Player);
 }
 
 void ADReyeVRPawn::BeginDestroy()
@@ -232,13 +236,14 @@ void ADReyeVRPawn::DrawSpectatorScreen(const FVector &GazeOrigin, const FVector 
 /// ----------------:FLATHUD:----------------- ///
 /// ========================================== ///
 
-void ADReyeVRPawn::InitFlatHUD(APlayerController *P)
+void ADReyeVRPawn::InitFlatHUD()
 {
-    check(P);
-    AHUD *Raw_HUD = P->GetHUD();
+    check(Player);
+    class AHUD *Raw_HUD = Player->GetHUD();
+    ensure(Raw_HUD);
     FlatHUD = Cast<ADReyeVRHUD>(Raw_HUD);
     if (FlatHUD)
-        FlatHUD->SetPlayer(P);
+        FlatHUD->SetPlayer(Player);
     else
         UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
     // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
@@ -652,8 +657,8 @@ void ADReyeVRPawn::SetSteeringKbd(const float SteeringInput)
     else
     {
         // so the steering wheel does go to 0 when letting go
-        ensure(EgoVehicle != nullptr);
-        EgoVehicle->VehicleInputs.Steering = 0;
+        if (EgoVehicle != nullptr)
+            EgoVehicle->VehicleInputs.Steering = 0;
     }
 }
 

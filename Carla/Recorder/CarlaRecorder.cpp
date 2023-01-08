@@ -727,27 +727,12 @@ void ACarlaRecorder::CreateRecorderEventAdd(
 }
 
 // DReyeVR replayer functions
-void ACarlaRecorder::RecPlayPause()
+void ACarlaRecorder::ReplayJumpAmnt(double AmntInSeconds)
 {
-  Replayer.PlayPause();
+  Replayer.Advance(AmntInSeconds);
 }
 
-void ACarlaRecorder::RecFastForward()
-{
-  Replayer.Advance(1.f);
-}
-
-void ACarlaRecorder::RecRewind()
-{
-  Replayer.Advance(-1.f);
-}
-
-void ACarlaRecorder::RecRestart()
+void ACarlaRecorder::RestartReplay()
 {
   Replayer.Restart();
-}
-
-void ACarlaRecorder::IncrTimeFactor(const float Amnt_s)
-{
-  Replayer.IncrTimeFactor(Amnt_s);
 }

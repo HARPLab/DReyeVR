@@ -836,12 +836,7 @@ void CarlaReplayer::ProcessFrameByFrame()
     Stop();
 }
 
-void CarlaReplayer::PlayPause()
-{
-  Paused = !Paused;
-}
-
-void CarlaReplayer::Restart()
+void CarlaReplayer::Restart() 
 {
   // Use same params as they were initially
   ReplayFile(LastReplay.Filename, LastReplay.TimeStart,
@@ -889,11 +884,4 @@ void CarlaReplayer::Advance(const float Amnt)
     Restart();
     ProcessToTime(DesiredTime, true);
   }
-}
-
-void CarlaReplayer::IncrTimeFactor(const float Amnt_s)
-{
-  double NewTimeFactor = FMath::Clamp(TimeFactor + Amnt_s, 0.0, 4.0); // min of paused, max of 4x
-  UE_LOG(LogTemp, Log, TEXT("Time factor: %.3fx -> %.3fx"), TimeFactor, NewTimeFactor);
-  SetTimeFactor(NewTimeFactor);
 }

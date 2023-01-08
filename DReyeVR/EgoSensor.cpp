@@ -344,10 +344,10 @@ void AEgoSensor::SetEgoVehicle(class AEgoVehicle *NewEgoVehicle)
     check(Vehicle);
 }
 
-void AEgoSensor::SetLevel(class ADReyeVRLevel *LevelIn)
+void AEgoSensor::SetGame(class ADReyeVRGameMode *GameIn)
 {
-    DReyeVRLevel = LevelIn;
-    check(DReyeVRLevel);
+    DReyeVRGame = GameIn;
+    check(DReyeVRGame);
 }
 
 void AEgoSensor::ComputeEgoVars()
@@ -530,8 +530,8 @@ void AEgoSensor::UpdateData(const DReyeVR::AggregateData &RecorderData, const do
 
 void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per)
 {
-    if (DReyeVRLevel)
-        DReyeVRLevel->ReplayCustomActor(RecorderData, Per);
+    if (DReyeVRGame)
+        DReyeVRGame->ReplayCustomActor(RecorderData, Per);
 }
 
 /// ========================================== ///

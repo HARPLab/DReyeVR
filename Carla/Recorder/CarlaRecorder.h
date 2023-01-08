@@ -170,12 +170,9 @@ public:
   void Ticking(float DeltaSeconds);
 
   // DReyeVR replayer functions
-  void RecPlayPause();
-  void RecFastForward();
-  void RecRewind();
-  void RecRestart();
-  void IncrTimeFactor(const float Amnt);
-
+  void ReplayJumpAmnt(double AmntInSeconds);
+  void RestartReplay();
+  
 private:
 
   bool Enabled;   // enabled or not

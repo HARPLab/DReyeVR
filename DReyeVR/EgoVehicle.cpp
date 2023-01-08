@@ -148,7 +148,7 @@ void AEgoVehicle::Tick(float DeltaSeconds)
     }
 
     // Update the world level
-    TickLevel(DeltaSeconds);
+    TickGame(DeltaSeconds);
 
     // Play sound that requires constant ticking
     TickSounds();
@@ -248,10 +248,12 @@ void AEgoVehicle::SetPawn(ADReyeVRPawn *PawnIn)
 
 const UCameraComponent *AEgoVehicle::GetCamera() const
 {
+    ensure(FirstPersonCam != nullptr);
     return FirstPersonCam;
 }
 UCameraComponent *AEgoVehicle::GetCamera()
 {
+    ensure(FirstPersonCam != nullptr);
     return FirstPersonCam;
 }
 FVector AEgoVehicle::GetCameraOffset() const
@@ -282,7 +284,10 @@ const class AEgoSensor *AEgoVehicle::GetSensor() const
 
 void AEgoVehicle::InitAIPlayer()
 {
-    AI_Player = Cast<AWheeledVehicleAIController>(this->GetController());
+    this->SpawnDefaultController(); // spawns default (AI) controller and gets possessed by it
+    auto PlayerController = this->GetController();
+    ensure(PlayerController != nullptr);
+    AI_Player = Cast<AWheeledVehicleAIController>(PlayerController);
     ensure(AI_Player != nullptr);
 }
 
@@ -325,8 +330,8 @@ void AEgoVehicle::InitSensor()
     // Attach the EgoSensor as a child to the EgoVehicle
     EgoSensor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
     EgoSensor->SetEgoVehicle(this);
-    if (DReyeVRLevel)
-        EgoSensor->SetLevel(DReyeVRLevel);
+    if (DReyeVRGame)
+        EgoSensor->SetGame(DReyeVRGame);
 }
 
 void AEgoVehicle::ReplayTick()
@@ -706,16 +711,21 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
 /// -----------------:LEVEL:------------------ ///
 /// ========================================== ///
 
-void AEgoVehicle::SetLevel(ADReyeVRLevel *Level)
+void AEgoVehicle::SetGame(ADReyeVRGameMode *Game)
 {
-    this->DReyeVRLevel = Level;
-    check(DReyeVRLevel != nullptr);
+    this->DReyeVRGame = Game;
+    check(DReyeVRGame != nullptr);
 }
 
-void AEgoVehicle::TickLevel(float DeltaSeconds)
+ADReyeVRGameMode *AEgoVehicle::GetGame()
 {
-    if (this->DReyeVRLevel != nullptr)
-        DReyeVRLevel->Tick(DeltaSeconds);
+    return DReyeVRGame;
+}
+
+void AEgoVehicle::TickGame(float DeltaSeconds)
+{
+    if (this->DReyeVRGame != nullptr)
+        DReyeVRGame->Tick(DeltaSeconds);
 }
 
 /// ========================================== ///

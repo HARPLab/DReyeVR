@@ -7,7 +7,6 @@ Blueprints/*,Unreal/CarlaUE4/Content/Carla/Blueprints/
 Content/DReyeVR_Signs/*,Unreal/CarlaUE4/Content/DReyeVR/DReyeVR_Signs/
 Content/Custom/*,Unreal/CarlaUE4/Content/DReyeVR/Custom/
 Content/Default.Package.json,Unreal/CarlaUE4/Content/Carla/Config/
-Maps/*,Unreal/CarlaUE4/Content/Carla/Maps/
 LibCarla/Client/*,LibCarla/source/carla/client/
 LibCarla/Client/detail/*,LibCarla/source/carla/client/detail/
 LibCarla/Sensor/*,LibCarla/source/carla/sensor/
