@@ -17,7 +17,50 @@
 static const FString ConfigFilePath =
     FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()), TEXT("Config"), TEXT("DReyeVRConfig.ini"));
 
-static std::unordered_map<std::string, FString> Params = {};
+struct ParamString
+{
+    ParamString() = default;
+
+    FString DataStr = ""; // string representation of the data to parse into primitives
+    bool bIsDirty = true; // whether or not the data has been read (clean) or not (dirty)
+
+    template <typename T> inline T DecipherToType() const
+    {
+        // supports FVector, FVector2D, FLinearColor, FQuat, and FRotator,
+        // basically any UE4 type that has a ::InitFromString method
+        T Ret;
+        if (Ret.InitFromString(DataStr) == false)
+            UE_LOG(LogTemp, Error, TEXT("Unable to decipher \"%s\" to a type"), *DataStr);
+        return Ret;
+    }
+
+    template <> inline bool DecipherToType<bool>() const
+    {
+        return DataStr.ToBool();
+    }
+
+    template <> inline int DecipherToType<int>() const
+    {
+        return FCString::Atoi(*DataStr);
+    }
+
+    template <> inline float DecipherToType<float>() const
+    {
+        return FCString::Atof(*DataStr);
+    }
+
+    template <> inline FString DecipherToType<FString>() const
+    {
+        return DataStr;
+    }
+
+    template <> inline FName DecipherToType<FName>() const
+    {
+        return FName(*DataStr);
+    }
+};
+
+static std::unordered_map<std::string, ParamString> Params = {};
 
 static std::string CreateVariableName(const std::string &Section, const std::string &Variable)
 {
@@ -57,8 +100,7 @@ static void ReadDReyeVRConfig()
                 if (std::getline(iss_Line, Value, ';')) // gets left side of ';' for comments
                 {
                     std::string VariableName = CreateVariableName(Section, Key);
-                    FString VariableValue = FString(Value.c_str());
-                    Params[VariableName] = VariableValue;
+                    Params[VariableName].DataStr = FString(Value.c_str()).TrimStartAndEnd();
                 }
             }
         }
@@ -79,123 +121,23 @@ static void EnsureConfigsUpdated()
         ReadDReyeVRConfig();
 }
 
-static void ReadConfigValue(const FString &Section, const FString &Variable, bool &Value)
+template <typename T> static void ReadConfigValue(const FString &Section, const FString &Variable, T &Value)
 {
     EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = Params[VariableName].ToBool();
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, int &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = FCString::Atoi(*Params[VariableName]);
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, float &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = FCString::Atof(*Params[VariableName]);
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FVector &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
+    const std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) == Params.end())
     {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FVector for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
+        UE_LOG(LogTemp, Error, TEXT("No variable matching \"%s\" found for type"), *FString(VariableName.c_str()));
+        return;
     }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FVector2D &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FVector2D for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FLinearColor &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FLinearColor for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FRotator &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FRotator for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FTransform &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FTransform for %s from %s"),
-                   *FString(VariableName.c_str()), *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FString &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = Params[VariableName];
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
+    auto &Param = Params[VariableName];
+    Value = Param.DecipherToType<T>();
 
-static void ReadConfigValue(const FString &Section, const FString &Variable, FName &Value)
-{
-    FString TmpValueString;
-    ReadConfigValue(Section, Variable, TmpValueString);
-    Value = FName(*TmpValueString);
+    if (Param.bIsDirty)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Read \"%s\" => %s"), *FString(VariableName.c_str()), *Param.DataStr);
+    }
+    Param.bIsDirty = false; // has just been read
 }
 
 static FVector ComputeClosestToRayIntersection(const FVector &L0, const FVector &LDir, const FVector &R0,
