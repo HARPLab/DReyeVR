@@ -307,6 +307,25 @@ def expand_correspondences_glob(corr: Dict[str, str]) -> Dict[str, str]:
     return expanded
 
 
+def get_all_files(corr: Dict[str, str]) -> Dict[str, str]:
+    files = {}
+    for k in corr.keys():
+        if advanced_is_dir(k):
+            files[k] = sorted(
+                [
+                    advanced_join([k, f])
+                    for f in os.listdir(k)
+                    if os.path.isfile(advanced_join([k, f]))
+                ]
+            )
+        else:
+            files[k] = [k]  # already a file
+    for group in files.values():
+        for f in group:
+            assert os.path.exists(f) and not advanced_is_dir(f)
+    return files
+
+
 def check_env_var(user_in: str, env_var: str) -> Optional[str]:
     if user_in is not None:
         # just use the path provided to us

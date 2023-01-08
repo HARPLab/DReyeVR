@@ -9,9 +9,11 @@ from utils import (
     SUPPORTED_CARLA,
     SUPPORTED_SCENARIO_RUNNER,
     advanced_join,
+    advanced_is_dir,
     default_args,
     expand_correspondences_glob,
     generate_correspondences,
+    get_all_files,
     get_leaf_from_path,
     print_line,
     print_status,
@@ -41,17 +43,35 @@ def check_repo(
 
     corr = generate_correspondences(corr_file)
     all_corr = expand_correspondences_glob(corr)
+    all_files = get_all_files(all_corr)
+
+    def found(filepath: str) -> None:
+        if verbose:
+            print(f"{filepath} -- found")
+
+    def not_found(filepath: str) -> None:
+        if verbose:
+            print(f"{filepath} -- not found")
 
     missing_files: List[str] = []
     for k in all_corr.keys():
         leafname = get_leaf_from_path(k)
         expected_path: str = advanced_join([ROOT, all_corr[k], leafname])
         if os.path.exists(expected_path):
-            if verbose:
-                print(f"{expected_path} -- found")
+            if advanced_is_dir(expected_path):
+                found(expected_path)
+                for inner_f in all_files[k]:
+                    inner_f_relative: str = inner_f[inner_f.find(leafname) :]
+                    file_path = advanced_join([ROOT, all_corr[k], inner_f_relative])
+                    if os.path.exists(file_path):
+                        found(file_path)
+                    else:
+                        not_found(file_path)
+                        missing_files.append(file_path)
+            else:
+                found(expected_path)
         else:
-            if verbose:
-                print(f"{expected_path} -- not found")
+            not_found(expected_path)
             missing_files.append(expected_path)
             # raise Exception(f"Failed to find {expected_path}")
 
