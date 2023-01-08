@@ -55,8 +55,7 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Game", "NonEgoVolumePercent", NonEgoVolumePercent);
     ReadConfigValue("Game", "AmbientVolumePercent", AmbientVolumePercent);
     ReadConfigValue("Game", "DoSpawnEgoVehicleTransform", bDoSpawnEgoVehicleTransform);
-    ReadConfigValue("Game", "SpawnEgoVehicleLocation", SpawnEgoVehicleLocation);
-    ReadConfigValue("Game", "SpawnEgoVehicleRotation", SpawnEgoVehicleRotation);
+    ReadConfigValue("Game", "SpawnEgoVehicleTransform", SpawnEgoVehicleTransform);
 
     // Recorder/replayer
     ReadConfigValue("Replayer", "RunSyncReplay", bReplaySync);
@@ -152,7 +151,6 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
         SpawnParams.Owner = this;
         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         // use the provided transform if requested, else generate a spawn point
-        FTransform SpawnEgoVehicleTransform = FTransform(SpawnEgoVehicleRotation, SpawnEgoVehicleLocation, FVector::OneVector);
         FTransform SpawnPt = bDoSpawnEgoVehicleTransform ? SpawnEgoVehicleTransform : GetSpawnPoint();
         UE_LOG(LogTemp, Log, TEXT("Spawning EgoVehicle at: %s (%d)"), *SpawnPt.ToString(), bDoSpawnEgoVehicleTransform);
         ensure(EgoVehicleBPClass != nullptr);

@@ -166,6 +166,21 @@ static void ReadConfigValue(const FString &Section, const FString &Variable, FRo
     else
         UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
 }
+static void ReadConfigValue(const FString &Section, const FString &Variable, FTransform &Value)
+{
+    EnsureConfigsUpdated();
+    std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) != Params.end())
+    {
+        if (Value.InitFromString(Params[VariableName]) == false)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Unable to construct FTransform for %s from %s"),
+                   *FString(VariableName.c_str()), *(Params[VariableName]));
+        }
+    }
+    else
+        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
+}
 static void ReadConfigValue(const FString &Section, const FString &Variable, FString &Value)
 {
     EnsureConfigsUpdated();

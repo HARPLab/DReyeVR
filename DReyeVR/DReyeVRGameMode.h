@@ -80,9 +80,8 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
     float NonEgoVolumePercent;
     float AmbientVolumePercent;
 
-    bool bDoSpawnEgoVehicleTransform = false; // whether or not to use provided pose
-    FVector SpawnEgoVehicleLocation;
-    FRotator SpawnEgoVehicleRotation;
+    bool bDoSpawnEgoVehicleTransform = false; // whether or not to use provided SpawnEgoVehicleTransform
+    FTransform SpawnEgoVehicleTransform;
 
     // for recorder/replayer params
     const double AmntPlaybackIncr = 0.1; // how much the playback speed changes (seconds)

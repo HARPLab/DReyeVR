@@ -52,21 +52,15 @@ void AEgoVehicle::ReadConfigVariables()
     auto InitMirrorParams = [](const FString &Name, struct MirrorParams &Params) {
         Params.Name = Name;
         ReadConfigValue("Mirrors", Params.Name + "MirrorEnabled", Params.Enabled);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorPos", Params.MirrorPos);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorRot", Params.MirrorRot);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorScale", Params.MirrorScale);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionPos", Params.ReflectionPos);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionRot", Params.ReflectionRot);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionScale", Params.ReflectionScale);
+        ReadConfigValue("Mirrors", Params.Name + "MirrorTransform", Params.MirrorTransform);
+        ReadConfigValue("Mirrors", Params.Name + "ReflectionTransform", Params.ReflectionTransform);
         ReadConfigValue("Mirrors", Params.Name + "ScreenPercentage", Params.ScreenPercentage);
     };
     InitMirrorParams("Rear", RearMirrorParams);
     InitMirrorParams("Left", LeftMirrorParams);
     InitMirrorParams("Right", RightMirrorParams);
     // rear mirror chassis
-    ReadConfigValue("Mirrors", "RearMirrorChassisPos", RearMirrorChassisPos);
-    ReadConfigValue("Mirrors", "RearMirrorChassisRot", RearMirrorChassisRot);
-    ReadConfigValue("Mirrors", "RearMirrorChassisScale", RearMirrorChassisScale);
+    ReadConfigValue("Mirrors", "RearMirrorChassisTransform", RearMirrorChassisTransform);
     // steering wheel
     ReadConfigValue("SteeringWheel", "InitLocation", InitWheelLocation);
     ReadConfigValue("SteeringWheel", "InitRotation", InitWheelRotation);
@@ -432,18 +426,18 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
 
     check(MirrorSM != nullptr);
     MirrorSM->SetupAttachment(VehicleMesh);
-    MirrorSM->SetRelativeLocation(MirrorPos);
-    MirrorSM->SetRelativeRotation(MirrorRot);
-    MirrorSM->SetRelativeScale3D(MirrorScale);
+    MirrorSM->SetRelativeLocation(MirrorTransform.GetLocation());
+    MirrorSM->SetRelativeRotation(MirrorTransform.Rotator());
+    MirrorSM->SetRelativeScale3D(MirrorTransform.GetScale3D());
     MirrorSM->SetGenerateOverlapEvents(false); // don't collide with itself
     MirrorSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     MirrorSM->SetVisibility(true);
 
     check(Reflection != nullptr);
     Reflection->SetupAttachment(MirrorSM);
-    Reflection->SetRelativeLocation(ReflectionPos);
-    Reflection->SetRelativeRotation(ReflectionRot);
-    Reflection->SetRelativeScale3D(ReflectionScale);
+    Reflection->SetRelativeLocation(ReflectionTransform.GetLocation());
+    Reflection->SetRelativeRotation(ReflectionTransform.Rotator());
+    Reflection->SetRelativeScale3D(ReflectionTransform.GetScale3D());
     Reflection->NormalDistortionStrength = 0.0f;
     Reflection->PrefilterRoughness = 0.0f;
     Reflection->DistanceFromPlaneFadeoutStart = 1500.f;
@@ -480,9 +474,9 @@ void AEgoVehicle::ConstructMirrors()
             CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RearMirrorParams.Name + "MirrorChassisSM")));
         RearMirrorChassisSM->SetStaticMesh(RearChassisSM.Object);
         RearMirrorChassisSM->SetupAttachment(VehicleMesh);
-        RearMirrorChassisSM->SetRelativeLocation(RearMirrorChassisPos);
-        RearMirrorChassisSM->SetRelativeRotation(RearMirrorChassisRot);
-        RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisScale);
+        RearMirrorChassisSM->SetRelativeLocation(RearMirrorChassisTransform.GetLocation());
+        RearMirrorChassisSM->SetRelativeRotation(RearMirrorChassisTransform.Rotator());
+        RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisTransform.GetScale3D());
         RearMirrorChassisSM->SetGenerateOverlapEvents(false); // don't collide with itself
         RearMirrorChassisSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         RearMirrorChassisSM->SetVisibility(true);
