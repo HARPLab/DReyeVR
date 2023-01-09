@@ -1,7 +1,7 @@
 #include "EgoVehicle.h"
 #include "Carla/Actor/ActorAttribute.h"             // FActorAttribute
 #include "Carla/Actor/ActorRegistry.h"              // Register
-#include "Carla/Game/CarlaStatics.h"                // GetEpisode
+#include "Carla/Game/CarlaStatics.h"                // GetCurrentEpisode
 #include "Carla/Vehicle/CarlaWheeledVehicleState.h" // ECarlaWheeledVehicleState
 #include "DReyeVRPawn.h"                            // ADReyeVRPawn
 #include "DrawDebugHelpers.h"                       // Debug Line/Sphere
@@ -93,9 +93,6 @@ void AEgoVehicle::BeginPlay()
     World = GetWorld();
     Episode = UCarlaStatics::GetCurrentEpisode(World);
 
-    // Spawn and attach the EgoSensor
-    InitSensor();
-
     // initialize
     InitAIPlayer();
 
@@ -122,11 +119,11 @@ void AEgoVehicle::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 
-    // Update the positions based off replay data
-    ReplayTick();
-
     // Get the current data from the AEgoSensor and use it
     UpdateSensor(DeltaSeconds);
+
+    // Update the positions based off replay data
+    ReplayTick();
 
     // Draw debug lines on editor
     DebugLines();
@@ -274,6 +271,10 @@ FRotator AEgoVehicle::GetCameraRot() const
 {
     return GetCamera()->GetComponentRotation();
 }
+const class AEgoSensor *AEgoVehicle::GetSensor() const
+{
+    return const_cast<const class AEgoSensor *>(EgoSensor);
+}
 
 /// ========================================== ///
 /// ---------------:AIPLAYER:----------------- ///
@@ -312,6 +313,9 @@ void AEgoVehicle::TickAutopilot()
 
 void AEgoVehicle::InitSensor()
 {
+    // update the world on refresh (ex. --reloadWorld)
+    World = GetWorld();
+    check(World != nullptr);
     // Spawn the EyeTracker Carla sensor and attach to Ego-Vehicle:
     FActorSpawnParameters EyeTrackerSpawnInfo;
     EyeTrackerSpawnInfo.Owner = this;
@@ -371,6 +375,20 @@ void AEgoVehicle::ReplayTick()
 
 void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
 {
+    if (EgoSensor == nullptr) // Spawn and attach the EgoSensor
+    {
+        // unfortunately World->SpawnActor *sometimes* fails if used in BeginPlay so
+        // calling it once in the tick is fine to avoid this crash.
+        InitSensor();
+    }
+
+    ensure(EgoSensor != nullptr);
+    if (EgoSensor == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("EgoSensor initialization failed!"));
+        return;
+    }
+
     // Explicitly update the EgoSensor here, synchronized with EgoVehicle tick
     EgoSensor->ManualTick(DeltaSeconds); // Ensures we always get the latest data
 

@@ -265,7 +265,7 @@ void ACarlaWheeledVehicle::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, A
   if (OtherActor != nullptr && OtherActor != this)
   {
     FString actor_name = OtherActor->GetName();
-    UE_LOG(LogTemp, Log, TEXT("Collision with \"%s\""), *actor_name);
+    // UE_LOG(LogTemp, Log, TEXT("Collision with \"%s\""), *actor_name);
     // can be more flexible, such as having collisions with static props or people too
     const FString OtherName = OtherActor->GetName().ToLower();
     double Now = FPlatformTime::Seconds();

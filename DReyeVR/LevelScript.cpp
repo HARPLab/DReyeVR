@@ -1,5 +1,5 @@
 #include "LevelScript.h"
-#include "Carla/Game/CarlaStatics.h"           // UCarlaStatics::GetRecorder
+#include "Carla/Game/CarlaStatics.h"           // GetRecorder, GetEpisode
 #include "Carla/Sensor/DReyeVRSensor.h"        // ADReyeVRSensor
 #include "Carla/Vehicle/CarlaWheeledVehicle.h" // ACarlaWheeledVehicle
 #include "Components/AudioComponent.h"         // UAudioComponent

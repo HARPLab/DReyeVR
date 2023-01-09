@@ -38,7 +38,7 @@ def find_ego_sensor(world: carla.libcarla.World) -> Optional[carla.libcarla.Sens
     try:
         sensor = ego_sensors[0]  # TODO: support for multiple eye trackers?
     except IndexError:
-        print("Unable to find DReyeVR ego vehicle in world!")
+        print("Unable to find DReyeVR ego sensor in world!")
     return sensor
 
 

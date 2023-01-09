@@ -195,8 +195,8 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
       which python3
       ...
       > PATH/TO/ANACONDA/envs/carla/bin/python3 # example output
-      # go to carla/include dir from here
-      cd PATH/TO/ANACONDA/envs/carla/include
+      # go to carla/install dir from here
+      cd PATH/TO/ANACONDA/envs/carla/install
       # create a symlink between python3.7 -> python3.7m
       ln -s python3.7m python3.7
       ```
