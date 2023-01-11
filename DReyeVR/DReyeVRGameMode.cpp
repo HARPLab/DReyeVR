@@ -9,7 +9,9 @@
 #include "Carla/Vehicle/CarlaWheeledVehicle.h" // ACarlaWheeledVehicle
 #include "Carla/Weather/Weather.h"             // AWeather
 #include "Components/AudioComponent.h"         // UAudioComponent
+#include "DReyeVRFactory.h"                    // ADReyeVRFactory
 #include "DReyeVRPawn.h"                       // ADReyeVRPawn
+#include "DReyeVRUtils.h"                      // FindDefnInRegistry
 #include "EgoVehicle.h"                        // AEgoVehicle
 #include "FlatHUD.h"                           // ADReyeVRHUD
 #include "HeadMountedDisplayFunctionLibrary.h" // IsHeadMountedDisplayAvailable
@@ -47,6 +49,7 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
         ATriggerFactory::StaticClass(),
         AAIControllerFactory::StaticClass(),
         AStaticMeshFactory::StaticClass(),
+        ADReyeVRFactory::StaticClass(), // this is what registers the DReyeVR actors
     };
 
     // read config variables
@@ -59,11 +62,6 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
 
     // Recorder/replayer
     ReadConfigValue("Replayer", "RunSyncReplay", bReplaySync);
-
-    // get ego vehicle bp
-    static ConstructorHelpers::FObjectFinder<UClass> EgoVehicleBP(
-        TEXT("/Game/Carla/Blueprints/Vehicles/DReyeVR/BP_EgoVehicle_DReyeVR.BP_EgoVehicle_DReyeVR_C"));
-    EgoVehicleBPClass = EgoVehicleBP.Object;
 }
 
 void ADReyeVRGameMode::BeginPlay()
@@ -88,12 +86,8 @@ void ADReyeVRGameMode::BeginPlay()
     // Initialize DReyeVR spectator
     SetupSpectator();
 
-    // Find the ego vehicle in the world
-    /// TODO: optionally, spawn ego-vehicle here with parametrized inputs
+    // Initialize the DReyeVR EgoVehicle (and Sensor)
     SetupEgoVehicle();
-
-    // Initialize control mode
-    ControlMode = DRIVER::HUMAN;
 }
 
 void ADReyeVRGameMode::SetupDReyeVRPawn()
@@ -130,11 +124,11 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     }
     ensure(DReyeVR_Pawn);
 
-    TArray<AActor *> FoundEgoVehicles;
-    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEgoVehicle::StaticClass(), FoundEgoVehicles);
-    if (FoundEgoVehicles.Num() > 0)
+    TArray<AActor *> FoundActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEgoVehicle::StaticClass(), FoundActors);
+    if (FoundActors.Num() > 0)
     {
-        for (AActor *Vehicle : FoundEgoVehicles)
+        for (AActor *Vehicle : FoundActors)
         {
             LOG("Found EgoVehicle in world: %s", *(Vehicle->GetName()));
             EgoVehiclePtr = CastChecked<AEgoVehicle>(Vehicle);
@@ -145,28 +139,13 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     else
     {
         LOG("Did not find EgoVehicle in map... spawning...");
-        auto World = GetWorld();
-        check(World != nullptr);
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.Owner = this;
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         // use the provided transform if requested, else generate a spawn point
         FTransform SpawnPt = bDoSpawnEgoVehicleTransform ? SpawnEgoVehicleTransform : GetSpawnPoint();
-        LOG("Spawning EgoVehicle at: %s (%d)", *SpawnPt.ToString(), bDoSpawnEgoVehicleTransform);
-        ensure(EgoVehicleBPClass != nullptr);
-        EgoVehiclePtr =
-            World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnPt.GetLocation(), SpawnPt.Rotator(), SpawnParams);
+        SpawnEgoVehicle(SpawnPt); // constructs and assigns EgoVehiclePtr
     }
 
     // finalize the EgoVehicle by installing the DReyeVR_Pawn to control it
     check(EgoVehiclePtr != nullptr);
-    EgoVehiclePtr->SetGame(this);
-    if (DReyeVR_Pawn)
-    {
-        // need to assign ego vehicle before possess!
-        DReyeVR_Pawn->BeginEgoVehicle(EgoVehiclePtr, GetWorld());
-        LOG("Created DReyeVR controller pawn");
-    }
     return (EgoVehiclePtr != nullptr);
 }
 
@@ -258,9 +237,15 @@ void ADReyeVRGameMode::PossessEgoVehicle()
 {
     if (EgoVehiclePtr == nullptr)
     {
-        LOG_WARN("No EgoVehicle to possess!");
-        return;
+        LOG_WARN("No EgoVehicle to possess! Attempting to remedy...");
+        SetupEgoVehicle();
+        if (EgoVehiclePtr == nullptr)
+        {
+            LOG_ERROR("Remedy failed, unable to possess EgoVehicle");
+            return;
+        }
     }
+    EgoVehiclePtr->SetAutopilot(false);
 
     if (DReyeVR_Pawn == nullptr)
     {
@@ -277,12 +262,14 @@ void ADReyeVRGameMode::PossessEgoVehicle()
     { // check if already possessing EgoVehicle (DReyeVRPawn)
         ensure(Player != nullptr);
         if (Player->GetPawn() == DReyeVR_Pawn)
+        {
+            LOG("Currently possessing EgoVehicle");
             return;
+        }
     }
 
     LOG("Possessing DReyeVR EgoVehicle");
     Player->Possess(DReyeVR_Pawn);
-    EgoVehiclePtr->SetAutopilot(false);
 }
 
 void ADReyeVRGameMode::PossessSpectator()
@@ -301,7 +288,10 @@ void ADReyeVRGameMode::PossessSpectator()
     { // check if already possessing spectator
         ensure(Player != nullptr);
         if (Player->GetPawn() == SpectatorPtr)
+        {
+            LOG("Already possessing Spectator");
             return;
+        }
     }
 
     if (EgoVehiclePtr)
@@ -320,13 +310,21 @@ void ADReyeVRGameMode::HandoffDriverToAI()
 {
     if (EgoVehiclePtr == nullptr)
     {
-        LOG_ERROR("No EgoVehicle to handoff AI control");
-        return;
+        LOG_WARN("No EgoVehicle to handoff AI control! Attempting to remedy...");
+        SetupEgoVehicle();
+        if (EgoVehiclePtr == nullptr)
+        {
+            LOG_ERROR("Remedy failed, unable to access EgoVehicle");
+            return;
+        }
     }
 
     { // check if autopilot already enabled
         if (EgoVehiclePtr->GetAutopilotStatus() == true)
+        {
+            LOG("EgoVehicle autopilot already on");
             return;
+        }
     }
     EgoVehiclePtr->SetAutopilot(true);
     LOG("Enabling EgoVehicle Autopilot");
@@ -544,6 +542,32 @@ void ADReyeVRGameMode::SetVolume()
             Vehicle->SetVolume(NewVolume);
         }
     }
+}
+
+void ADReyeVRGameMode::SpawnEgoVehicle(const FTransform &SpawnPt)
+{
+    UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
+    check(Episode != nullptr);
+    FActorDefinition EgoVehicleDefn = FindDefnInRegistry(Episode, AEgoVehicle::StaticClass());
+    FActorDescription DReyeVRDescr;
+    { // create a Description from the Definition to spawn the actor
+        DReyeVRDescr.UId = EgoVehicleDefn.UId;
+        DReyeVRDescr.Id = EgoVehicleDefn.Id;
+        DReyeVRDescr.Class = EgoVehicleDefn.Class;
+        // ensure this vehicle is denoted by the 'hero' attribute
+        FActorAttribute HeroRole;
+        HeroRole.Id = "role_name";
+        HeroRole.Type = EActorAttributeType::String;
+        HeroRole.Value = "hero";
+        DReyeVRDescr.Variations.Add(HeroRole.Id, std::move(HeroRole));
+    }
+
+    if (Episode == nullptr)
+    {
+        LOG_ERROR("Null Episode in world!");
+    }
+    // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
+    EgoVehiclePtr = static_cast<AEgoVehicle *>(Episode->SpawnActor(SpawnPt, DReyeVRDescr));
 }
 
 FTransform ADReyeVRGameMode::GetSpawnPoint(int SpawnPointIndex) const

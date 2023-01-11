@@ -43,7 +43,6 @@ AEgoSensor::AEgoSensor(const FObjectInitializer &ObjectInitializer) : Super(Obje
 
 void AEgoSensor::ReadConfigVariables()
 {
-    ReadConfigValue("EgoSensor", "ActorRegistryID", EgoSensorID);
     ReadConfigValue("EgoSensor", "StreamSensorData", bStreamData);
     ReadConfigValue("EgoSensor", "MaxTraceLenM", MaxTraceLenM);
     ReadConfigValue("EgoSensor", "DrawDebugFocusTrace", bDrawDebugFocusTrace);
@@ -74,7 +73,7 @@ void AEgoSensor::BeginPlay()
     InitEyeTracker();
 
     // Register EgoSensor with the CarlaActorRegistry
-    Register();
+    // Register();
 
 #if USE_FOVEATED_RENDER
     // Initialize VRS plugin (using our VRS fork!)
@@ -532,18 +531,4 @@ void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const 
 {
     if (DReyeVRGame)
         DReyeVRGame->ReplayCustomActor(RecorderData, Per);
-}
-
-/// ========================================== ///
-/// -----------------:OTHER:------------------ ///
-/// ========================================== ///
-
-void AEgoSensor::Register()
-{
-    // Register EgoSensor with ActorRegistry
-    FCarlaActor::IdType ID = EgoSensorID;
-    FActorDescription SensorDescr;
-    SensorDescr.Id = "sensor.dreyevr.dreyevrsensor";
-    FString RegistryTags = "EgoSensor,DReyeVR";
-    UCarlaStatics::GetCurrentEpisode(World)->RegisterActor(*this, SensorDescr, RegistryTags, ID);
 }

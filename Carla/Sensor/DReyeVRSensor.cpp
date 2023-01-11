@@ -25,9 +25,7 @@ ADReyeVRSensor::ADReyeVRSensor(const FObjectInitializer &ObjectInitializer) : Su
 FActorDefinition ADReyeVRSensor::GetSensorDefinition()
 {
     // What our sensor is going to be called:
-    auto Definition = UActorBlueprintFunctionLibrary::MakeGenericSensorDefinition(
-        TEXT("DReyeVR"),        // folder directory   "dreyevr"
-        TEXT("DReyeVRSensor")); // sensor name        "dreyevrsensor"
+    auto Definition = UActorBlueprintFunctionLibrary::MakeGenericSensorDefinition(TEXT("dreyevr"), TEXT("sensor_base"));
 
     /// NOTE: only has EActorAttributeType for bool, int, float, string, and RGBColor
     // see /Plugins/Carla/Source/Carla/Actor/ActorAttribute.h for the whole list
@@ -45,11 +43,13 @@ void ADReyeVRSensor::Set(const FActorDescription &Description)
 
 void ADReyeVRSensor::SetOwner(AActor *Owner)
 {
-    check(Owner != nullptr);
     Super::SetOwner(Owner);
-    // Set Transform to the same as the Owner
-    SetActorLocation(Owner->GetActorLocation());
-    SetActorRotation(Owner->GetActorRotation());
+    if (Owner != nullptr)
+    {
+        // Set Transform to the same as the Owner
+        SetActorLocation(Owner->GetActorLocation());
+        SetActorRotation(Owner->GetActorRotation());
+    }
 }
 
 void ADReyeVRSensor::BeginPlay()

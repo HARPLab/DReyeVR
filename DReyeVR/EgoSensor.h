@@ -109,8 +109,4 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
 
     ////////////////:REPLAY:////////////////
     class ADReyeVRGameMode *DReyeVRGame = nullptr;
-
-    ////////////////:OTHER:////////////////
-    int EgoSensorID;
-    void Register();
 };

@@ -24,21 +24,27 @@ import carla
 
 def find_ego_vehicle(world: carla.libcarla.World) -> Optional[carla.libcarla.Vehicle]:
     DReyeVR_vehicle = None
-    ego_vehicles = world.get_actors().filter("vehicle.dreyevr.egovehicle")
-    try:
+    ego_vehicles = list(world.get_actors().filter("vehicle.dreyevr.*"))
+    if len(ego_vehicles) >= 1:
         DReyeVR_vehicle = ego_vehicles[0]  # TODO: support for multiple ego vehicles?
-    except IndexError:
-        print("Unable to find DReyeVR ego vehicle in world!")
+    else:
+        model: str = "vehicle.dreyevr.model3"
+        print(f'No EgoVehicle found, spawning one: "{model}"')
+        bp = world.get_blueprint_library().find(model)
+        transform = world.get_map().get_spawn_points()[0]
+        DReyeVR_vehicle = world.spawn_actor(bp, transform)
     return DReyeVR_vehicle
 
 
 def find_ego_sensor(world: carla.libcarla.World) -> Optional[carla.libcarla.Sensor]:
     sensor = None
-    ego_sensors = world.get_actors().filter("sensor.dreyevr.dreyevrsensor")
-    try:
-        sensor = ego_sensors[0]  # TODO: support for multiple eye trackers?
-    except IndexError:
-        print("Unable to find DReyeVR ego sensor in world!")
+    ego_sensors = list(world.get_actors().filter("sensor.dreyevr.*"))
+    if len(ego_sensors) >= 1:
+        sensor = ego_sensors[0]  # TODO: support for multiple ego sensors?
+    elif find_ego_vehicle(world) is None:
+        raise Exception(
+            "No EgoVehicle (nor EgoSensor) found in the world! EgoSensor needs EgoVehicle as parent"
+        )
     return sensor
 
 

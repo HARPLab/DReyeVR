@@ -140,6 +140,30 @@ template <typename T> static void ReadConfigValue(const FString &Section, const 
     Param.bIsDirty = false; // has just been read
 }
 
+static FActorDefinition FindDefnInRegistry(const UCarlaEpisode *Episode, const UClass *ClassType)
+{
+    // searches through the registers actors (definitions) to find one with the matching class type
+    check(Episode != nullptr);
+
+    FActorDefinition FoundDefinition;
+    bool bFoundDef = false;
+    for (const auto &Defn : Episode->GetActorDefinitions())
+    {
+        if (Defn.Class == ClassType)
+        {
+            LOG("Found appropriate definition registered at UId: %d as \"%s\"", Defn.UId, *Defn.Id);
+            FoundDefinition = Defn;
+            bFoundDef = true;
+            break; // assumes the first is the ONLY one matching this class (Ex. EgoVehicle, EgoSensor)
+        }
+    }
+    if (!bFoundDef)
+    {
+        LOG_ERROR("Unable to find appropriate definition in registry!");
+    }
+    return FoundDefinition;
+}
+
 static FVector ComputeClosestToRayIntersection(const FVector &L0, const FVector &LDir, const FVector &R0,
                                                const FVector &RDir)
 {

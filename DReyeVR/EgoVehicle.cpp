@@ -72,7 +72,6 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("SteeringWheel", "MaxSteerVelocity", MaxSteerVelocity);
     ReadConfigValue("SteeringWheel", "SteeringScale", SteeringAnimScale);
     // other/cosmetic
-    ReadConfigValue("EgoVehicle", "ActorRegistryID", EgoVehicleID);
     ReadConfigValue("EgoVehicle", "DrawDebugEditor", bDrawDebugEditor);
     // inputs
     ReadConfigValue("VehicleInputs", "ScaleSteeringDamping", ScaleSteeringInput);
@@ -89,7 +88,7 @@ void AEgoVehicle::BeginPlay()
 
     // Get information about the world
     World = GetWorld();
-    Episode = UCarlaStatics::GetCurrentEpisode(World);
+    ensure(World != nullptr);
 
     // initialize
     InitAIPlayer();
@@ -97,8 +96,8 @@ void AEgoVehicle::BeginPlay()
     // Bug-workaround for initial delay on throttle; see https://github.com/carla-simulator/carla/issues/1640
     this->GetVehicleMovementComponent()->SetTargetGear(1, true);
 
-    // Register Ego Vehicle with ActorRegistry
-    Register();
+    // get the GameMode script
+    SetGame(Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World)));
 
     LOG("Initialized DReyeVR EgoVehicle");
 }
@@ -320,12 +319,28 @@ void AEgoVehicle::InitSensor()
     World = GetWorld();
     check(World != nullptr);
     // Spawn the EyeTracker Carla sensor and attach to Ego-Vehicle:
-    FActorSpawnParameters EyeTrackerSpawnInfo;
-    EyeTrackerSpawnInfo.Owner = this;
-    EyeTrackerSpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    EgoSensor = World->SpawnActor<AEgoSensor>(GetCameraPosn(), FRotator::ZeroRotator, EyeTrackerSpawnInfo);
+    {
+        UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(World);
+        check(Episode != nullptr);
+        FActorDefinition EgoSensorDef = FindDefnInRegistry(Episode, AEgoSensor::StaticClass());
+        FActorDescription Description;
+        { // create a Description from the Definition to spawn the actor
+            Description.UId = EgoSensorDef.UId;
+            Description.Id = EgoSensorDef.Id;
+            Description.Class = EgoSensorDef.Class;
+        }
+
+        if (Episode == nullptr)
+        {
+            LOG_ERROR("Null Episode in world!");
+        }
+        // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
+        FTransform SpawnPt = FTransform(FRotator::ZeroRotator, GetCameraPosn(), FVector::OneVector);
+        EgoSensor = static_cast<AEgoSensor *>(Episode->SpawnActor(SpawnPt, Description));
+    }
     check(EgoSensor != nullptr);
     // Attach the EgoSensor as a child to the EgoVehicle
+    EgoSensor->SetOwner(this);
     EgoSensor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
     EgoSensor->SetEgoVehicle(this);
     if (DReyeVRGame)
@@ -711,8 +726,12 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
 
 void AEgoVehicle::SetGame(ADReyeVRGameMode *Game)
 {
-    this->DReyeVRGame = Game;
+    DReyeVRGame = Game;
     check(DReyeVRGame != nullptr);
+    DReyeVRGame->SetEgoVehicle(this);
+
+    DReyeVRGame->GetPawn()->BeginEgoVehicle(this, World);
+    LOG("Successfully assigned GameMode & controller pawn");
 }
 
 ADReyeVRGameMode *AEgoVehicle::GetGame()
@@ -724,33 +743,6 @@ void AEgoVehicle::TickGame(float DeltaSeconds)
 {
     if (this->DReyeVRGame != nullptr)
         DReyeVRGame->Tick(DeltaSeconds);
-}
-
-/// ========================================== ///
-/// -----------------:OTHER:------------------ ///
-/// ========================================== ///
-
-void AEgoVehicle::Register()
-{
-    FCarlaActor::IdType ID = EgoVehicleID;
-    FActorDescription Description;
-    Description.Class = ACarlaWheeledVehicle::StaticClass();
-    Description.Id = "vehicle.dreyevr.egovehicle";
-    Description.UId = ID;
-    // ensure this vehicle is denoted by the 'hero' attribute
-    FActorAttribute HeroRole;
-    HeroRole.Id = "role_name";
-    HeroRole.Type = EActorAttributeType::String;
-    HeroRole.Value = "hero";
-    Description.Variations.Add(HeroRole.Id, std::move(HeroRole));
-    // ensure the vehicle has attributes denoting number of wheels
-    FActorAttribute NumWheels;
-    NumWheels.Id = "number_of_wheels";
-    NumWheels.Type = EActorAttributeType::Int;
-    NumWheels.Value = "4";
-    Description.Variations.Add(NumWheels.Id, std::move(NumWheels));
-    FString RegistryTags = "EgoVehicle,DReyeVR";
-    Episode->RegisterActor(*this, Description, RegistryTags, ID);
 }
 
 /// ========================================== ///

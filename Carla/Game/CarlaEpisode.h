@@ -141,26 +141,6 @@ public:
     return ActorDispatcher->GetActorRegistry();
   }
 
-  FCarlaActor* RegisterActor(AActor &Actor, FActorDescription ActorDescription, FString &Tags, FActorRegistry::IdType DesiredId = 0)
-  {
-    // first bind the already-spawned actor so it does not get spawned but found
-    auto FindFunctor = [&](const FTransform &Transform, const FActorDescription &Description) {
-      return FActorSpawnResult(&Actor);
-    };
-    // need to create an FActorDefinition from our FActorDescription for some reason -_-
-    FActorDefinition ActorDefinition;
-    ActorDefinition.Id = ActorDescription.Id;
-    ActorDefinition.Class = ActorDescription.Class;
-    ActorDefinition.Tags = Tags; // list of comma-separated tags
-    ensure(ActorDispatcher != nullptr);
-    ActorDispatcher->Bind(ActorDefinition, FindFunctor);
-    // take the UId from the ActorDefinition which has just been updated in ActorDispatcher.cpp:BindAndReturnUId
-    ActorDescription.UId = ActorDispatcher->GetActorDefinitions().Last().UId;
-    // then register this actor with the ActorDispatcher
-    return ActorDispatcher->RegisterActor(Actor, ActorDescription, DesiredId);
-  }
-
-
   // ===========================================================================
   // -- Actor look up methods --------------------------------------------------
   // ===========================================================================
