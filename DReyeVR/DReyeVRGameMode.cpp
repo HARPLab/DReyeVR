@@ -61,7 +61,9 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Game", "SpawnEgoVehicleTransform", SpawnEgoVehicleTransform);
 
     // Recorder/replayer
-    ReadConfigValue("Replayer", "RunSyncReplay", bReplaySync);
+    bool bEnableReplayInterpolation = false;
+    ReadConfigValue("Replayer", "ReplayInterpolation", bEnableReplayInterpolation);
+    bReplaySync = !bEnableReplayInterpolation; // synchronous => no interpolation!
 }
 
 void ADReyeVRGameMode::BeginPlay()
@@ -340,49 +342,44 @@ void ADReyeVRGameMode::ReplayPlayPause()
     }
 }
 
-ACarlaRecorder *GetLiveRecorder(UWorld *World)
-{
-    ensure(World);
-    /// NOTE: this is quite ugly but otherwise (if we call directly to Replayer) causes linker errors with
-    /// CarlaReplayer
-    auto *Recorder = UCarlaStatics::GetRecorder(World);
-    if (Recorder != nullptr && Recorder->GetReplayer() && Recorder->GetReplayer()->IsEnabled())
-        return Recorder;
-    return nullptr;
-}
-
 void ADReyeVRGameMode::ReplayFastForward()
 {
-    auto *Recorder = GetLiveRecorder(GetWorld());
-    if (Recorder)
+    auto *Replayer = UCarlaStatics::GetReplayer(GetWorld());
+    if (Replayer != nullptr && Replayer->IsEnabled())
     {
         LOG("Advance replay by +1.0s");
-        Recorder->ReplayJumpAmnt(1.0);
+        Replayer->Advance(1.0);
     }
 }
 
 void ADReyeVRGameMode::ReplayRewind()
 {
-    auto *Recorder = GetLiveRecorder(GetWorld());
-    if (Recorder)
+    auto *Replayer = UCarlaStatics::GetReplayer(GetWorld());
+    if (Replayer != nullptr && Replayer->IsEnabled())
     {
         LOG("Advance replay by -1.0s");
-        Recorder->ReplayJumpAmnt(-1.0);
+        Replayer->Advance(-1.0);
     }
 }
 
 void ADReyeVRGameMode::ReplayRestart()
 {
-    auto *Recorder = GetLiveRecorder(GetWorld());
-    if (Recorder)
+    auto *Replayer = UCarlaStatics::GetReplayer(GetWorld());
+    if (Replayer != nullptr && Replayer->IsEnabled())
     {
         LOG("Restarting recording replay...");
-        Recorder->RestartReplay();
+        Replayer->Restart();
     }
 }
 
 void ADReyeVRGameMode::ChangeTimestep(UWorld *World, double AmntChangeSeconds)
 {
+    if (bReplaySync)
+    {
+        LOG("Changing timestep of replay during a synchronous replay is not supported. Enable ReplayInterpolation to "
+            "achieve this.")
+        return;
+    }
     ensure(World != nullptr);
     auto *Replayer = UCarlaStatics::GetReplayer(World);
     if (Replayer != nullptr && Replayer->IsEnabled())
@@ -414,7 +411,7 @@ void ADReyeVRGameMode::ChangeTimestep(UWorld *World, double AmntChangeSeconds)
                 Replayer->SetTimeFactor(ReplayTimeFactorMin);
             }
         }
-        ReplayTimeFactor = NewFactor;
+        ReplayTimeFactor = FMath::Clamp(NewFactor, ReplayTimeFactorMin, ReplayTimeFactorMax);
     }
 }
 

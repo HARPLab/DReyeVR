@@ -725,14 +725,3 @@ void ACarlaRecorder::CreateRecorderEventAdd(
     AddActorBoundingBox(CarlaActor);
   }
 }
-
-// DReyeVR replayer functions
-void ACarlaRecorder::ReplayJumpAmnt(double AmntInSeconds)
-{
-  Replayer.Advance(AmntInSeconds);
-}
-
-void ACarlaRecorder::RestartReplay()
-{
-  Replayer.Restart();
-}

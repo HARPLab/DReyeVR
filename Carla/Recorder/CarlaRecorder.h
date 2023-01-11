@@ -169,10 +169,6 @@ public:
 
   void Ticking(float DeltaSeconds);
 
-  // DReyeVR replayer functions
-  void ReplayJumpAmnt(double AmntInSeconds);
-  void RestartReplay();
-  
 private:
 
   bool Enabled;   // enabled or not

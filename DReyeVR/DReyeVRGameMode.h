@@ -88,10 +88,10 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
     FTransform SpawnEgoVehicleTransform;
 
     // for recorder/replayer params
-    const double AmntPlaybackIncr = 0.1; // how much the playback speed changes (seconds)
-    double ReplayTimeFactor = 1.0;       // same as CarlaReplayer.h::TimeFactor (but local)
-    double ReplayTimeFactorMin = 0.0;    // minimum playback of 0 (paused)
-    double ReplayTimeFactorMax = 10.0;   // maximum of 10x playback
-    bool bReplaySync = false;            // false allows for interpolation
-    bool bRecorderInitiated = false;     // allows tick-wise checking for replayer/recorder
+    const double AmntPlaybackIncr = 0.25; // how much the playback speed changes (multiplicative, ex: 1x + 0.1 = 1.1x)
+    double ReplayTimeFactor = 1.0;        // same as CarlaReplayer.h::TimeFactor (but local)
+    double ReplayTimeFactorMin = 0.0;     // minimum playback of 0 (paused)
+    double ReplayTimeFactorMax = 4.0;     // maximum of 4.0x playback
+    bool bReplaySync = false;             // false allows for interpolation
+    bool bRecorderInitiated = false;      // allows tick-wise checking for replayer/recorder
 };

@@ -26,7 +26,7 @@
 
 class UCarlaEpisode;
 
-class CarlaReplayer
+class CARLA_API CarlaReplayer
 {
   #pragma pack(push, 1)
   struct Header

@@ -322,7 +322,7 @@ static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString 
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
     ImageTask->PixelData = MakeUnique<TImagePixelData<FColor>>(PixelData);
     ImageTask->Filename = FilePath;
-    LOG("Saving screenshot to %s", *FilePath);
+    // LOG("Saving screenshot to %s", *FilePath);
     ImageTask->Format = FileFormatJPG ? EImageFormat::JPEG : EImageFormat::PNG; // lower quality, less storage
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
     ImageTask->bOverwriteFile = true;

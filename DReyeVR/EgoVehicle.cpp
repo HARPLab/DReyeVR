@@ -221,7 +221,7 @@ void AEgoVehicle::SetCameraRootPose(const FTransform &CameraPoseTransform)
 {
     // sets the base posision of the Camera root (where the camera is at "rest")
     this->CameraPose = CameraPoseTransform;
-    LOG("Setting camera pose to: %s", *(CameraPose + CameraPoseOffset).ToString());
+    // LOG("Setting camera pose to: %s", *(CameraPose + CameraPoseOffset).ToString());
 
     // First, set the root of the camera to the driver's seat head pos
     VRCameraRoot->SetRelativeLocation(CameraPose.GetLocation() + CameraPoseOffset.GetLocation());
