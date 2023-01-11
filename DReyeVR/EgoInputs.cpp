@@ -143,11 +143,15 @@ void AEgoVehicle::PressReverse()
     if (!bCanPressReverse)
         return;
     bCanPressReverse = false; // don't press again until release
+    bReverse = !bReverse;
 
     // negate to toggle bw + (forwards) and - (backwards)
     const int CurrentGear = this->GetVehicleMovementComponent()->GetTargetGear();
-    const int NewGear = CurrentGear != 0 ? -1 * CurrentGear : -1; // set to -1 if parked, else -gear
-    this->bReverse = !this->bReverse;
+    int NewGear = -1; // for when parked
+    if (CurrentGear != 0)
+    {
+        NewGear = bReverse ? -1 * std::abs(CurrentGear) : std::abs(CurrentGear); // negative => backwards
+    }
     this->GetVehicleMovementComponent()->SetTargetGear(NewGear, true); // UE4 control
 
     // apply new light state
