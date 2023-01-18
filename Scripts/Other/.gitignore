@@ -20,6 +20,8 @@ Unreal/CarlaUE4/CarlaUE4.xcworkspace
 
 # added by DReyeVR to ignore this auto-generated file
 Unreal/CarlaUE4/Config/OptionalModules.ini
+!Unreal/CarlaUE4/Plugins
+cmake-build-debug
 
 /ExportedMaps
 /Import/*
@@ -60,3 +62,5 @@ _out*
 _site
 core
 profiler.csv
+CarlaUE4.xcworkspace
+OptionalModules.ini

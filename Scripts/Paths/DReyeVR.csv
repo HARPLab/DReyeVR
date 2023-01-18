@@ -3,11 +3,10 @@ CarlaUE4,Unreal/CarlaUE4/Source/
 Configs/CarlaUE4.Build.cs,Unreal/CarlaUE4/Source/CarlaUE4
 Configs/Default*.ini,Unreal/CarlaUE4/Config/
 Configs/DReyeVRConfig.ini,Unreal/CarlaUE4/Config/
+Configs/Default.Package.json,Unreal/CarlaUE4/Content/Carla/Config/
 Configs/CarlaUE4.uproject,Unreal/CarlaUE4/
-Blueprints/*,Unreal/CarlaUE4/Content/Carla/Blueprints/
 Content/DReyeVR_Signs/*,Unreal/CarlaUE4/Content/DReyeVR/DReyeVR_Signs/
-Content/Custom/*,Unreal/CarlaUE4/Content/DReyeVR/Custom/
-Content/Default.Package.json,Unreal/CarlaUE4/Content/Carla/Config/
+Content/*,Unreal/CarlaUE4/Content/DReyeVR/
 LibCarla/Client/*,LibCarla/source/carla/client/
 LibCarla/Client/detail/*,LibCarla/source/carla/client/detail/
 LibCarla/Sensor/*,LibCarla/source/carla/sensor/

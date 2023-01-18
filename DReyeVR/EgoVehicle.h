@@ -83,6 +83,8 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class UWorld *World;
 
   private:
+    void ConstructRigidBody();
+
     ////////////////:CAMERA:////////////////
     void ConstructCameraRoot(); // needs to be called in the constructor
     UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))

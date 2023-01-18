@@ -2,6 +2,7 @@
 
 import os
 from typing import List, Optional
+import filecmp
 
 from utils import (
     CARLA_PATH_FILE,
@@ -49,11 +50,21 @@ def check_repo(
         if verbose:
             print(f"{filepath} -- found")
 
+    def check(filepath: str, local_file: str = None) -> None:
+        # make sure the files have the same content
+        if filecmp.cmp(filepath, local_file) is False:
+            if verbose:
+                print(f"{filepath} -- modified")
+            modified_files.append(filepath)
+        else:
+            found(filepath)
+
     def not_found(filepath: str) -> None:
         if verbose:
             print(f"{filepath} -- not found")
 
     missing_files: List[str] = []
+    modified_files: List[str] = []
     for k in all_corr.keys():
         leafname = get_leaf_from_path(k)
         expected_path: str = advanced_join([ROOT, all_corr[k], leafname])
@@ -64,12 +75,12 @@ def check_repo(
                     inner_f_relative: str = inner_f[inner_f.find(leafname) :]
                     file_path = advanced_join([ROOT, all_corr[k], inner_f_relative])
                     if os.path.exists(file_path):
-                        found(file_path)
+                        check(file_path, local_file=inner_f)
                     else:
                         not_found(file_path)
                         missing_files.append(file_path)
             else:
-                found(expected_path)
+                check(expected_path, local_file=k)
         else:
             not_found(expected_path)
             missing_files.append(expected_path)
@@ -79,6 +90,13 @@ def check_repo(
         print()
         print("ERROR: the following files are missing:")
         for m in missing_files:
+            print(m)
+        return False
+
+    if len(modified_files) > 0:
+        print()
+        print("ERROR: the following files are modified:")
+        for m in modified_files:
             print(m)
         return False
 

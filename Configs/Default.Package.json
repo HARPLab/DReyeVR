@@ -1,0 +1,469 @@
+{
+	"props": [
+		{
+			"name": "ATM",
+			"path": "/Game/Carla/Static/Static/SM_Atm.SM_Atm",
+			"size": "Medium"
+		},
+		{
+			"name": "Barbeque",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_Barbecue.SM_Barbecue",
+			"size": "Small"
+		},
+		{
+			"name": "Barrel",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_Barrel.SM_Barrel",
+			"size": "Small"
+		},
+		{
+			"name": "Bench01",
+			"path": "/Game/Carla/Static/Static/SM_Bench01.SM_Bench01",
+			"size": "Medium"
+		},
+		{
+			"name": "Bench02",
+			"path": "/Game/Carla/Static/Static/SM_Bench02.SM_Bench02",
+			"size": "Medium"
+		},
+		{
+			"name": "Bench03",
+			"path": "/Game/Carla/Static/Static/SM_Bench03.SM_Bench03",
+			"size": "Medium"
+		},
+		{
+			"name": "Bike Helmet",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_bikehelmet.SM_bikehelmet",
+			"size": "Tiny"
+		},
+		{
+			"name": "Bin",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_Bin.SM_Bin",
+			"size": "Medium"
+		},
+		{
+			"name": "Box01",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_Box01.SM_Box01",
+			"size": "Small"
+		},
+		{
+			"name": "Box02",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_box02.SM_box02",
+			"size": "Small"
+		},
+		{
+			"name": "Box03",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_box03.SM_box03",
+			"size": "Small"
+		},
+		{
+			"name": "Briefcase",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_Briefcase.SM_Briefcase",
+			"size": "Small"
+		},
+		{
+			"name": "BrokenTile01",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_BrokenTile01.SM_BrokenTile01",
+			"size": "Tiny"
+		},
+		{
+			"name": "BrokenTile02",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_BrokenTile02.SM_BrokenTile02",
+			"size": "Tiny"
+		},
+		{
+			"name": "BrokenTile03",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_BrokenTile03.SM_BrokenTile03",
+			"size": "Tiny"
+		},
+		{
+			"name": "BrokenTile04",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_BrokenTile04.SM_BrokenTile04",
+			"size": "Tiny"
+		},
+		{
+			"name": "BusStop",
+			"path": "/Game/Carla/Static/Static/Materials/BusStop/SM_BusStop.SM_BusStop",
+			"size": "Big"
+		},
+		{
+			"name": "VendingMachine",
+			"path": "/Game/Carla/Static/Static/SM_CarlaCola.SM_CarlaCola",
+			"size": "Medium"
+		},
+		{
+			"name": "ChainBarrier",
+			"path": "/Game/Carla/Static/Static/SM_ChainBarrier.SM_ChainBarrier",
+			"size": "Medium"
+		},
+		{
+			"name": "ChainBarrierEnd",
+			"path": "/Game/Carla/Static/Static/SM_ChainBarrierEnd.SM_ChainBarrierEnd",
+			"size": "Small"
+		},
+		{
+			"name": "ClothContainer",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_ClothContainer.SM_ClothContainer",
+			"size": "Medium"
+		},
+		{
+			"name": "ClothesLine",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_ClothesLine.SM_ClothesLine",
+			"size": "Big"
+		},
+		{
+			"name": "ColaCan",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_ColaCan.SM_ColaCan",
+			"size": "Tiny"
+		},
+		{
+			"name": "ConstructionCone",
+			"path": "/Game/Carla/Static/Dynamic/Construction/SM_ConstructionCone.SM_ConstructionCone",
+			"size": "Small"
+		},
+		{
+			"name": "Container",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_Container.SM_Container",
+			"size": "Medium"
+		},
+		{
+			"name": "CreasedBox01",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_CreasedBox01.SM_CreasedBox01",
+			"size": "Small"
+		},
+		{
+			"name": "CreasedBox02",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_CreasedBox02.SM_CreasedBox02",
+			"size": "Small"
+		},
+		{
+			"name": "CreasedBox03",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_CreasedBox03.SM_CreasedBox03",
+			"size": "Small"
+		},
+		{
+			"name": "DirtDebris01",
+			"path": "/Game/Carla/Static/Other/SM_DirtDebris01.SM_DirtDebris01",
+			"size": "Small"
+		},
+		{
+			"name": "DirtDebris02",
+			"path": "/Game/Carla/Static/Other/SM_DirtDebris02.SM_DirtDebris02",
+			"size": "Small"
+		},
+		{
+			"name": "DirtDebris03",
+			"path": "/Game/Carla/Static/Other/SM_DirtDebris03.SM_DirtDebris03",
+			"size": "Small"
+		},
+		{
+			"name": "Garbage01",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage01.SM_Garbage01",
+			"size": "Tiny"
+		},
+		{
+			"name": "Garbage02",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage02.SM_Garbage02",
+			"size": "Tiny"
+		},
+		{
+			"name": "Garbage03",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage03.SM_Garbage03",
+			"size": "Tiny"
+		},
+		{
+			"name": "Garbage04",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage04.SM_Garbage04",
+			"size": "Tiny"
+		},
+		{
+			"name": "Garbage05",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage05.SM_Garbage05",
+			"size": "Tiny"
+		},
+		{
+			"name": "Garbage06",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_Garbage06.SM_Garbage06",
+			"size": "Tiny"
+		},
+		{
+			"name": "GardenLamp",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_GardenLamp.SM_GardenLamp",
+			"size": "Small"
+		},
+		{
+			"name": "GlassContainer",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_GlassContainer.SM_GlassContainer",
+			"size": "Medium"
+		},
+		{
+			"name": "Gnome",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_Gnome.SM_Gnome",
+			"size": "Small"
+		},
+		{
+			"name": "GuitarCase",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_GuitarCase.SM_GuitarCase",
+			"size": "Small"
+		},
+		{
+			"name": "IronPlank",
+			"path": "/Game/Carla/Static/Dynamic/Trash/Wastes/SM_IronPlank.SM_IronPlank",
+			"size": "Small"
+		},
+		{
+			"name": "Kiosk_01",
+			"path": "/Game/Carla/Static/Building/SM_Kiosk01.SM_Kiosk01",
+			"size": "Medium"
+		},
+		{
+			"name": "MailBox",
+			"path": "/Game/Carla/Static/Static/SM_MailBox.SM_MailBox",
+			"size": "Small"
+		},
+		{
+			"name": "MapTable",
+			"path": "/Game/Carla/Static/Static/SM_MapTable.SM_MapTable",
+			"size": "Medium"
+		},
+		{
+			"name": "Mobile",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_Mobile.SM_Mobile",
+			"size": "Tiny"
+		},
+		{
+			"name": "MotorHelmet",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/Sm_Motorhelmet.Sm_Motorhelmet",
+			"size": "Small"
+		},
+		{
+			"name": "Pergola",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_Pergola.SM_Pergola",
+			"size": "Big"
+		},
+		{
+			"name": "PlantPot01",
+			"path": "/Game/Carla/Static/Static/SM_Plantpot01.SM_Plantpot01",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot02",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot02.SM_PlantPot02",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot03",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot03.SM_PlantPot03",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot04",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot04.SM_PlantPot04",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot05",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot05.SM_PlantPot05",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot06",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot06.SM_PlantPot06",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot07",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot07.SM_PlantPot07",
+			"size": "Small"
+		},
+		{
+			"name": "PlantPot08",
+			"path": "/Game/Carla/Static/Static/SM_PlantPot08.SM_PlantPot08",
+			"size": "Small"
+		},
+		{
+			"name": "PlasticBag",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_PlasticBag.SM_PlasticBag",
+			"size": "Small"
+		},
+		{
+			"name": "PlasticChair",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_PlasticChair.SM_PlasticChair",
+			"size": "Small"
+		},
+		{
+			"name": "PlasticTable",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_PlasticTable.SM_PlasticTable",
+			"size": "Medium"
+		},
+		{
+			"name": "PlatformGarbage01",
+			"path": "/Game/Carla/Static/Static/SM_PlatformGarbage01.SM_PlatformGarbage01",
+			"size": "Medium"
+		},
+		{
+			"name": "Purse",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_Purse.SM_Purse",
+			"size": "Small"
+		},
+		{
+			"name": "ShoppingCart",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_ShoppinCart.SM_ShoppinCart",
+			"size": "Medium"
+		},
+		{
+			"name": "ShoppingBag",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_ShoppingBag.SM_ShoppingBag",
+			"size": "Small"
+		},
+		{
+			"name": "ShoppingTrolley",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_ShoppingTrolley.SM_ShoppingTrolley",
+			"size": "Small"
+		},
+		{
+			"name": "Slide",
+			"path": "/Game/Carla/Static/Static/SM_Slide.SM_Slide",
+			"size": "Big"
+		},
+		{
+			"name": "StreetSign01",
+			"path": "/Game/Carla/Static/Static/SM_StreetAD01.SM_StreetAD01",
+			"size": "Medium"
+		},
+		{
+			"name": "StreetSign",
+			"path": "/Game/Carla/Static/Static/SM_StreetAD02.SM_StreetAD02",
+			"size": "Small"
+		},
+		{
+			"name": "StreetSign04",
+			"path": "/Game/Carla/Static/Static/SM_StreetAD04.SM_StreetAD04",
+			"size": "Small"
+		},
+		{
+			"name": "StreetBarrier",
+			"path": "/Game/Carla/Static/Dynamic/Construction/SM_StreetBarrier.SM_StreetBarrier",
+			"size": "Small"
+		},
+		{
+			"name": "StreetFountain",
+			"path": "/Game/Carla/Static/Static/SM_StreetFountain.SM_StreetFountain",
+			"size": "Small"
+		},
+		{
+			"name": "Swing",
+			"path": "/Game/Carla/Static/Static/SM_Swing.SM_Swing",
+			"size": "Medium"
+		},
+		{
+			"name": "SwingCouch",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_SwingCouch.SM_SwingCouch",
+			"size": "Medium"
+		},
+		{
+			"name": "Table",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_Table.SM_Table",
+			"size": "Medium"
+		},
+		{
+			"name": "TrafficCone01",
+			"path": "/Game/Carla/Static/Dynamic/Construction/SM_TrafficCones_01.SM_TrafficCones_01",
+			"size": "Small"
+		},
+		{
+			"name": "TrafficCone02",
+			"path": "/Game/Carla/Static/Dynamic/Construction/SM_TrafficCones_02.SM_TrafficCones_02",
+			"size": "Small"
+		},
+		{
+			"name": "TrafficWarning",
+			"path": "/Game/Carla/Static/Dynamic/Construction/SM_TrafficCones_03.SM_TrafficCones_03",
+			"size": "Big"
+		},
+		{
+			"name": "Trampoline",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_Trampoline.SM_Trampoline",
+			"size": "Big"
+		},
+		{
+			"name": "TrashBag",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_TrasdhBag.SM_TrasdhBag",
+			"size": "Small"
+		},
+		{
+			"name": "TrashCan01",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_TrashCan01.SM_TrashCan01",
+			"size": "Small"
+		},
+		{
+			"name": "TrashCan02",
+			"path": "/Game/Carla/Static/Static/SM_trashCanV3.SM_trashCanV3",
+			"size": "Small"
+		},
+		{
+			"name": "TrashCan03",
+			"path": "/Game/Carla/Static/Dynamic/Trash/SM_TrashCan03.SM_TrashCan03",
+			"size": "Small"
+		},
+		{
+			"name": "TrashCan04",
+			"path": "/Game/Carla/Static/Static/SM_TrashCan04.SM_TrashCan04",
+			"size": "Small"
+		},
+		{
+			"name": "TrashCan05",
+			"path": "/Game/Carla/Static/Static/SM_TrashCan05.SM_TrashCan05",
+			"size": "Small"
+		},
+		{
+			"name": "TravelCase",
+			"path": "/Game/Carla/Static/Dynamic/PedestrianProps/SM_TravelCase.SM_TravelCase",
+			"size": "Small"
+		},
+		{
+			"name": "WateringCan",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_WateringCan.SM_WateringCan",
+			"size": "Small"
+		},
+		{
+			"name": "DogHouse",
+			"path": "/Game/Carla/Static/Dynamic/Garden/SM_DogHouse.SM_DogHouse",
+			"size": "Small"
+		},
+		{
+			"name": "Fountain",
+			"path": "/Game/Carla/Static/Static/SM_Fountain.SM_Fountain",
+			"size": "big"
+		},
+		{
+			"name": "Advertisement",
+			"path": "/Game/Carla/Static/Dynamic/Bar-Restaurant/SM_Advertise.SM_Advertise",
+			"size": "Small"
+		},
+		{
+			"name": "Calibrator",
+			"path": "/Game/Carla/Static/Static/Calibrator/SM_calibration.SM_calibration",
+			"size": "Small"
+		},
+		{
+			"name": "DReyeVR_sign_left",
+			"path": "/Game/DReyeVR/Signs/FullSign/SM_DReyeVR_sign_left.SM_DReyeVR_sign_left",
+			"size": "Big"
+		},
+		{
+			"name": "DReyeVR_sign_straight",
+			"path": "/Game/DReyeVR/Signs/FullSign/SM_DReyeVR_sign_straight.SM_DReyeVR_sign_straight",
+			"size": "Big"
+		},
+		{
+			"name": "DReyeVR_sign_right",
+			"path": "/Game/DReyeVR/Signs/FullSign/SM_DReyeVR_sign_right.SM_DReyeVR_sign_right",
+			"size": "Big"
+		},
+		{
+			"name": "DReyeVR_sign_goal",
+			"path": "/Game/DReyeVR/Signs/FullSign/SM_DReyeVR_sign_goal.SM_DReyeVR_sign_goal",
+			"size": "Big"
+		}
+	]
+}
