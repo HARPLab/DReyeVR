@@ -75,7 +75,6 @@ Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - Static in-environment directional signs for natural navigation (See [`Docs/Signs.md`](Docs/Signs.md))
 - Adding weather to the Carla recorder/replayer/query (See this [Carla PR](https://github.com/carla-simulator/carla/pull/5235))
 - Custom dynamic 3D actors with full recording support (eg. HUD indicators for direction, AR bounding boxes, visual targets, etc.). See [CustomActor.md](Docs/CustomActor.md) for more.
-- Empty room for "blank slate" eye tracking experiments without cognitive overhead of driving
 - (DEBUG ONLY) Foveated rendering for improved performance with gaze-aware (or fixed) variable rate shading
 
 ## Install

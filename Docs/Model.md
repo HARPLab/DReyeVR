@@ -116,58 +116,10 @@ This will allow you to create a plain simple static mesh (cyan underline) from t
 Now that we have a reasonable steering wheel model as a simple static mesh, it is easy to spawn it and attach it to the ego-vehicle (currently without a steering wheel) in code. Managing it in code is nice because it will allow us to `SetRelativeRotation` of the mesh dynamically on every tick, allowing it to be responsive to our inputs at runtime. 
 
 The first step to Spawn the steering wheel in code is to find its mesh in the editor. Right click on the static mesh (cyan underline) and select `Copy Reference`. For me it looks like this:
-- `StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/SteeringWheel/SM_SteeringWheel_DReyeVR.SM_SteeringWheel_DReyeVR''`
+- `"StaticMesh'/Game/DReyeVR/EgoVehicle/model3/SteeringWheel/Wheel_StaticMeshl_model3.Wheel_StaticMeshl_model3'"`
 
 (Note that we won't be needing any of the other steering wheel assets anymore, feel free to delete them)
 
-The general strategy for adding Unreal components in code is to spawn them in the constructor then use their reference alongside their C++ API. For our case we'll only need a constructor and a tick method:
-```c++
-// In EgoVehicle.h
-////////////////:STEERINGWHEEL:////////////////
-void ConstructSteeringWheel(); // needs to be called in the constructor
-UPROPERTY(Category = Steering, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-class UStaticMeshComponent *SteeringWheel;
-void TickSteeringWheel(const float DeltaTime);
-FVector InitWheelLocation;
-FRotator InitWheelRotation;
-float MaxSteerAngleDeg;
-float MaxSteerVelocity;
-float SteeringScale;
-```
-
-```c++
-// In EgoVehicle.cpp
-void AEgoVehicle::ConstructSteeringWheel()
-{
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> SteeringWheelSM(
-        TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/SteeringWheel/"
-             "SM_SteeringWheel_DReyeVR.SM_SteeringWheel_DReyeVR'")); // from earlier
-    SteeringWheel = CreateDefaultSubobject<UStaticMeshComponent>(FName("SteeringWheel"));
-    SteeringWheel->SetStaticMesh(SteeringWheelSM.Object);
-    SteeringWheel->SetupAttachment(GetRootComponent()); // The vehicle blueprint itself
-    SteeringWheel->SetRelativeLocation(InitWheelLocation);
-    SteeringWheel->SetRelativeRotation(InitWheelRotation);
-    SteeringWheel->SetGenerateOverlapEvents(false); // don't collide with itself
-    SteeringWheel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    SteeringWheel->SetVisibility(true);
-}
-
-void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
-{
-    const FRotator CurrentRotation = SteeringWheel->GetRelativeRotation();
-    const float TargetAngle = GetVehicleInputs().Steering * SteeringScale;
-    float DeltaAngle = (TargetAngle - CurrentRotation.Roll);
-
-    // place a speed-limit on the steering wheel
-    DeltaAngle = FMath::Clamp(DeltaAngle, -MaxSteerVelocity, MaxSteerVelocity);
-
-    // create the new rotation using the deltas
-    FRotator NewRotation = CurrentRotation + DeltaTime * FRotator(0.f, 0.f, DeltaAngle);
-
-    // Clamp the roll amount so the wheel can't spin infinitely
-    NewRotation.Roll = FMath::Clamp(NewRotation.Roll, -MaxSteerAngleDeg, MaxSteerAngleDeg);
-    SteeringWheel->SetRelativeRotation(NewRotation);
-}
-```
+The general strategy for adding Unreal components in code is to spawn them in the constructor then use their reference alongside their C++ API. For our case we'll only need a constructor and a tick method (See [EgoVehicle::ConstructSteeringWheel & EgoVehicle::TickSteeringWheel](../DReyeVR/EgoVehicle.cpp))
 
 Now enjoy a responsive steering wheel asset attached to the EgoVehicle as you drive around!

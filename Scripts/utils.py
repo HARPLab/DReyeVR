@@ -308,22 +308,24 @@ def expand_correspondences_glob(corr: Dict[str, str]) -> Dict[str, str]:
 
 
 def get_all_files(corr: Dict[str, str]) -> Dict[str, str]:
-    files = {}
+    files_map = {}
     for k in corr.keys():
         if advanced_is_dir(k):
-            files[k] = sorted(
-                [
-                    advanced_join([k, f])
-                    for f in os.listdir(k)
-                    if os.path.isfile(advanced_join([k, f]))
-                ]
-            )
+            only_files = []
+            for root, _, files in os.walk(k):
+                for f in files:
+                    filepath = advanced_join([root, f])
+                    if os.path.isfile(filepath):
+                        only_files.append(filepath)
+                        assert os.path.exists(filepath)
+
+            files_map[k] = list(sorted(only_files))
         else:
-            files[k] = [k]  # already a file
-    for group in files.values():
+            files_map[k] = [k]  # already a file
+    for group in files_map.values():
         for f in group:
-            assert os.path.exists(f) and not advanced_is_dir(f)
-    return files
+            assert not advanced_is_dir(f)
+    return files_map
 
 
 def check_env_var(user_in: str, env_var: str) -> Optional[str]:

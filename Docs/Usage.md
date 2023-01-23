@@ -96,8 +96,8 @@ cd $SCENARIO_RUNNER_ROOT # go to scenario-runner/
 
 ## Using our new DReyeVR PythonAPI
 For your own custom scripts, we recommend taking a look at the [`DReyeVR_utils.py`](../PythonAPI/DReyeVR_utils.py) file, specifically the two functions:
-- `find_ego_vehicle` which takes in the `carla.libcarla.World` instance and returns the DReyeVR ego-vehicle (`carla.libcarla.Vehicle`) present in the world (or `None` if there is none)
-- `find_ego_sensor` which takes in the `carla.libcarla.World` instance and returns the DReyeVR eye tracker (`carla.libcarla.Sensor`) present in the world (or `None` if there is none)
+- `find_ego_vehicle` which takes in the `carla.libcarla.World` instance and returns the DReyeVR ego-vehicle (`carla.libcarla.Vehicle`) present in the world or spawns one in if there is none. 
+- `find_ego_sensor` which takes in the `carla.libcarla.World` instance and returns the DReyeVR eye tracker (`carla.libcarla.Sensor`) present in the world, which should be attached to the spawned EgoVehicle (if the EgoVehicle is spawned)
 
 Then, in your script, you can follow the technique we used in `schematic_mode.py` such as:
 ```python

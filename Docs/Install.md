@@ -6,7 +6,7 @@
     - If you need help setting up Carla/UE4 for VR. Take a look at [SetupVR.md](SetupVR.md) for a more in-depth explanation. 
   - You have [Unreal Engine 4.26 (Carla)](https://github.com/carlaunreal/unrealengine) installed from source
     - Note, if the link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github)
-  - You are running a **Windows 10** or **Linux** x86-64 machine or **MacOS** m1 arm64 machine
+  - You are running a **Windows 10** or **Linux** x86-64 machine or **MacOS** m1 arm64/x86-64 machine
     - If on **Windows 10** you will *need* `Make-3.81` as per [Carla documentation](https://carla.readthedocs.io/en/latest/build_windows/#system-requirements)
   - You have a fully functional vanilla [Carla 0.9.13 build](https://carla.readthedocs.io/en/0.9.13/#building-carla) installed
     - This requires the `-b 0.9.13` when cloning (`git clone https://github.com/carla-simulator/carla -b 0.9.13`) from their [GitHub repo](https://github.com/carla-simulator/carla)
@@ -15,7 +15,7 @@
     - This means if you [installed carla via pip](https://pypi.org/project/carla/), you'll **need to uninstall** it to proceed.
   - (Optional) You have a fully functional default [Carla Scenario Runner v0.9.13 build](https://github.com/carla-simulator/scenario_runner/tree/v0.9.13)
     - Simply clone `git clone https://github.com/carla-simulator/scenario_runner -b v0.9.13` and verify it works with your carla build
-- **Tl;dr**:Make sure you compile Carla 0.9.13 and ensure it is working as expected. 
+- **Tl;dr**:Make sure you compile Carla and ensure it is working as expected. 
   - ie. `make PythonAPI && make launch` completes without error
   - Can verify unit tests pass with `make check`
 
@@ -23,12 +23,10 @@
 ## DReyeVR installation command summary
 <details>
 
-**NOTE** Since DReyeVR is still installed using `bash`, on Windows you'll need [WSL](https://docs.microsoft.com/en-us/windows/wsl/install) installed.
+**NOTE** You'll need a terminal on Linux/Mac. On Windows you'll be fine with the same x64 Native Tools CMD prompt that you used to build Carla.  
 <summary> Show command lines to install and build DReyeVR </summary>
 
 ```bash
-# NOTE: On windows, this can almost all be done in WSL, except the make commands which need
-# to be done in the "Windows x64 Native Tools Command Prompt for VS 2019"
 mkdir CarlaDReyeVR && cd CarlaDReyeVR # doing everything in this "CarlaDReyeVR" directory
 
 #####################################################
@@ -44,14 +42,15 @@ mkdir CarlaDReyeVR && cd CarlaDReyeVR # doing everything in this "CarlaDReyeVR" 
 # Windows: https://carla.readthedocs.io/en/0.9.13/build_windows/
 git clone https://github.com/carla-simulator/carla -b 0.9.13
 cd carla
-./Update.sh
-make PythonAPI && make launch
+./Update.sh # linux/mac
+Update.bat # Windows
+make PythonAPI && make launch # to build vanilla Carla
 
 #####################################################
 ############## install DReyeVR plugins ##############
 #####################################################
 # (optional) install SRanipal (https://developer.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/download/latest/)
-mv /PATH/TO/SRANIPALPLUGIN/SDK/03_Unreal/Plugins/SRanipal Unreal/CarlaUE4/Plugins/ # install to carla
+mv /PATH/TO/SRANIPALPLUGIN/SDK/03_Unreal/Plugins/SRanipal Unreal/CarlaUE4/Plugins/ 
 
 # (optional) install LogitechWheelPlugin
 git clone https://github.com/HARPLab/LogitechWheelPlugin
@@ -127,7 +126,7 @@ Before installing `DReyeVR`, we'll also need to install the dependencies:
   - Our work has been tested on [SRanipal version 1.3.3.0](https://developer.vive.com/resources/vive-sense/sdk/vive-eye-and-facial-tracking-sdk/) (latest version at time of writing) which we cannot redistribute.
     - Bug 1: [Possible Bug in Unreal SDK for Left/Right Eye Gazes](https://forum.vive.com/topic/9306-possible-bug-in-unreal-sdk-for-leftright-eye-gazes/?ct=1613756396)
     - Bug 2: Conflict with using `#define ERROR` with `UE4` that prevents compilation
-        - This can be fixed by running the [`patch_sranipal.sh`](../Scripts/patch_sranipal.sh) script in [`Scripts`](../Scripts) once SRanipal is installed
+        - This can be fixed by running the [`make patch-sranipal CARLA=/PATH/TO/CARLA`](../Scripts/patch_sranipal.py) command once SRanipal is installed
     - You **must** fix **Bug 2** with in order to build, but *Bug 1* is more benign.
       - if *Bug 1* still occurs in the latest `SRanipal` then you can edit the macro `SRANIPAL_EYE_SWAP_FIXED` in `EgoSensor.h` to `true`. This simply swaps the the `Right->GazeRay` and `Left->GazeRay` in [`EgoSensor.cpp`](../DReyeVR/EgoSensor.cpp)
   - It is recommended to re-calibrate the SRanipal eye tracker plugin for every new participant in an experiment. To see how to do this check out this [guide on foveated rendering using SRanipal](https://forum.vive.com/topic/7434-getting-started-with-vrs-foveated-rendering-using-htc-vive-pro-eye-unreal-engine/) by HTC developer MariosBikos_HTC
@@ -282,7 +281,10 @@ make patch-sranipal CARLA=../carla # only applies if you use SRanipal
 ***
 
 ## Upgrading `DReyeVR`
-If you currently have an older version of `DReyeVR` installed and want to upgrade to a newer version, the recommended strategy is as follows:
+If you currently have an older version of `DReyeVR` installed and want to upgrade to a newer version, it is best to re-install DReyeVR from a fresh Carla repository. Therefore you can manually delete the `carla` repository and re-clone it directly (carefully ensuring the versions match) or use our provided scripts which attempt to reset the repository for you:
+
+<details>
+<summary> Show instructions to use DReyeVR scripts to reset CARLA repo</summary>
 
 **IMPORTANT:** the `DReyeVR` clean script will overwrite and reset the Carla repository you specify, so make your backups now if you have any unstaged code. (`git reset --hard HEAD` and `git clean -fd` will be invoked, so if you commit your local changes they will be safe)
 
@@ -293,12 +295,14 @@ make clean
 
 # it is a good idea to clean the Content/ directory which is not tracked by Carla's git system
 rm -rf Unreal/CarlaUE4/Content/
-./Update.sh # re-install the Content fresh from Carla's servers (use .bat on Windows)
+
+# re-install the Content fresh from Carla's servers
+./Update.sh # Linux/mac
+Update.bat  # Windows
 
 # next, go to DReyeVR and get the latest updates
 cd /PATH/TO/DReyeVR/
 git pull origin main # or dev, or whatever branch
-
 
 # next, run the DReyeVR-cleaner to automatically hard-reset the Carla repo
 # accept the prompt to hard-clean CARLA, note that this will reset tracked and remove untracked files
@@ -320,6 +324,8 @@ make package
 ***
 
 As long as you have no errors in the previous sections, you should be able to just build the `Carla` project with our `DReyeVR` files as follows:
+
+</details>
 
 ## Building `DReyeVR`
 - If you are not interested in using SRanipal or the LogitechWheelPlugin, you can disable these at compile-time by changing the variables in `Unreal/CarlaUE4/Source/CarlaUE4/CarlaUE4.Build.cs` to `false`:
