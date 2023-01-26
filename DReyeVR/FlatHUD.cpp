@@ -1,5 +1,12 @@
 #include "FlatHUD.h"
 
+#include "DReyeVRUtils.h" // GetTimeSeconds
+
+// fixing issue described in CarlaHUD.h regarding DrawText on Windows
+#ifdef DrawText
+#undef DrawText
+#endif
+
 void ADReyeVRHUD::SetPlayer(APlayerController *P)
 {
     Player = P;

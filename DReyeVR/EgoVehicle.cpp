@@ -732,7 +732,7 @@ void AEgoVehicle::UpdateDash()
     if (bEnableTurnSignalAction)
     {
         // Draw the signals
-        float Now = FPlatformTime::Seconds();
+        float Now = GetWorld()->GetTimeSeconds();
         const float StartTime = std::max(RightSignalTimeToDie, LeftSignalTimeToDie) - TurnSignalDuration;
         FString TurnSignalStr = "";
         constexpr static float TurnSignalBlinkRate = 0.4f; // rate of blinking

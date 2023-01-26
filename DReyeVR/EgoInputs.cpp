@@ -199,7 +199,7 @@ void AEgoVehicle::ReleaseTurnSignalR()
     if (bCanPressTurnSignalR)
         return;
     VehicleInputs.TurnSignalRight = false;
-    RightSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    RightSignalTimeToDie = GetWorld()->GetTimeSeconds() + this->TurnSignalDuration; // reset counter
     bCanPressTurnSignalR = true;
 }
 
@@ -230,7 +230,7 @@ void AEgoVehicle::ReleaseTurnSignalL()
     if (bCanPressTurnSignalL)
         return;
     VehicleInputs.TurnSignalLeft = false;
-    LeftSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    LeftSignalTimeToDie = GetWorld()->GetTimeSeconds() + this->TurnSignalDuration; // reset counter
     bCanPressTurnSignalL = true;
 }
 
