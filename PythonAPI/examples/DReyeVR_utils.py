@@ -24,11 +24,11 @@ import carla
 
 def find_ego_vehicle(world: carla.libcarla.World) -> Optional[carla.libcarla.Vehicle]:
     DReyeVR_vehicle = None
-    ego_vehicles = list(world.get_actors().filter("vehicle.dreyevr.*"))
+    ego_vehicles = list(world.get_actors().filter("harplab.dreyevr_vehicle.*"))
     if len(ego_vehicles) >= 1:
         DReyeVR_vehicle = ego_vehicles[0]  # TODO: support for multiple ego vehicles?
     else:
-        model: str = "vehicle.dreyevr.model3"
+        model: str = "harplab.dreyevr_vehicle.model3"
         print(f'No EgoVehicle found, spawning one: "{model}"')
         bp = world.get_blueprint_library().find(model)
         transform = world.get_map().get_spawn_points()[0]
@@ -38,7 +38,7 @@ def find_ego_vehicle(world: carla.libcarla.World) -> Optional[carla.libcarla.Veh
 
 def find_ego_sensor(world: carla.libcarla.World) -> Optional[carla.libcarla.Sensor]:
     sensor = None
-    ego_sensors = list(world.get_actors().filter("sensor.dreyevr.*"))
+    ego_sensors = list(world.get_actors().filter("harplab.dreyevr_sensor.*"))
     if len(ego_sensors) >= 1:
         sensor = ego_sensors[0]  # TODO: support for multiple ego sensors?
     elif find_ego_vehicle(world) is None:

@@ -51,9 +51,6 @@ class ADReyeVRPawn : public APawn
         return bIsLogiConnected;
     }
 
-    void DrawSpectatorScreen(const FVector &GazeOrigin, const FVector &GazeDir);
-    void DrawFlatHUD(float DeltaSeconds, const FVector &GazeOrigin, const FVector &GazeDir);
-
   protected:
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
@@ -71,6 +68,10 @@ class ADReyeVRPawn : public APawn
     void NextShader();
     void PrevShader();
     size_t CurrentShaderIdx = 0; // 0th shader is rgb (camera)
+
+    void TickSpectatorScreen(float DeltaSeconds); // to render the spectator screen (VR) or flat-screen hud (non-VR)
+    void DrawSpectatorScreen();
+    void DrawFlatHUD(float DeltaSeconds);
 
     ////////////////:STEAMVR:////////////////
     void InitSteamVR();         // Initialize the Head Mounted Display

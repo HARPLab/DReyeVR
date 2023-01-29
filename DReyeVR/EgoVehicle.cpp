@@ -137,16 +137,6 @@ void AEgoVehicle::Tick(float DeltaSeconds)
     // Ensure appropriate autopilot functionality is accessible from EgoVehicle
     TickAutopilot();
 
-    if (Pawn)
-    {
-        // Draw the spectator vr screen and overlay elements
-        Pawn->DrawSpectatorScreen(EgoSensor->GetData()->GetGazeOrigin(DReyeVR::Gaze::LEFT),
-                                  EgoSensor->GetData()->GetGazeDir(DReyeVR::Gaze::LEFT));
-
-        // draws combined reticle
-        Pawn->DrawFlatHUD(DeltaSeconds, EgoSensor->GetData()->GetGazeOrigin(), EgoSensor->GetData()->GetGazeDir());
-    }
-
     // Update the world level
     TickGame(DeltaSeconds);
 
@@ -486,28 +476,6 @@ void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
 
     // Explicitly update the EgoSensor here, synchronized with EgoVehicle tick
     EgoSensor->ManualTick(DeltaSeconds); // Ensures we always get the latest data
-
-    // Calculate gaze data (in world space) using eye tracker data
-    const DReyeVR::AggregateData *Data = EgoSensor->GetData();
-    // Compute World positions and orientations
-    const FRotator WorldRot = FirstPersonCam->GetComponentRotation();
-    const FVector WorldPos = FirstPersonCam->GetComponentLocation();
-
-    // First get the gaze origin and direction and vergence from the EyeTracker Sensor
-    const float RayLength = FMath::Max(1.f, Data->GetGazeVergence() / 100.f); // vergence to m (from cm)
-    const float VRMeterScale = 100.f;
-
-    // Both eyes
-    CombinedGaze = RayLength * VRMeterScale * Data->GetGazeDir();
-    CombinedOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin());
-
-    // Left eye
-    LeftGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::LEFT);
-    LeftOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::LEFT));
-
-    // Right eye
-    RightGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::RIGHT);
-    RightOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::RIGHT));
 }
 
 /// ========================================== ///
@@ -829,15 +797,34 @@ void AEgoVehicle::TickGame(float DeltaSeconds)
 void AEgoVehicle::DebugLines() const
 {
 #if WITH_EDITOR
-    // Compute World positions and orientations
-    const FRotator WorldRot = FirstPersonCam->GetComponentRotation();
-    // Rotate and add the gaze ray to the origin
-    FVector CombinedGazePosn = CombinedOrigin + WorldRot.RotateVector(CombinedGaze);
 
-    // Use Absolute Ray Position to draw debug information
     if (bDrawDebugEditor)
     {
-        DrawDebugSphere(World, CombinedGazePosn, 4.0f, 12, FColor::Blue);
+        // Calculate gaze data (in world space) using eye tracker data
+        const DReyeVR::AggregateData *Data = EgoSensor->GetData();
+        // Compute World positions and orientations
+        const FRotator &WorldRot = FirstPersonCam->GetComponentRotation();
+        const FVector &WorldPos = FirstPersonCam->GetComponentLocation();
+
+        // First get the gaze origin and direction and vergence from the EyeTracker Sensor
+        const float RayLength = FMath::Max(1.f, Data->GetGazeVergence() / 100.f); // vergence to m (from cm)
+        const float VRMeterScale = 100.f;
+
+        // Both eyes
+        const FVector CombinedGaze = RayLength * VRMeterScale * Data->GetGazeDir();
+        const FVector CombinedOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin());
+
+        // Left eye
+        const FVector LeftGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::LEFT);
+        const FVector LeftOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::LEFT));
+
+        // Right eye
+        const FVector RightGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::RIGHT);
+        const FVector RightOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::RIGHT));
+
+        // Use Absolute Ray Position to draw debug information
+        // Rotate and add the gaze ray to the origin
+        DrawDebugSphere(World, CombinedOrigin + WorldRot.RotateVector(CombinedGaze), 4.0f, 12, FColor::Blue);
 
         // Draw individual rays for left and right eye
         DrawDebugLine(World,

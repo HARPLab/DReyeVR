@@ -119,6 +119,7 @@ def main():
     random.seed(args.seed if args.seed is not None else int(time.time()))
 
     other_vehicles = []
+    ego_vehicle = None
     try:
         world = client.get_world()
 
@@ -137,7 +138,8 @@ def main():
         while True:
             world.wait_for_tick()
     finally:
-        ego_vehicle.set_autopilot(False, traffic_manager.get_port())
+        if ego_vehicle is not None:
+            ego_vehicle.set_autopilot(False, traffic_manager.get_port())
         print("\ndestroying %d vehicles" % len(other_vehicles))
         client.apply_batch([carla.command.DestroyActor(x) for x in other_vehicles])
 
@@ -152,4 +154,3 @@ if __name__ == "__main__":
         pass
     finally:
         print("\ndone.")
-

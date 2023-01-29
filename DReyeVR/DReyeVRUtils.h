@@ -30,7 +30,9 @@ struct ParamString
         // basically any UE4 type that has a ::InitFromString method
         T Ret;
         if (Ret.InitFromString(DataStr) == false)
+        {
             LOG_ERROR("Unable to decipher \"%s\" to a type", *DataStr);
+        }
         return Ret;
     }
 
@@ -262,26 +264,6 @@ static void GenerateCrosshairImage(TArray<FColor> &Src, const float Size, const 
             Src.Add(PixelColour);
         }
     }
-}
-
-static FVector2D ProjectGazeToScreen(const APlayerController *Player, const UCameraComponent *Camera,
-                                     const FVector &InOrigin, const FVector &InDir, bool bPlayerViewportRelative = true)
-{
-    if (Player == nullptr)
-        return FVector2D::ZeroVector;
-
-    // compute the 3D world point of the InOrigin + InDir
-    const FVector &WorldPos = Camera->GetComponentLocation();
-    const FRotator &WorldRot = Camera->GetComponentRotation();
-    const FVector Origin = WorldPos + WorldRot.RotateVector(InOrigin);
-    const FVector GazeDir = 100.f * WorldRot.RotateVector(InDir);
-    const FVector WorldPoint = Origin + GazeDir;
-
-    FVector2D ProjectedCoords;
-    // first project the 3D point to 2D using the player's viewport
-    UGameplayStatics::ProjectWorldToScreen(Player, WorldPoint, ProjectedCoords, bPlayerViewportRelative);
-
-    return ProjectedCoords;
 }
 
 static float CmPerSecondToXPerHour(const bool MilesPerHour)

@@ -260,7 +260,7 @@ bool AEgoSensor::ComputeGazeTrace(FHitResult &Hit, const ECollisionChannel Trace
     const FRotator &WorldRot = GetData()->GetCameraRotationAbs();
     const FVector &WorldPos = GetData()->GetCameraLocationAbs();
     const FVector GazeOrigin = WorldPos + WorldRot.RotateVector(GetData()->GetGazeOrigin());
-    const FVector GazeRay = TraceLen * WorldRot.RotateVector(GetData()->GetGazeDir());
+    const FVector GazeRay = TraceLen * WorldRot.RotateVector(GetData()->GetGazeDir()).GetSafeNormal();
     // Create collision information container.
     FCollisionQueryParams TraceParam;
     TraceParam = FCollisionQueryParams(FName("TraceParam"), true);
@@ -285,6 +285,15 @@ bool AEgoSensor::ComputeGazeTrace(FHitResult &Hit, const ECollisionChannel Trace
         bDidHit = World->SweepSingleByChannel(Hit, GazeOrigin, GazeOrigin + GazeRay, FQuat(0.f, 0.f, 0.f, 0.f),
                                               TraceChannel, Sphear, TraceParam);
     }
+
+    if (!bDidHit)
+    {
+        // focus point is just straight ahead to the maximum trace length
+        Hit.Actor = nullptr;
+        Hit.Location = GazeOrigin + GazeRay;
+        Hit.Distance = TraceLen;
+    }
+
     if (bDrawDebugFocusTrace)
     {
         DrawDebugSphere(World, Hit.Location, 8.0f, 30, FColor::Blue);

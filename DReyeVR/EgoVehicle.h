@@ -101,9 +101,6 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void InitSensor();
     class AEgoSensor *EgoSensor; // custom sensor helper that holds logic for extracting useful data
     void UpdateSensor(const float DeltaTime);
-    FVector CombinedGaze, CombinedOrigin;
-    FVector LeftGaze, LeftOrigin;
-    FVector RightGaze, RightOrigin;
 
     ///////////////:DREYEVRPAWN://///////////
     class ADReyeVRPawn *Pawn = nullptr;
