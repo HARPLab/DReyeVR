@@ -86,7 +86,7 @@ static void ReadDReyeVRConfig()
         while (std::getline(ConfigFile, Line))
         {
             // std::string stdKey = std::string(TCHAR_TO_UTF8(*Key));
-            if (Line[0] == ';') // ignore comments
+            if (Line[0] == '#' || Line[0] == ';') // ignore comments
                 continue;
             std::istringstream iss_Line(Line);
             if (Line[0] == '[') // test section
@@ -99,10 +99,11 @@ static void ReadDReyeVRConfig()
             if (std::getline(iss_Line, Key, '=')) // gets left side of '=' into FileKey
             {
                 std::string Value;
-                if (std::getline(iss_Line, Value, ';')) // gets left side of ';' for comments
+                if (std::getline(iss_Line, Value, '#')) // gets left side of '#' for comments
                 {
                     std::string VariableName = CreateVariableName(Section, Key);
-                    Params[VariableName].DataStr = FString(Value.c_str()).TrimStartAndEnd();
+                    bool bHasQuotes = false;
+                    Params[VariableName].DataStr = FString(Value.c_str()).TrimStartAndEnd().TrimQuotes(&bHasQuotes);
                 }
             }
         }

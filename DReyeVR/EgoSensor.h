@@ -6,16 +6,13 @@
 #include <chrono>                               // timing threads
 #include <cstdint>
 
-// #define USE_SRANIPAL_PLUGIN true // handled in .Build.cs file
-#define SRANIPAL_EYE_SWAP_FIXED false // as of v1.3.1.1 this bug is unfortunately still present
+#if USE_SRANIPAL_PLUGIN
 
-#ifndef _WIN32
-// unset the #define if on anything other than Windows bc the SRanipal libraries only work on Windows :(
-#undef USE_SRANIPAL_PLUGIN
-#define USE_SRANIPAL_PLUGIN false
+// avoid macro conflict since SRanipal uses "ERROR" often
+#ifdef ERROR
+#undef ERROR
 #endif
 
-#if USE_SRANIPAL_PLUGIN
 /// NOTE: Can only use SRanipal on Windows machines
 #include "SRanipalEye.h"      // SRanipal Module Framework
 #include "SRanipalEye_Core.h" // SRanipal Eye Tracker
@@ -106,6 +103,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void TickFoveatedRender();
     void ConvertToEyeTrackerSpace(FVector &inVec) const;
     bool bEnableFovRender = false;
+    bool bUseEyeTrackingVRS = true;
 
     ////////////////:REPLAY:////////////////
     class ADReyeVRGameMode *DReyeVRGame = nullptr;

@@ -1,0 +1,11 @@
+## DReyeVR 0.1.0 (for Carla 0.9.13)
+- Replace existing `LevelScript` (`ADReyeVRLevel`) with `GameMode` (`ADReyeVRGameMode`). This allows us to not need to carry the (large) map blueprint files (ue4 binary) and we can use the vanilla Carla maps without modification. By default we spawn the EgoVehicle in the first of the recommended Carla locations, but this default behavior can be changed in the PythonAPI. For instance, you can delay spawning the EgoVehicle until via PythonAPI where you can specify the spawn transform. Existing functionality is preserved using `find_ego_vehicle` and `find_ego_sensor` which spawn the DReyeVR EgoVehicle if it does not exist in the world. 
+- Added `ADReyeVRFactory` as the Carla-esque spawning and registry functionality so the `EgoVehicle` and `EgoSensor` are spawned with the same "Factory" mechanisms as existing Carla vehicles/sensors/props/etc.
+- Renamed DReyeVR-specific actors to be addressible in PythonAPI as `"harplab.dreyevr_$X.$id"` such as `"harplab.dreyevr_vehicle.model3"` and `"harplab.dreyevr_sensor.ego_sensor"`. Avoids conflicts with existing Carla PythonAPI scripts that may filter on `"vehicle.*"`.
+- Moved all blueprint (`.uasset`) content out of the Carla content (which is now entirely untouched, no need to re-update) to a separate Content folder that lies in `/Game/Content/DReyeVR/` (renamed to support future DReyeVR blueprint changes without relying on Carla content).
+- Adding check that SRanipal is within one of our recommended supported versions: `1.3.1.1`, `1.3.2.0`, & `1.3.3.0`. Also provided links in the documentation to download these versions. Additionally included a workaround for the old `patch-sranipal` which is now no longer needed.
+- Added custom `LogDReyeVR` macros (`LOG`, `LOG_WARN`, `LOG_ERROR`) for improved logging with attached file, function, and line number to the message. Done in precompilation to avoid runtime performance overhead.
+- Improved `make check` to ensure that a 1:1 file correspondence exists between Carla dest and DReyeVR source, and that all files have equal content. 
+- Improved vehicle dash with blinking turn signal and fixed bugs with inconsistent gear indicator. 
+- Fixed bugs and inconsistencies with replayer media control and special actions such as toggling reverse/turn signals in replay.
+- Updated documentation and config file

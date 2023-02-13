@@ -6,10 +6,11 @@
 [Submission Video Demonstration (YouTube)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
 <!-- Welcome to the DReyeVR wiki! -->
 
-This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) build that adds virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
-<!-- we should add a video/gif here (youtube/gdrive?) -->
+This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) simulator to add virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
 
 If you have questions, hopefully our [F.A.Q. wiki page](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) can answer some of them.
+
+**IMPORTANT:** Currently DReyeVR only supports Carla versions: [0.9.13](https://github.com/carla-simulator/carla/tree/0.9.13)
 
 ## Highlights
 ### Ego Vehicle
@@ -18,7 +19,7 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
   - We have tested with the following devices:
     | Device | VR Supported | Eye tracking | OS |
     | --- | --- | --- | --- |
-    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | :heavy_check_mark: | :heavy_check_mark: ([SRanipal](https://developer-express.vive.com/resources/vive-sense/eye-and-facial-tracking-sdk/) >=1.3.1.1) | Windows, Linux |
+    | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | :heavy_check_mark: | :heavy_check_mark: | Windows, Linux |
     | [Oculus/Meta Quest 2](https://www.oculus.com/quest-2/) | :heavy_check_mark: | :x: | Windows |
 - Vehicle controls 
   - Generic keyboard WASD + mouse
@@ -77,13 +78,16 @@ Carla-compatible **ego-vehicle sensor** (see [EgoSensor.h](DReyeVR/EgoSensor.h))
 - Custom dynamic 3D actors with full recording support (eg. HUD indicators for direction, AR bounding boxes, visual targets, etc.). See [CustomActor.md](Docs/CustomActor.md) for more.
 - (DEBUG ONLY) Foveated rendering for improved performance with gaze-aware (or fixed) variable rate shading
 
-## Install
-See [`Docs/Install.md`](Docs/Install.md) to either:
-- Install and build `DReyeVR` on top of a working Carla (0.9.13) build. 
-- Use our [Carla fork](https://github.com/HARPLab/carla/tree/DReyeVR-0.9.13) with `DReyeVR` pre-installed.
+## Install/Build
+See [`Docs/Install.md`](Docs/Install.md) to:
+- Install and build `DReyeVR` on top of a working `Carla` repository. 
+- Download plugins for `DReyeVR` required for fancy features such as:
+  - Eye tracking (SRanipal)
+  - Steering wheel/pedals (Logitech)
+- Set up a `conda` environment for DReyeVR PythonAPI
 
 ## OS compatibility
-| OS | VR | Eye tracking | Audio | Keyboard+Mouse | Racing wheel | Foveated Rendering (WIP) |
+| OS | VR | Eye tracking | Audio | Keyboard+Mouse | Racing wheel | Foveated Rendering (Editor) |
 | --- | --- | --- | --- | --- | --- | --- |
 | Windows | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | Linux | :heavy_check_mark: | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: | :x: |

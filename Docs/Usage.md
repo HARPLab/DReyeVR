@@ -415,7 +415,7 @@ void AEgoVehicle::ReadConfigVariables()
 Then, in the config file, you can simply add this variable in the section and variable described from `ReadConfigValue` as follows
 ```ini
 [MyFavourites]
-Number=867.5309; Note you can also write comments!
+Number=867.5309 # You can also write comments!
 ```
 
 And, just like the other variables in the file, you can bunch and organize them together under the same section header.
@@ -424,10 +424,19 @@ And, just like the other variables in the file, you can bunch and organize them 
 ## Motivations
 After performing (and recording) an [experiment](../ScenarioRunner/run_experiment.py), we are provided with a log of everything that happened in the simulator that we can use for live reenactment and post-hoc analysis. It is often the case that after some postprocessing on the data, we might be interested in overlaying something on the simulator view to match what a participant was seeing/doing and what the world looked like. Unfortunately, it is difficult to get the exact image frame corresponding to an exact recording event using an asynchronous screen recorder such as OBS, therefore we baked in this functionality within the engine itself, so it can directly go to any recorded event and take a high quality screenshot. The end result is the exact frame-by-frame views corresponding to the recorded world conditions without interpolation. 
 
-To enable this feature, toggle the `RunSyncReplay` flag in [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini) under the `[Replayer]` section. This will allow for frame-by-frame reenactment (otherwise the replay will respect wall-clock-time and introduce interpolation between frames). In order to additionally perform frame capture during this replay, make sure to have the `RecordFrames` flag enabled as well. There are several other frame capture options below such as resolution and gamma parameters. 
+### Synchronized replay
+To have this functionality, disable the `ReplayInterpolation` flag in [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini) under the `[Replayer]` section. Disabling replay interpolation will allow for frame-by-frame reenactment of what was captured (otherwise the replay will respect wall-clock-time and introduce interpolation between frames).
 
-The resulting frame capture images (`.png` or `.jpg` depending on the `FileFormatJPG` flag) will be found in `Unreal/CarlaUE4/{FrameDir}/{DateTimeNow}/{FrameName}*` where `{FrameDir}` and `{FrameName}` are both determined in the [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini). The `{DateTimeNow}` string is uniquely based on your machine's local current time so you can run multiple recordings without overwriting old files. 
+### Frame capture
+While replaying (so, after the experiment was conducted) we can additionally perform frame capture during this replay. Since taking high-res screnshots is expensive, this is a slow process that is done during replays when real-time performance is less important. To enable this feature, enable the `RecordFrames` flag in the `[Replayer]` section as well. There are several other frame capture options below such as resolution and gamma parameters.
 
+The resulting frame capture images (`.png` or `.jpg` depending on the `FileFormatJPG` flag) will be found in `Unreal/CarlaUE4/{FrameDir}/{DateTimeNow}/{FrameName}*` where `{FrameDir}` and `{FrameName}` are both determined in the [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini). The `{DateTimeNow}` string is uniquely based on your machine's local current time so you can run multiple recordings without overwriting old files.
+
+**NOTE**: Depending on whether you are running the Editor mode or package mode of DReyeVR will place the FrameCapture directory in the following:
+- Editor (debug): `%CARLA_ROOT%\Unreal\CarlaUE4\FrameCap\`
+- Package (shipping): `%CARLA_ROOT%\Build\UE4Carla\0.9.13-dirty\WindowsNoEditor\CarlaUE4\FrameCap\`
+
+(Showing Windows paths for convenience, but the desinations are similar for Linux/Mac)
 
 With these flags enabled, any time you initiate a replay such as:
 ```bash

@@ -45,7 +45,7 @@ public class CarlaUE4 : ModuleRules
         // Edit these variables to enable/disable features of DReyeVR
         bool UseSRanipalPlugin = true;
         bool UseLogitechPlugin = true;
-        bool UseFoveatedRender = false; // not ready for production yet!
+        bool UseFoveatedRender = false; // currently only supported in editor
         ////////////////////////////////////////////////////////////////////////////////////
 
         if (!IsWindows(Target))
@@ -64,8 +64,8 @@ public class CarlaUE4 : ModuleRules
         // Add plugin dependencies
         if (UseSRanipalPlugin)
         {
-            PrivateDependencyModuleNames.AddRange(new string[] { "SRanipalEye" });
-            PrivateIncludePathModuleNames.AddRange(new string[] { "SRanipalEye" });
+            PrivateDependencyModuleNames.AddRange(new string[] { "SRanipal", "SRanipalEye" });
+            PrivateIncludePathModuleNames.AddRange(new string[] { "SRanipal", "SRanipalEye" });
         }
 
         if (UseLogitechPlugin)

@@ -5,7 +5,6 @@
 #include "Engine.h"
 
 #include "Util/NonCopyable.h"
-#include <string_view>
 
 DECLARE_LOG_CATEGORY_EXTERN(LogDReyeVR, Log, All);
 

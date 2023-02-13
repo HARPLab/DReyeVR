@@ -28,11 +28,6 @@ Use the following commands:
         Can specify Carla path with CARLA=/PATH/TO/CARLA
         Can specify ScenarioRunner path with SR=/PATH/TO/SCENARIO_RUNNER
 
-    patch-sranipal:
-
-        Apply the patches required for building the SRanipal plugin in UE4. 
-        Requires a Carla path, use CARLA=/PATH/TO/CARLA
-
     rev | r-install:
 
         Copy files from the Carla/ScenarioRunner directory into DReyeVR. Useful for DReyeVR development.

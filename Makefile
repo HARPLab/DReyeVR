@@ -17,12 +17,9 @@ test:
 check: # TODO: make better DReyeVR unit tests!
 	python Scripts/check_install.py --carla ${CARLA} --scenario-runner ${SR} --verbose
 
-patch-sranipal:
-	python Scripts/patch_sranipal.py --carla ${CARLA}
-
 rev: r-install
 
 r-install:
 	python Scripts/r-install.py --carla ${CARLA} --scenario-runner ${SR}
 
-all: install patch-sranipal check
+all: install check
