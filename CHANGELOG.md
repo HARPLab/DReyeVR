@@ -8,4 +8,5 @@
 - Improved `make check` to ensure that a 1:1 file correspondence exists between Carla dest and DReyeVR source, and that all files have equal content. 
 - Improved vehicle dash with blinking turn signal and fixed bugs with inconsistent gear indicator. 
 - Fixed bugs and inconsistencies with replayer media control and special actions such as toggling reverse/turn signals in replay.
+- Enabled cooking for `Town06` and `Town07` in package/shipping mode.
 - Updated documentation and config file
