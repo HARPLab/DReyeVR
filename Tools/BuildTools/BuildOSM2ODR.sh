@@ -97,8 +97,8 @@ if ${BUILD_OSM2ODR} ; then
       -DCMAKE_INSTALL_PREFIX=${LIBCARLA_INSTALL_CLIENT_FOLDER} \
       -DPROJ_INCLUDE_DIR=${CARLA_BUILD_FOLDER}/proj-install/include \
       -DPROJ_LIBRARY=${CARLA_BUILD_FOLDER}/proj-install/lib/libproj.a \
-      -DXercesC_INCLUDE_DIR=${CARLA_BUILD_FOLDER}/xerces-c-3.2.3-install/include \
-      -DXercesC_LIBRARY=${CARLA_BUILD_FOLDER}/xerces-c-3.2.3-install/lib/libxerces-c.a
+      -DXercesC_INCLUDE_DIR=${CARLA_BUILD_FOLDER}/xerces-c-3.2.4-install/include \
+      -DXercesC_LIBRARY=${CARLA_BUILD_FOLDER}/xerces-c-3.2.4-install/lib/libxerces-c.a
 
   ninja osm2odr
   ninja install
