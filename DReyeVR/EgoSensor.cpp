@@ -8,13 +8,13 @@
 #include "Misc/DateTime.h"              // FDateTime
 #include "UObject/UObjectBaseUtility.h" // GetName
 
+#if USE_SRANIPAL_PLUGIN
+#include "SRanipal_API.h" // SRanipal_GetVersion
+#endif
+
 #if USE_FOVEATED_RENDER
 #include "EyeTrackerTypes.h"             // FEyeTrackerStereoGazeData
 #include "VRSBlueprintFunctionLibrary.h" // VRS
-#endif
-
-#ifdef _WIN32
-#include <windows.h> // required for file IO in Windows
 #endif
 
 #include <string>
@@ -43,7 +43,6 @@ AEgoSensor::AEgoSensor(const FObjectInitializer &ObjectInitializer) : Super(Obje
 
 void AEgoSensor::ReadConfigVariables()
 {
-    ReadConfigValue("EgoSensor", "ActorRegistryID", EgoSensorID);
     ReadConfigValue("EgoSensor", "StreamSensorData", bStreamData);
     ReadConfigValue("EgoSensor", "MaxTraceLenM", MaxTraceLenM);
     ReadConfigValue("EgoSensor", "DrawDebugFocusTrace", bDrawDebugFocusTrace);
@@ -59,8 +58,11 @@ void AEgoSensor::ReadConfigVariables()
     ReadConfigValue("Replayer", "FrameDir", FrameCapLocation);
     ReadConfigValue("Replayer", "FrameName", FrameCapFilename);
 
+#if USE_FOVEATED_RENDER
     // foveated rendering variables
-    ReadConfigValue("FoveatedRender", "Enabled", bEnableFovRender);
+    ReadConfigValue("VariableRateShading", "Enabled", bEnableFovRender);
+    ReadConfigValue("VariableRateShading", "UsingEyeTracking", bUseEyeTrackingVRS);
+#endif
 }
 
 void AEgoSensor::BeginPlay()
@@ -73,16 +75,14 @@ void AEgoSensor::BeginPlay()
     // Initialize the eye tracker hardware
     InitEyeTracker();
 
-    // Register EgoSensor with the CarlaActorRegistry
-    Register();
-
 #if USE_FOVEATED_RENDER
     // Initialize VRS plugin (using our VRS fork!)
     UVariableRateShadingFunctionLibrary::EnableVRS(bEnableFovRender);
-    UVariableRateShadingFunctionLibrary::EnableEyeTracking(bEnableFovRender);
+    UVariableRateShadingFunctionLibrary::EnableEyeTracking(bUseEyeTrackingVRS);
+    LOG("Initialized Variable Rate Shading (VRS) plugin");
 #endif
 
-    UE_LOG(LogTemp, Log, TEXT("Initialized DReyeVR EgoSensor"));
+    LOG("Initialized DReyeVR EgoSensor");
 }
 
 void AEgoSensor::BeginDestroy()
@@ -121,27 +121,50 @@ void AEgoSensor::InitEyeTracker()
 {
 #if USE_SRANIPAL_PLUGIN
     bSRanipalEnabled = false;
-    // initialize SRanipal framework for eye tracking
-    UE_LOG(LogTemp, Warning, TEXT("Attempting to use SRanipal eye tracking"));
+
+    char *SR_Version_chars = new char[128]();
+    ViveSR::anipal::SRanipal_GetVersion(SR_Version_chars);
+    const FString SR_Version(SR_Version_chars);
+    {
+        // we found that these versions work great, other versions may cause random crashes
+        const std::vector<std::string> SupportedVers = {"1.3.1.1", "1.3.2.0", "1.3.3.0"};
+        auto FoundVersion = std::find(SupportedVers.begin(), SupportedVers.end(), std::string(SR_Version_chars));
+        bool bIsCompatible = (FoundVersion != SupportedVers.end());
+        if (!bIsCompatible)
+        {
+            std::string SupportedVersStr = "";
+            for (const auto &Ver : SupportedVers)
+                SupportedVersStr += Ver + ", ";
+            LOG_ERROR("Detected incompatible SRanipal version: %s", *SR_Version);
+            LOG_WARN("Please use a compatible SRanipal version such as: {%s}", *FString(SupportedVersStr.c_str()));
+            LOG_WARN("Check out the DReyeVR documentation to download a supported version.");
+            LOG_WARN("Disabling SRanipal for now...");
+            bSRanipalEnabled = false;
+            return;
+        }
+
+        // initialize SRanipal framework for eye tracking
+        LOG("Attempting to use SRanipal (%s) for eye tracking", *SR_Version);
+    }
     // Initialize the SRanipal eye tracker (WINDOWS ONLY)
     SRanipalFramework = SRanipalEye_Framework::Instance();
     SRanipal = SRanipalEye_Core::Instance();
     // no easily discernible difference between v1 and v2
     /// TODO: use the status output from StartFramework to determine if SRanipal loaded successfully
     int Status = SRanipalFramework->StartFramework(SupportedEyeVersion::version1);
-    if (Status == SRanipalEye_Framework::FrameworkStatus::ERROR_SRANIPAL || // matches the patch_sranipal.sh script
+    if (Status == SRanipalEye_Framework::FrameworkStatus::ERROR ||
         Status == SRanipalEye_Framework::FrameworkStatus::NOT_SUPPORT)
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to start SRanipal framework!"));
+        LOG_ERROR("Unable to start SRanipal framework (%d)!", Status);
         return;
     }
     // SRanipal->SetEyeParameter_() // can set the eye gaze jitter parameter
     // see SRanipal_Eyes_Enums.h
     // Get the reference timing to synchronize the SRanipal timer with Carla
-    UE_LOG(LogTemp, Log, TEXT("Successfully started SRanipal framework"));
+    LOG("Successfully started SRanipal (%s) framework", *SR_Version);
     bSRanipalEnabled = true;
 #else
-    UE_LOG(LogTemp, Warning, TEXT("Not using SRanipal eye tracking"));
+    LOG("Not using SRanipal eye tracking");
 #endif
 }
 
@@ -173,17 +196,14 @@ void AEgoSensor::TickEyeTracker()
         // Assigns EyeOrigin and Gaze direction (normalized) of combined gaze
         Combined->GazeValid = SRanipal->GetGazeRay(GazeIndex::COMBINE, Combined->GazeOrigin, Combined->GazeDir);
         // Assign Left/Right Gaze direction
+        Left->GazeValid = SRanipal->GetGazeRay(GazeIndex::LEFT, Left->GazeOrigin, Left->GazeDir);
+        Right->GazeValid = SRanipal->GetGazeRay(GazeIndex::RIGHT, Right->GazeOrigin, Right->GazeDir);
         /// NOTE: the eye gazes are reversed bc SRanipal has a bug in their closed libraries
         // see: https://forum.vive.com/topic/9306-possible-bug-in-unreal-sdk-for-leftright-eye-gazes
-        if (SRANIPAL_EYE_SWAP_FIXED) // if the latest SRanipal does not have this bug
+        const bool SRANIPAL_EYE_SWAP_BUG = true;
+        if (SRANIPAL_EYE_SWAP_BUG) // if the latest SRanipal does not have this bug
         {
-            Left->GazeValid = SRanipal->GetGazeRay(GazeIndex::LEFT, Left->GazeOrigin, Left->GazeDir);
-            Right->GazeValid = SRanipal->GetGazeRay(GazeIndex::RIGHT, Right->GazeOrigin, Right->GazeDir);
-        }
-        else // this is the default case which we were dealing with during development
-        {
-            Left->GazeValid = SRanipal->GetGazeRay(GazeIndex::LEFT, Left->GazeOrigin, Right->GazeDir);
-            Right->GazeValid = SRanipal->GetGazeRay(GazeIndex::RIGHT, Right->GazeOrigin, Left->GazeDir);
+            std::swap(Left->GazeDir, Right->GazeDir); // need to swap the gaze directions
         }
         // Assign Eye openness
         Left->EyeOpennessValid = SRanipal->GetEyeOpenness(EyeIndex::LEFT, Left->EyeOpenness);
@@ -261,7 +281,7 @@ bool AEgoSensor::ComputeGazeTrace(FHitResult &Hit, const ECollisionChannel Trace
     const FRotator &WorldRot = GetData()->GetCameraRotationAbs();
     const FVector &WorldPos = GetData()->GetCameraLocationAbs();
     const FVector GazeOrigin = WorldPos + WorldRot.RotateVector(GetData()->GetGazeOrigin());
-    const FVector GazeRay = TraceLen * WorldRot.RotateVector(GetData()->GetGazeDir());
+    const FVector GazeRay = TraceLen * WorldRot.RotateVector(GetData()->GetGazeDir()).GetSafeNormal();
     // Create collision information container.
     FCollisionQueryParams TraceParam;
     TraceParam = FCollisionQueryParams(FName("TraceParam"), true);
@@ -286,6 +306,15 @@ bool AEgoSensor::ComputeGazeTrace(FHitResult &Hit, const ECollisionChannel Trace
         bDidHit = World->SweepSingleByChannel(Hit, GazeOrigin, GazeOrigin + GazeRay, FQuat(0.f, 0.f, 0.f, 0.f),
                                               TraceChannel, Sphear, TraceParam);
     }
+
+    if (!bDidHit)
+    {
+        // focus point is just straight ahead to the maximum trace length
+        Hit.Actor = nullptr;
+        Hit.Location = GazeOrigin + GazeRay;
+        Hit.Distance = TraceLen;
+    }
+
     if (bDrawDebugFocusTrace)
     {
         DrawDebugSphere(World, Hit.Location, 8.0f, 30, FColor::Blue);
@@ -344,10 +373,10 @@ void AEgoSensor::SetEgoVehicle(class AEgoVehicle *NewEgoVehicle)
     check(Vehicle);
 }
 
-void AEgoSensor::SetLevel(class ADReyeVRLevel *LevelIn)
+void AEgoSensor::SetGame(class ADReyeVRGameMode *GameIn)
 {
-    DReyeVRLevel = LevelIn;
-    check(DReyeVRLevel);
+    DReyeVRGame = GameIn;
+    check(DReyeVRGame);
 }
 
 void AEgoSensor::ComputeEgoVars()
@@ -419,7 +448,7 @@ void AEgoSensor::InitFrameCapture()
         FrameCapLocation = FPaths::Combine(FrameCapLocation, DirName);
 
         // create directory if not present
-        UE_LOG(LogTemp, Log, TEXT("Outputting frame capture data to %s"), *FrameCapLocation);
+        LOG("Outputting frame capture data to %s", *FrameCapLocation);
         IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
         if (!PlatformFile.DirectoryExists(*FrameCapLocation))
         {
@@ -510,8 +539,8 @@ void AEgoSensor::TickFoveatedRender()
     F.LeftEyeDirection = GetData()->GetGazeDir(DReyeVR::Gaze::LEFT);
     ConvertToEyeTrackerSpace(F.LeftEyeDirection);
     F.RightEyeOrigin = GetData()->GetGazeOrigin(DReyeVR::Gaze::RIGHT);
-    ConvertToEyeTrackerSpace(F.RightEyeDirection);
     F.RightEyeDirection = GetData()->GetGazeDir(DReyeVR::Gaze::RIGHT);
+    ConvertToEyeTrackerSpace(F.RightEyeDirection);
     F.FixationPoint = GetData()->GetFocusActorPoint();
     F.ConfidenceValue = 0.99f;
     UVariableRateShadingFunctionLibrary::UpdateStereoGazeDataToFoveatedRendering(F);
@@ -530,20 +559,6 @@ void AEgoSensor::UpdateData(const DReyeVR::AggregateData &RecorderData, const do
 
 void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per)
 {
-    if (DReyeVRLevel)
-        DReyeVRLevel->ReplayCustomActor(RecorderData, Per);
-}
-
-/// ========================================== ///
-/// -----------------:OTHER:------------------ ///
-/// ========================================== ///
-
-void AEgoSensor::Register()
-{
-    // Register EgoSensor with ActorRegistry
-    FCarlaActor::IdType ID = EgoSensorID;
-    FActorDescription SensorDescr;
-    SensorDescr.Id = "sensor.dreyevr.dreyevrsensor";
-    FString RegistryTags = "EgoSensor,DReyeVR";
-    UCarlaStatics::GetCurrentEpisode(World)->RegisterActor(*this, SensorDescr, RegistryTags, ID);
+    if (DReyeVRGame)
+        DReyeVRGame->ReplayCustomActor(RecorderData, Per);
 }

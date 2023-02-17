@@ -25,9 +25,7 @@ ADReyeVRSensor::ADReyeVRSensor(const FObjectInitializer &ObjectInitializer) : Su
 FActorDefinition ADReyeVRSensor::GetSensorDefinition()
 {
     // What our sensor is going to be called:
-    auto Definition = UActorBlueprintFunctionLibrary::MakeGenericSensorDefinition(
-        TEXT("DReyeVR"),        // folder directory   "dreyevr"
-        TEXT("DReyeVRSensor")); // sensor name        "dreyevrsensor"
+    auto Definition = UActorBlueprintFunctionLibrary::MakeGenericSensorDefinition(TEXT("dreyevr"), TEXT("sensor_base"));
 
     /// NOTE: only has EActorAttributeType for bool, int, float, string, and RGBColor
     // see /Plugins/Carla/Source/Carla/Actor/ActorAttribute.h for the whole list
@@ -45,11 +43,13 @@ void ADReyeVRSensor::Set(const FActorDescription &Description)
 
 void ADReyeVRSensor::SetOwner(AActor *Owner)
 {
-    check(Owner != nullptr);
     Super::SetOwner(Owner);
-    // Set Transform to the same as the Owner
-    SetActorLocation(Owner->GetActorLocation());
-    SetActorRotation(Owner->GetActorRotation());
+    if (Owner != nullptr)
+    {
+        // Set Transform to the same as the Owner
+        SetActorLocation(Owner->GetActorLocation());
+        SetActorRotation(Owner->GetActorRotation());
+    }
 }
 
 void ADReyeVRSensor::BeginPlay()
@@ -232,7 +232,7 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor(class UWorld *World) // s
     if (World != nullptr && World != ADReyeVRSensor::sWorld)
     {
         // check if the world has been reloaded and we need to refresh our internal pointers
-        UE_LOG(LogTemp, Warning, TEXT("Detected world change! Invalidating cached data"));
+        DReyeVR_LOG_WARN("Detected world change! Invalidating cached data");
         ADReyeVRSensor::sWorld = World;
         ADReyeVRSensor::DReyeVRSensorPtr = nullptr;
         ADReyeVRCustomActor::ActiveCustomActors.clear();
@@ -254,14 +254,14 @@ class ADReyeVRSensor *ADReyeVRSensor::GetDReyeVRSensor(class UWorld *World) // s
         }
         if (FoundActors.Num() > 1)
         {
-            UE_LOG(LogTemp, Error, TEXT("Multiple DReyeVR sensors active in the world! Not supported."));
+            DReyeVR_LOG_ERROR("Multiple DReyeVR sensors active in the world! Not supported.");
         }
     }
 
     // check if DReyeVR sensor was found
     if (ADReyeVRSensor::DReyeVRSensorPtr == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("No DReyeVRSensor found in the world!"));
+        DReyeVR_LOG_ERROR("No DReyeVRSensor found in the world!");
     }
 
     return DReyeVRSensorPtr;

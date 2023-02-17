@@ -17,7 +17,52 @@
 static const FString ConfigFilePath =
     FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()), TEXT("Config"), TEXT("DReyeVRConfig.ini"));
 
-static std::unordered_map<std::string, FString> Params = {};
+struct ParamString
+{
+    ParamString() = default;
+
+    FString DataStr = ""; // string representation of the data to parse into primitives
+    bool bIsDirty = true; // whether or not the data has been read (clean) or not (dirty)
+
+    template <typename T> inline T DecipherToType() const
+    {
+        // supports FVector, FVector2D, FLinearColor, FQuat, and FRotator,
+        // basically any UE4 type that has a ::InitFromString method
+        T Ret;
+        if (Ret.InitFromString(DataStr) == false)
+        {
+            LOG_ERROR("Unable to decipher \"%s\" to a type", *DataStr);
+        }
+        return Ret;
+    }
+
+    template <> inline bool DecipherToType<bool>() const
+    {
+        return DataStr.ToBool();
+    }
+
+    template <> inline int DecipherToType<int>() const
+    {
+        return FCString::Atoi(*DataStr);
+    }
+
+    template <> inline float DecipherToType<float>() const
+    {
+        return FCString::Atof(*DataStr);
+    }
+
+    template <> inline FString DecipherToType<FString>() const
+    {
+        return DataStr;
+    }
+
+    template <> inline FName DecipherToType<FName>() const
+    {
+        return FName(*DataStr);
+    }
+};
+
+static std::unordered_map<std::string, ParamString> Params = {};
 
 static std::string CreateVariableName(const std::string &Section, const std::string &Variable)
 {
@@ -31,7 +76,7 @@ static std::string CreateVariableName(const FString &Section, const FString &Var
 static void ReadDReyeVRConfig()
 {
     /// TODO: add feature to "hot-reload" new params during runtime
-    UE_LOG(LogTemp, Warning, TEXT("Reading config from %s"), *ConfigFilePath);
+    LOG_WARN("Reading config from %s", *ConfigFilePath);
     /// performs a single pass over the config file to collect all variables into Params
     std::ifstream ConfigFile(TCHAR_TO_ANSI(*ConfigFilePath));
     if (ConfigFile)
@@ -41,7 +86,7 @@ static void ReadDReyeVRConfig()
         while (std::getline(ConfigFile, Line))
         {
             // std::string stdKey = std::string(TCHAR_TO_UTF8(*Key));
-            if (Line[0] == ';') // ignore comments
+            if (Line[0] == '#' || Line[0] == ';') // ignore comments
                 continue;
             std::istringstream iss_Line(Line);
             if (Line[0] == '[') // test section
@@ -54,21 +99,21 @@ static void ReadDReyeVRConfig()
             if (std::getline(iss_Line, Key, '=')) // gets left side of '=' into FileKey
             {
                 std::string Value;
-                if (std::getline(iss_Line, Value, ';')) // gets left side of ';' for comments
+                if (std::getline(iss_Line, Value, '#')) // gets left side of '#' for comments
                 {
                     std::string VariableName = CreateVariableName(Section, Key);
-                    FString VariableValue = FString(Value.c_str());
-                    Params[VariableName] = VariableValue;
+                    bool bHasQuotes = false;
+                    Params[VariableName].DataStr = FString(Value.c_str()).TrimStartAndEnd().TrimQuotes(&bHasQuotes);
                 }
             }
         }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to open the config file %s"), *ConfigFilePath);
+        LOG_ERROR("Unable to open the config file %s", *ConfigFilePath);
     }
     // for (auto &e : Params){
-    //     UE_LOG(LogTemp, Warning, TEXT("%s: %s"), *FString(e.first.c_str()), *e.second);
+    //     LOG_WARN("%s: %s", *FString(e.first.c_str()), *e.second);
     // }
 }
 
@@ -79,108 +124,47 @@ static void EnsureConfigsUpdated()
         ReadDReyeVRConfig();
 }
 
-static void ReadConfigValue(const FString &Section, const FString &Variable, bool &Value)
+template <typename T> static void ReadConfigValue(const FString &Section, const FString &Variable, T &Value)
 {
     EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = Params[VariableName].ToBool();
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, int &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = FCString::Atoi(*Params[VariableName]);
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, float &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = FCString::Atof(*Params[VariableName]);
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FVector &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
+    const std::string VariableName = CreateVariableName(Section, Variable);
+    if (Params.find(VariableName) == Params.end())
     {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FVector for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
+        LOG_ERROR("No variable matching \"%s\" found for type", *FString(VariableName.c_str()));
+        return;
     }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FVector2D &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
+    auto &Param = Params[VariableName];
+    Value = Param.DecipherToType<T>();
+
+    if (Param.bIsDirty)
     {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FVector2D for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
+        LOG("Read \"%s\" => %s", *FString(VariableName.c_str()), *Param.DataStr);
     }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FLinearColor &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FLinearColor for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FRotator &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-    {
-        if (Value.InitFromString(Params[VariableName]) == false)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Unable to construct FRotator for %s from %s"), *FString(VariableName.c_str()),
-                   *(Params[VariableName]));
-        }
-    }
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
-}
-static void ReadConfigValue(const FString &Section, const FString &Variable, FString &Value)
-{
-    EnsureConfigsUpdated();
-    std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) != Params.end())
-        Value = Params[VariableName];
-    else
-        UE_LOG(LogTemp, Error, TEXT("No variable matching %s found"), *FString(VariableName.c_str()));
+    Param.bIsDirty = false; // has just been read
 }
 
-static void ReadConfigValue(const FString &Section, const FString &Variable, FName &Value)
+static FActorDefinition FindDefnInRegistry(const UCarlaEpisode *Episode, const UClass *ClassType)
 {
-    FString TmpValueString;
-    ReadConfigValue(Section, Variable, TmpValueString);
-    Value = FName(*TmpValueString);
+    // searches through the registers actors (definitions) to find one with the matching class type
+    check(Episode != nullptr);
+
+    FActorDefinition FoundDefinition;
+    bool bFoundDef = false;
+    for (const auto &Defn : Episode->GetActorDefinitions())
+    {
+        if (Defn.Class == ClassType)
+        {
+            LOG("Found appropriate definition registered at UId: %d as \"%s\"", Defn.UId, *Defn.Id);
+            FoundDefinition = Defn;
+            bFoundDef = true;
+            break; // assumes the first is the ONLY one matching this class (Ex. EgoVehicle, EgoSensor)
+        }
+    }
+    if (!bFoundDef)
+    {
+        LOG_ERROR("Unable to find appropriate definition in registry!");
+    }
+    return FoundDefinition;
 }
 
 static FVector ComputeClosestToRayIntersection(const FVector &L0, const FVector &LDir, const FVector &R0,
@@ -283,26 +267,6 @@ static void GenerateCrosshairImage(TArray<FColor> &Src, const float Size, const 
     }
 }
 
-static FVector2D ProjectGazeToScreen(const APlayerController *Player, const UCameraComponent *Camera,
-                                     const FVector &InOrigin, const FVector &InDir, bool bPlayerViewportRelative = true)
-{
-    if (Player == nullptr)
-        return FVector2D::ZeroVector;
-
-    // compute the 3D world point of the InOrigin + InDir
-    const FVector &WorldPos = Camera->GetComponentLocation();
-    const FRotator &WorldRot = Camera->GetComponentRotation();
-    const FVector Origin = WorldPos + WorldRot.RotateVector(InOrigin);
-    const FVector GazeDir = 100.f * WorldRot.RotateVector(InDir);
-    const FVector WorldPoint = Origin + GazeDir;
-
-    FVector2D ProjectedCoords;
-    // first project the 3D point to 2D using the player's viewport
-    UGameplayStatics::ProjectWorldToScreen(Player, WorldPoint, ProjectedCoords, bPlayerViewportRelative);
-
-    return ProjectedCoords;
-}
-
 static float CmPerSecondToXPerHour(const bool MilesPerHour)
 {
     // convert cm/s to X/h
@@ -330,18 +294,18 @@ static void SaveFrameToDisk(UTextureRenderTarget2D &RenderTarget, const FString 
     ReadPixelFlags.SetLinearToGamma(true);
     if (RTResource == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("Missing render target!"));
+        LOG_ERROR("Missing render target!");
         return;
     }
     if (!RTResource->ReadPixels(Pixels, ReadPixelFlags))
-        UE_LOG(LogTemp, Error, TEXT("Unable to read pixels!"));
+        LOG_ERROR("Unable to read pixels!");
 
     // dump pixel array to disk
     PixelData.Pixels = Pixels;
     TUniquePtr<FImageWriteTask> ImageTask = MakeUnique<FImageWriteTask>();
     ImageTask->PixelData = MakeUnique<TImagePixelData<FColor>>(PixelData);
     ImageTask->Filename = FilePath;
-    UE_LOG(LogTemp, Log, TEXT("Saving screenshot to %s"), *FilePath);
+    // LOG("Saving screenshot to %s", *FilePath);
     ImageTask->Format = FileFormatJPG ? EImageFormat::JPEG : EImageFormat::PNG; // lower quality, less storage
     ImageTask->CompressionQuality = (int32)EImageCompressionQuality::Default;
     ImageTask->bOverwriteFile = true;

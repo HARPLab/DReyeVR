@@ -6,16 +6,13 @@
 #include <chrono>                               // timing threads
 #include <cstdint>
 
-// #define USE_SRANIPAL_PLUGIN true // handled in .Build.cs file
-#define SRANIPAL_EYE_SWAP_FIXED false // as of v1.3.1.1 this bug is unfortunately still present
+#if USE_SRANIPAL_PLUGIN
 
-#ifndef _WIN32
-// unset the #define if on anything other than Windows bc the SRanipal libraries only work on Windows :(
-#undef USE_SRANIPAL_PLUGIN
-#define USE_SRANIPAL_PLUGIN false
+// avoid macro conflict since SRanipal uses "ERROR" often
+#ifdef ERROR
+#undef ERROR
 #endif
 
-#if USE_SRANIPAL_PLUGIN
 /// NOTE: Can only use SRanipal on Windows machines
 #include "SRanipalEye.h"      // SRanipal Module Framework
 #include "SRanipalEye_Core.h" // SRanipal Eye Tracker
@@ -27,7 +24,7 @@
 #include "EgoSensor.generated.h"
 
 class AEgoVehicle;
-class ADReyeVRLevel;
+class ADReyeVRGameMode;
 
 UCLASS()
 class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
@@ -40,7 +37,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void ManualTick(float DeltaSeconds); // Tick called explicitly from DReyeVR EgoVehicle
 
     void SetEgoVehicle(class AEgoVehicle *EgoVehicle); // provide access to EgoVehicle (and by extension its camera)
-    void SetLevel(class ADReyeVRLevel *Level);         // provides access to ADReyeVRLevel
+    void SetGame(class ADReyeVRGameMode *Game);        // provides access to ADReyeVRGameMode
 
     void UpdateData(const DReyeVR::AggregateData &RecorderData, const double Per) override;
     void UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per) override;
@@ -106,11 +103,8 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void TickFoveatedRender();
     void ConvertToEyeTrackerSpace(FVector &inVec) const;
     bool bEnableFovRender = false;
+    bool bUseEyeTrackingVRS = true;
 
     ////////////////:REPLAY:////////////////
-    class ADReyeVRLevel *DReyeVRLevel = nullptr;
-
-    ////////////////:OTHER:////////////////
-    int EgoSensorID;
-    void Register();
+    class ADReyeVRGameMode *DReyeVRGame = nullptr;
 };

@@ -87,8 +87,7 @@ void AEgoVehicle::ReleasePrevCameraView()
 void AEgoVehicle::NextCameraView()
 {
     CurrentCameraTransformIdx = (CurrentCameraTransformIdx + 1) % (CameraTransforms.size());
-    UE_LOG(LogTemp, Log, TEXT("Switching to next camera view: \"%s\""),
-           *CameraTransforms[CurrentCameraTransformIdx].first);
+    LOG("Switching to next camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
@@ -97,8 +96,7 @@ void AEgoVehicle::PrevCameraView()
     if (CurrentCameraTransformIdx == 0)
         CurrentCameraTransformIdx = CameraTransforms.size();
     CurrentCameraTransformIdx--;
-    UE_LOG(LogTemp, Log, TEXT("Switching to prev camera view: \"%s\""),
-           *CameraTransforms[CurrentCameraTransformIdx].first);
+    LOG("Switching to prev camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
@@ -145,11 +143,15 @@ void AEgoVehicle::PressReverse()
     if (!bCanPressReverse)
         return;
     bCanPressReverse = false; // don't press again until release
+    bReverse = !bReverse;
 
     // negate to toggle bw + (forwards) and - (backwards)
     const int CurrentGear = this->GetVehicleMovementComponent()->GetTargetGear();
-    const int NewGear = CurrentGear != 0 ? -1 * CurrentGear : -1; // set to -1 if parked, else -gear
-    this->bReverse = !this->bReverse;
+    int NewGear = -1; // for when parked
+    if (CurrentGear != 0)
+    {
+        NewGear = bReverse ? -1 * std::abs(CurrentGear) : std::abs(CurrentGear); // negative => backwards
+    }
     this->GetVehicleMovementComponent()->SetTargetGear(NewGear, true); // UE4 control
 
     // apply new light state
@@ -157,7 +159,7 @@ void AEgoVehicle::PressReverse()
     Lights.Reverse = this->bReverse;
     this->SetVehicleLightState(Lights);
 
-    UE_LOG(LogTemp, Log, TEXT("Toggle Reverse"));
+    LOG("Toggle Reverse");
     // assign to input struct
     VehicleInputs.ToggledReverse = true;
 
@@ -197,7 +199,7 @@ void AEgoVehicle::ReleaseTurnSignalR()
     if (bCanPressTurnSignalR)
         return;
     VehicleInputs.TurnSignalRight = false;
-    RightSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    RightSignalTimeToDie = GetWorld()->GetTimeSeconds() + this->TurnSignalDuration; // reset counter
     bCanPressTurnSignalR = true;
 }
 
@@ -228,7 +230,7 @@ void AEgoVehicle::ReleaseTurnSignalL()
     if (bCanPressTurnSignalL)
         return;
     VehicleInputs.TurnSignalLeft = false;
-    LeftSignalTimeToDie = FPlatformTime::Seconds() + this->TurnSignalDuration; // reset counter
+    LeftSignalTimeToDie = GetWorld()->GetTimeSeconds() + this->TurnSignalDuration; // reset counter
     bCanPressTurnSignalL = true;
 }
 

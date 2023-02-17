@@ -1,12 +1,19 @@
 #include "FlatHUD.h"
 
+#include "DReyeVRUtils.h" // GetTimeSeconds
+
+// fixing issue described in CarlaHUD.h regarding DrawText on Windows
+#ifdef DrawText
+#undef DrawText
+#endif
+
 void ADReyeVRHUD::SetPlayer(APlayerController *P)
 {
     Player = P;
     // Player = GetOwningPlayerController();
     if (Player == nullptr)
     {
-        UE_LOG(LogTemp, Error, TEXT("Can't find player controller!"));
+        LOG_ERROR("Can't find player controller!");
     }
     check(Player != nullptr);
 }

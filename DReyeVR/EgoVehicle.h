@@ -11,18 +11,18 @@
 #include "Components/PlanarReflectionComponent.h"     // Planar Reflection
 #include "Components/SceneComponent.h"                // USceneComponent
 #include "CoreMinimal.h"                              // Unreal functions
+#include "DReyeVRGameMode.h"                          // ADReyeVRGameMode
 #include "DReyeVRUtils.h"                             // ReadConfigValue
 #include "EgoSensor.h"                                // AEgoSensor
 #include "FlatHUD.h"                                  // ADReyeVRHUD
 #include "ImageUtils.h"                               // CreateTexture2D
-#include "LevelScript.h"                              // ADReyeVRLevel
 #include "WheeledVehicle.h"                           // VehicleMovementComponent
 #include <stdio.h>
 #include <vector>
 
 #include "EgoVehicle.generated.h"
 
-class ADReyeVRLevel;
+class ADReyeVRGameMode;
 class ADReyeVRPawn;
 
 UCLASS()
@@ -41,7 +41,8 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     virtual void Tick(float DeltaTime) override; // called automatically
 
     // Setters from external classes
-    void SetLevel(ADReyeVRLevel *Level);
+    void SetGame(ADReyeVRGameMode *Game);
+    ADReyeVRGameMode *GetGame();
     void SetPawn(ADReyeVRPawn *Pawn);
     void SetVolume(const float VolumeIn);
 
@@ -82,7 +83,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class UWorld *World;
 
   private:
-    void Register(); // function to register the AEgoVehicle with Carla's ActorRegistry
+    void ConstructRigidBody();
 
     ////////////////:CAMERA:////////////////
     void ConstructCameraRoot(); // needs to be called in the constructor
@@ -100,9 +101,6 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void InitSensor();
     class AEgoSensor *EgoSensor; // custom sensor helper that holds logic for extracting useful data
     void UpdateSensor(const float DeltaTime);
-    FVector CombinedGaze, CombinedOrigin;
-    FVector LeftGaze, LeftOrigin;
-    FVector RightGaze, RightOrigin;
 
     ///////////////:DREYEVRPAWN://///////////
     class ADReyeVRPawn *Pawn = nullptr;
@@ -112,8 +110,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     struct MirrorParams
     {
         bool Enabled;
-        FVector MirrorPos, MirrorScale, ReflectionPos, ReflectionScale;
-        FRotator MirrorRot, ReflectionRot;
+        FTransform MirrorTransform, ReflectionTransform;
         float ScreenPercentage;
         FString Name;
         void Initialize(class UStaticMeshComponent *SM, class UPlanarReflectionComponent *Reflection,
@@ -135,8 +132,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     // rear mirror chassis (dynamic)
     UPROPERTY(Category = Mirrors, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UStaticMeshComponent *RearMirrorChassisSM;
-    FVector RearMirrorChassisPos, RearMirrorChassisScale;
-    FRotator RearMirrorChassisRot;
+    FTransform RearMirrorChassisTransform;
 
     ////////////////:AICONTROLLER:////////////////
     class AWheeledVehicleAIController *AI_Player = nullptr;
@@ -207,8 +203,8 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class UAudioComponent *TurnSignalSound; // good for turn signals
 
     ////////////////:LEVEL:////////////////
-    void TickLevel(float DeltaSeconds);
-    class ADReyeVRLevel *DReyeVRLevel;
+    void TickGame(float DeltaSeconds);
+    class ADReyeVRGameMode *DReyeVRGame;
 
     ////////////////:DASH:////////////////
     // Text Render components (Like the HUD but part of the mesh and works in VR)
@@ -237,12 +233,6 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     float SteeringAnimScale;
 
     ////////////////:OTHER:////////////////
-
-    // Actor registry
-    int EgoVehicleID;
-    UCarlaEpisode *Episode = nullptr;
-
-    // Other
     void DebugLines() const;
     bool bDrawDebugEditor = false;
 };

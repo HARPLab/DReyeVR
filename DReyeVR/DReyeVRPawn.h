@@ -28,7 +28,8 @@ class ADReyeVRPawn : public APawn
     virtual void SetupPlayerInputComponent(UInputComponent *PlayerInputComponent) override;
     virtual void Tick(float DeltaSeconds) override;
 
-    void BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerController *PlayerIn);
+    void BeginPlayer(APlayerController *PlayerIn);
+    void BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World);
 
     APlayerController *GetPlayer()
     {
@@ -50,9 +51,6 @@ class ADReyeVRPawn : public APawn
         return bIsLogiConnected;
     }
 
-    void DrawSpectatorScreen(const FVector &GazeOrigin, const FVector &GazeDir);
-    void DrawFlatHUD(float DeltaSeconds, const FVector &GazeOrigin, const FVector &GazeDir);
-
   protected:
     virtual void BeginPlay() override;
     virtual void BeginDestroy() override;
@@ -71,6 +69,10 @@ class ADReyeVRPawn : public APawn
     void PrevShader();
     size_t CurrentShaderIdx = 0; // 0th shader is rgb (camera)
 
+    void TickSpectatorScreen(float DeltaSeconds); // to render the spectator screen (VR) or flat-screen hud (non-VR)
+    void DrawSpectatorScreen();
+    void DrawFlatHUD(float DeltaSeconds);
+
     ////////////////:STEAMVR:////////////////
     void InitSteamVR();         // Initialize the Head Mounted Display
     void InitSpectator();       // Initialize the VR spectator
@@ -81,7 +83,7 @@ class ADReyeVRPawn : public APawn
 
     ////////////////:FLATHUD:////////////////
     // (Flat) HUD (NOTE: ONLY FOR NON VR)
-    void InitFlatHUD(APlayerController *P);
+    void InitFlatHUD();
     UPROPERTY(Category = HUD, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class ADReyeVRHUD *FlatHUD;
     FVector2D ReticlePos;                // 2D reticle position from eye gaze

@@ -17,6 +17,8 @@
 // Sets default values
 AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
 {
+    LOG("Constructing Ego Vehicle: %s", *FString(this->GetName()));
+
     ReadConfigVariables();
 
     // this actor ticks AFTER the physics simulation is done
@@ -25,6 +27,9 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
 
     // Set up the root position to be the this mesh
     SetRootComponent(GetMesh());
+
+    // Initialize the rigid body static mesh
+    ConstructRigidBody();
 
     // Initialize the camera components
     ConstructCameraRoot();
@@ -40,6 +45,8 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
 
     // Initialize the steering wheel
     ConstructSteeringWheel();
+
+    LOG("Finished constructing %s", *FString(this->GetName()));
 }
 
 void AEgoVehicle::ReadConfigVariables()
@@ -52,21 +59,15 @@ void AEgoVehicle::ReadConfigVariables()
     auto InitMirrorParams = [](const FString &Name, struct MirrorParams &Params) {
         Params.Name = Name;
         ReadConfigValue("Mirrors", Params.Name + "MirrorEnabled", Params.Enabled);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorPos", Params.MirrorPos);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorRot", Params.MirrorRot);
-        ReadConfigValue("Mirrors", Params.Name + "MirrorScale", Params.MirrorScale);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionPos", Params.ReflectionPos);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionRot", Params.ReflectionRot);
-        ReadConfigValue("Mirrors", Params.Name + "ReflectionScale", Params.ReflectionScale);
+        ReadConfigValue("Mirrors", Params.Name + "MirrorTransform", Params.MirrorTransform);
+        ReadConfigValue("Mirrors", Params.Name + "ReflectionTransform", Params.ReflectionTransform);
         ReadConfigValue("Mirrors", Params.Name + "ScreenPercentage", Params.ScreenPercentage);
     };
     InitMirrorParams("Rear", RearMirrorParams);
     InitMirrorParams("Left", LeftMirrorParams);
     InitMirrorParams("Right", RightMirrorParams);
     // rear mirror chassis
-    ReadConfigValue("Mirrors", "RearMirrorChassisPos", RearMirrorChassisPos);
-    ReadConfigValue("Mirrors", "RearMirrorChassisRot", RearMirrorChassisRot);
-    ReadConfigValue("Mirrors", "RearMirrorChassisScale", RearMirrorChassisScale);
+    ReadConfigValue("Mirrors", "RearMirrorChassisTransform", RearMirrorChassisTransform);
     // steering wheel
     ReadConfigValue("SteeringWheel", "InitLocation", InitWheelLocation);
     ReadConfigValue("SteeringWheel", "InitRotation", InitWheelRotation);
@@ -74,7 +75,6 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("SteeringWheel", "MaxSteerVelocity", MaxSteerVelocity);
     ReadConfigValue("SteeringWheel", "SteeringScale", SteeringAnimScale);
     // other/cosmetic
-    ReadConfigValue("EgoVehicle", "ActorRegistryID", EgoVehicleID);
     ReadConfigValue("EgoVehicle", "DrawDebugEditor", bDrawDebugEditor);
     // inputs
     ReadConfigValue("VehicleInputs", "ScaleSteeringDamping", ScaleSteeringInput);
@@ -91,7 +91,7 @@ void AEgoVehicle::BeginPlay()
 
     // Get information about the world
     World = GetWorld();
-    Episode = UCarlaStatics::GetCurrentEpisode(World);
+    ensure(World != nullptr);
 
     // initialize
     InitAIPlayer();
@@ -99,10 +99,10 @@ void AEgoVehicle::BeginPlay()
     // Bug-workaround for initial delay on throttle; see https://github.com/carla-simulator/carla/issues/1640
     this->GetVehicleMovementComponent()->SetTargetGear(1, true);
 
-    // Register Ego Vehicle with ActorRegistry
-    Register();
+    // get the GameMode script
+    SetGame(Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World)));
 
-    UE_LOG(LogTemp, Log, TEXT("Initialized DReyeVR EgoVehicle"));
+    LOG("Initialized DReyeVR EgoVehicle");
 }
 
 void AEgoVehicle::BeginDestroy()
@@ -137,21 +137,85 @@ void AEgoVehicle::Tick(float DeltaSeconds)
     // Ensure appropriate autopilot functionality is accessible from EgoVehicle
     TickAutopilot();
 
-    if (Pawn)
-    {
-        // Draw the spectator vr screen and overlay elements
-        Pawn->DrawSpectatorScreen(EgoSensor->GetData()->GetGazeOrigin(DReyeVR::Gaze::LEFT),
-                                  EgoSensor->GetData()->GetGazeDir(DReyeVR::Gaze::LEFT));
-
-        // draws combined reticle
-        Pawn->DrawFlatHUD(DeltaSeconds, EgoSensor->GetData()->GetGazeOrigin(), EgoSensor->GetData()->GetGazeDir());
-    }
-
     // Update the world level
-    TickLevel(DeltaSeconds);
+    TickGame(DeltaSeconds);
 
     // Play sound that requires constant ticking
     TickSounds();
+}
+
+void AEgoVehicle::ConstructRigidBody()
+{
+#if 0
+    /// TODO: re-enable this code once spawning from DReyeVR needs to be done without a hardcoded blueprint asset
+    ///       to see this effect remove the reference to EgoVehicleBPClass in DReyeVRFactory.cpp once implemented
+
+    // https://forums.unrealengine.com/t/cannot-create-vehicle-updatedcomponent-has-not-initialized-its-rigid-body-actor/461662
+    /// NOTE: this must be run in the constructors!
+
+    // load skeletal mesh (static mesh)
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CarMesh(TEXT(
+        "SkeletalMesh'/Game/DReyeVR/EgoVehicle/model3/Mesh/SkeletalMesh_model3.SkeletalMesh_model3'"));
+    // original: "SkeletalMesh'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_v2.SM_TeslaM3_v2'"
+    USkeletalMesh *SkeletalMesh = CarMesh.Object;
+    if (SkeletalMesh == nullptr)
+    {
+        LOG_ERROR("Unable to load skeletal mesh!");
+        return;
+    }
+
+    // load skeleton (for animations)
+    static ConstructorHelpers::FObjectFinder<USkeleton> CarSkeleton(
+        TEXT("Skeleton'/Game/DReyeVR/EgoVehicle/model3/Mesh/Skeleton_model3.Skeleton_model3'"));
+    // original:
+    // "Skeleton'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_lights_body_Skeleton.SM_TeslaM3_lights_body_Skeleton'"
+    USkeleton *Skeleton = CarSkeleton.Object;
+    if (Skeleton == nullptr)
+    {
+        LOG_ERROR("Unable to load skeleton!");
+        return;
+    }
+
+    // load animations bp
+    static ConstructorHelpers::FClassFinder<UObject> AnimBPClass(
+        TEXT("/Game/DReyeVR/EgoVehicle/model3/Mesh/Animation_model3.Animation_model3_C"));
+    // original: "/Game/Carla/Static/Car/4Wheeled/Tesla/Tesla_Animation.Tesla_Animation_C"
+    auto AnimInstance = AnimBPClass.Class;
+    if (!AnimBPClass.Succeeded())
+    {
+        LOG_ERROR("Unable to load Animation!");
+        return;
+    }
+
+    // load physics asset
+    static ConstructorHelpers::FObjectFinder<UPhysicsAsset> CarPhysics(TEXT(
+        "PhysicsAsset'/Game/DReyeVR/EgoVehicle/model3/Mesh/Physics_model3.Physics_model3'"));
+    // original: "PhysicsAsset'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_PhysicsAsset.SM_TeslaM3_PhysicsAsset'"
+    UPhysicsAsset *PhysicsAsset = CarPhysics.Object;
+    if (PhysicsAsset == nullptr)
+    {
+        LOG_ERROR("Unable to load PhysicsAsset!");
+        return;
+    }
+
+    // contrary to https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/USkeletalMesh/SetSkeleton/
+    SkeletalMesh->Skeleton = Skeleton;
+    SkeletalMesh->PhysicsAsset = PhysicsAsset;
+    SkeletalMesh->Build();
+
+    USkeletalMeshComponent *Mesh = GetMesh();
+    check(Mesh != nullptr);
+    Mesh->SetSkeletalMesh(SkeletalMesh, true);
+    Mesh->SetAnimInstanceClass(AnimInstance);
+    Mesh->SetPhysicsAsset(PhysicsAsset);
+    Mesh->RecreatePhysicsState();
+    this->GetVehicleMovementComponent()->RecreatePhysicsState();
+
+    // sanity checks
+    ensure(Mesh->GetPhysicsAsset() != nullptr);
+
+    LOG("Successfully created EgoVehicle rigid body");
+#endif
 }
 
 /// ========================================== ///
@@ -224,7 +288,7 @@ void AEgoVehicle::SetCameraRootPose(const FTransform &CameraPoseTransform)
 {
     // sets the base posision of the Camera root (where the camera is at "rest")
     this->CameraPose = CameraPoseTransform;
-    UE_LOG(LogTemp, Log, TEXT("Setting camera pose to: %s"), *(CameraPose + CameraPoseOffset).ToString());
+    // LOG("Setting camera pose to: %s", *(CameraPose + CameraPoseOffset).ToString());
 
     // First, set the root of the camera to the driver's seat head pos
     VRCameraRoot->SetRelativeLocation(CameraPose.GetLocation() + CameraPoseOffset.GetLocation());
@@ -248,10 +312,12 @@ void AEgoVehicle::SetPawn(ADReyeVRPawn *PawnIn)
 
 const UCameraComponent *AEgoVehicle::GetCamera() const
 {
+    ensure(FirstPersonCam != nullptr);
     return FirstPersonCam;
 }
 UCameraComponent *AEgoVehicle::GetCamera()
 {
+    ensure(FirstPersonCam != nullptr);
     return FirstPersonCam;
 }
 FVector AEgoVehicle::GetCameraOffset() const
@@ -282,7 +348,10 @@ const class AEgoSensor *AEgoVehicle::GetSensor() const
 
 void AEgoVehicle::InitAIPlayer()
 {
-    AI_Player = Cast<AWheeledVehicleAIController>(this->GetController());
+    this->SpawnDefaultController(); // spawns default (AI) controller and gets possessed by it
+    auto PlayerController = this->GetController();
+    ensure(PlayerController != nullptr);
+    AI_Player = Cast<AWheeledVehicleAIController>(PlayerController);
     ensure(AI_Player != nullptr);
 }
 
@@ -317,16 +386,32 @@ void AEgoVehicle::InitSensor()
     World = GetWorld();
     check(World != nullptr);
     // Spawn the EyeTracker Carla sensor and attach to Ego-Vehicle:
-    FActorSpawnParameters EyeTrackerSpawnInfo;
-    EyeTrackerSpawnInfo.Owner = this;
-    EyeTrackerSpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    EgoSensor = World->SpawnActor<AEgoSensor>(GetCameraPosn(), FRotator::ZeroRotator, EyeTrackerSpawnInfo);
+    {
+        UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(World);
+        check(Episode != nullptr);
+        FActorDefinition EgoSensorDef = FindDefnInRegistry(Episode, AEgoSensor::StaticClass());
+        FActorDescription Description;
+        { // create a Description from the Definition to spawn the actor
+            Description.UId = EgoSensorDef.UId;
+            Description.Id = EgoSensorDef.Id;
+            Description.Class = EgoSensorDef.Class;
+        }
+
+        if (Episode == nullptr)
+        {
+            LOG_ERROR("Null Episode in world!");
+        }
+        // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
+        FTransform SpawnPt = FTransform(FRotator::ZeroRotator, GetCameraPosn(), FVector::OneVector);
+        EgoSensor = static_cast<AEgoSensor *>(Episode->SpawnActor(SpawnPt, Description));
+    }
     check(EgoSensor != nullptr);
     // Attach the EgoSensor as a child to the EgoVehicle
+    EgoSensor->SetOwner(this);
     EgoSensor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
     EgoSensor->SetEgoVehicle(this);
-    if (DReyeVRLevel)
-        EgoSensor->SetLevel(DReyeVRLevel);
+    if (DReyeVRGame)
+        EgoSensor->SetGame(DReyeVRGame);
 }
 
 void AEgoVehicle::ReplayTick()
@@ -385,34 +470,12 @@ void AEgoVehicle::UpdateSensor(const float DeltaSeconds)
     ensure(EgoSensor != nullptr);
     if (EgoSensor == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("EgoSensor initialization failed!"));
+        LOG_WARN("EgoSensor initialization failed!");
         return;
     }
 
     // Explicitly update the EgoSensor here, synchronized with EgoVehicle tick
     EgoSensor->ManualTick(DeltaSeconds); // Ensures we always get the latest data
-
-    // Calculate gaze data (in world space) using eye tracker data
-    const DReyeVR::AggregateData *Data = EgoSensor->GetData();
-    // Compute World positions and orientations
-    const FRotator WorldRot = FirstPersonCam->GetComponentRotation();
-    const FVector WorldPos = FirstPersonCam->GetComponentLocation();
-
-    // First get the gaze origin and direction and vergence from the EyeTracker Sensor
-    const float RayLength = FMath::Max(1.f, Data->GetGazeVergence() / 100.f); // vergence to m (from cm)
-    const float VRMeterScale = 100.f;
-
-    // Both eyes
-    CombinedGaze = RayLength * VRMeterScale * Data->GetGazeDir();
-    CombinedOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin());
-
-    // Left eye
-    LeftGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::LEFT);
-    LeftOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::LEFT));
-
-    // Right eye
-    RightGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::RIGHT);
-    RightOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::RIGHT));
 }
 
 /// ========================================== ///
@@ -423,22 +486,22 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
                                            class UPlanarReflectionComponent *Reflection,
                                            class USkeletalMeshComponent *VehicleMesh)
 {
-    UE_LOG(LogTemp, Log, TEXT("Initializing %s mirror"), *Name)
+    LOG("Initializing %s mirror", *Name)
 
     check(MirrorSM != nullptr);
     MirrorSM->SetupAttachment(VehicleMesh);
-    MirrorSM->SetRelativeLocation(MirrorPos);
-    MirrorSM->SetRelativeRotation(MirrorRot);
-    MirrorSM->SetRelativeScale3D(MirrorScale);
+    MirrorSM->SetRelativeLocation(MirrorTransform.GetLocation());
+    MirrorSM->SetRelativeRotation(MirrorTransform.Rotator());
+    MirrorSM->SetRelativeScale3D(MirrorTransform.GetScale3D());
     MirrorSM->SetGenerateOverlapEvents(false); // don't collide with itself
     MirrorSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     MirrorSM->SetVisibility(true);
 
     check(Reflection != nullptr);
     Reflection->SetupAttachment(MirrorSM);
-    Reflection->SetRelativeLocation(ReflectionPos);
-    Reflection->SetRelativeRotation(ReflectionRot);
-    Reflection->SetRelativeScale3D(ReflectionScale);
+    Reflection->SetRelativeLocation(ReflectionTransform.GetLocation());
+    Reflection->SetRelativeRotation(ReflectionTransform.Rotator());
+    Reflection->SetRelativeScale3D(ReflectionTransform.GetScale3D());
     Reflection->NormalDistortionStrength = 0.0f;
     Reflection->PrefilterRoughness = 0.0f;
     Reflection->DistanceFromPlaneFadeoutStart = 1500.f;
@@ -462,22 +525,21 @@ void AEgoVehicle::ConstructMirrors()
     if (RearMirrorParams.Enabled)
     {
         static ConstructorHelpers::FObjectFinder<UStaticMesh> RearSM(
-            TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/"
-                 "RearMirror_DReyeVR_Glass_SM.RearMirror_DReyeVR_Glass_SM'"));
+            TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/RearMirror_model3.RearMirror_model3'"));
         RearMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RearMirrorParams.Name + "MirrorSM")));
         RearMirrorSM->SetStaticMesh(RearSM.Object);
         RearReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(RearMirrorParams.Name + "Refl")));
         RearMirrorParams.Initialize(RearMirrorSM, RearReflection, VehicleMesh);
         // also add the chassis for this mirror
-        static ConstructorHelpers::FObjectFinder<UStaticMesh> RearChassisSM(TEXT(
-            "StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/RearMirror_DReyeVR_SM.RearMirror_DReyeVR_SM'"));
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> RearChassisSM(
+            TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/RearMirror_Mesh_model3.RearMirror_Mesh_model3'"));
         RearMirrorChassisSM =
             CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RearMirrorParams.Name + "MirrorChassisSM")));
         RearMirrorChassisSM->SetStaticMesh(RearChassisSM.Object);
         RearMirrorChassisSM->SetupAttachment(VehicleMesh);
-        RearMirrorChassisSM->SetRelativeLocation(RearMirrorChassisPos);
-        RearMirrorChassisSM->SetRelativeRotation(RearMirrorChassisRot);
-        RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisScale);
+        RearMirrorChassisSM->SetRelativeLocation(RearMirrorChassisTransform.GetLocation());
+        RearMirrorChassisSM->SetRelativeRotation(RearMirrorChassisTransform.Rotator());
+        RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisTransform.GetScale3D());
         RearMirrorChassisSM->SetGenerateOverlapEvents(false); // don't collide with itself
         RearMirrorChassisSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         RearMirrorChassisSM->SetVisibility(true);
@@ -487,8 +549,8 @@ void AEgoVehicle::ConstructMirrors()
     /// Left mirror
     if (LeftMirrorParams.Enabled)
     {
-        static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftSM(TEXT(
-            "StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/LeftMirror_DReyeVR_SM.LeftMirror_DReyeVR_SM'"));
+        static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftSM(
+            TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/LeftMirror_model3.LeftMirror_model3'"));
         LeftMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(LeftMirrorParams.Name + "MirrorSM")));
         LeftMirrorSM->SetStaticMesh(LeftSM.Object);
         LeftReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(LeftMirrorParams.Name + "Refl")));
@@ -498,8 +560,7 @@ void AEgoVehicle::ConstructMirrors()
     if (RightMirrorParams.Enabled)
     {
         static ConstructorHelpers::FObjectFinder<UStaticMesh> RightSM(
-            TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/Mirrors/"
-                 "RightMirror_DReyeVR_SM.RightMirror_DReyeVR_SM'"));
+            TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/RightMirror_model3.RightMirror_model3'"));
         RightMirrorSM = CreateDefaultSubobject<UStaticMeshComponent>(FName(*(RightMirrorParams.Name + "MirrorSM")));
         RightMirrorSM->SetStaticMesh(RightSM.Object);
         RightReflection = CreateDefaultSubobject<UPlanarReflectionComponent>(FName(*(RightMirrorParams.Name + "Refl")));
@@ -519,14 +580,14 @@ void AEgoVehicle::ConstructEgoSounds()
     ensureMsgf(CrashSound != nullptr, TEXT("Vehicle crash sound should be initialized!"));
 
     static ConstructorHelpers::FObjectFinder<USoundWave> GearSound(
-        TEXT("SoundWave'/Game/Carla/Blueprints/Vehicles/DReyeVR/Sounds/GearShift.GearShift'"));
+        TEXT("SoundWave'/Game/DReyeVR/Sounds/GearShift.GearShift'"));
     GearShiftSound = CreateDefaultSubobject<UAudioComponent>(TEXT("GearShift"));
     GearShiftSound->SetupAttachment(GetRootComponent());
     GearShiftSound->bAutoActivate = false;
     GearShiftSound->SetSound(GearSound.Object);
 
     static ConstructorHelpers::FObjectFinder<USoundWave> TurnSignalSoundWave(
-        TEXT("SoundWave'/Game/Carla/Blueprints/Vehicles/DReyeVR/Sounds/TurnSignal.TurnSignal'"));
+        TEXT("SoundWave'/Game/DReyeVR/Sounds/TurnSignal.TurnSignal'"));
     TurnSignalSound = CreateDefaultSubobject<UAudioComponent>(TEXT("TurnSignal"));
     TurnSignalSound->SetupAttachment(GetRootComponent());
     TurnSignalSound->bAutoActivate = false;
@@ -609,25 +670,23 @@ void AEgoVehicle::UpdateDash()
     {
         const DReyeVR::AggregateData *Replay = EgoSensor->GetData();
         XPH = Replay->GetVehicleVelocity() * SpeedometerScale; // FwdSpeed is in cm/s
-        if (Replay->GetUserInputs().ToggledReverse)
-        {
-            bReverse = !bReverse;
-            PlayGearShiftSound();
-        }
+        const auto &ReplayInputs = Replay->GetUserInputs();
+        if (ReplayInputs.ToggledReverse)
+            PressReverse();
+        else
+            ReleaseReverse();
+
         if (bEnableTurnSignalAction)
         {
-            if (Replay->GetUserInputs().TurnSignalLeft)
-            {
-                LeftSignalTimeToDie = FPlatformTime::Seconds() + TurnSignalDuration;
-                RightSignalTimeToDie = 0.f;
-                PlayTurnSignalSound();
-            }
-            if (Replay->GetUserInputs().TurnSignalRight)
-            {
-                RightSignalTimeToDie = FPlatformTime::Seconds() + TurnSignalDuration;
-                LeftSignalTimeToDie = 0.f;
-                PlayTurnSignalSound();
-            }
+            if (ReplayInputs.TurnSignalLeft)
+                PressTurnSignalL();
+            else
+                ReleaseTurnSignalL();
+
+            if (ReplayInputs.TurnSignalRight)
+                PressTurnSignalR();
+            else
+                ReleaseTurnSignalR();
         }
     }
     else
@@ -641,17 +700,22 @@ void AEgoVehicle::UpdateDash()
     if (bEnableTurnSignalAction)
     {
         // Draw the signals
-        float Now = FPlatformTime::Seconds();
-        if (Now < RightSignalTimeToDie)
-            TurnSignals->SetText(FText::FromString(">>>"));
-        else if (Now < LeftSignalTimeToDie)
-            TurnSignals->SetText(FText::FromString("<<<"));
-        else
-            TurnSignals->SetText(FText::FromString("")); // nothing
+        float Now = GetWorld()->GetTimeSeconds();
+        const float StartTime = std::max(RightSignalTimeToDie, LeftSignalTimeToDie) - TurnSignalDuration;
+        FString TurnSignalStr = "";
+        constexpr static float TurnSignalBlinkRate = 0.4f; // rate of blinking
+        if (std::fmodf(Now - StartTime, TurnSignalBlinkRate * 2) < TurnSignalBlinkRate)
+        {
+            if (Now < RightSignalTimeToDie)
+                TurnSignalStr = ">>>";
+            else if (Now < LeftSignalTimeToDie)
+                TurnSignalStr = "<<<";
+        }
+        TurnSignals->SetText(FText::FromString(TurnSignalStr));
     }
 
     // Draw the gear shifter
-    if (bReverse)
+    if (bReverse) // backwards
         GearShifter->SetText(FText::FromString("R"));
     else
         GearShifter->SetText(FText::FromString("D"));
@@ -663,9 +727,8 @@ void AEgoVehicle::UpdateDash()
 
 void AEgoVehicle::ConstructSteeringWheel()
 {
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> SteeringWheelSM(
-        TEXT("StaticMesh'/Game/Carla/Blueprints/Vehicles/DReyeVR/SteeringWheel/"
-             "SM_SteeringWheel_DReyeVR.SM_SteeringWheel_DReyeVR'"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SteeringWheelSM(TEXT(
+        "StaticMesh'/Game/DReyeVR/EgoVehicle/model3/SteeringWheel/Wheel_StaticMeshl_model3.Wheel_StaticMeshl_model3'"));
     SteeringWheel = CreateDefaultSubobject<UStaticMeshComponent>(FName("SteeringWheel"));
     SteeringWheel->SetStaticMesh(SteeringWheelSM.Object);
     SteeringWheel->SetupAttachment(GetRootComponent()); // The vehicle blueprint itself
@@ -706,43 +769,25 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
 /// -----------------:LEVEL:------------------ ///
 /// ========================================== ///
 
-void AEgoVehicle::SetLevel(ADReyeVRLevel *Level)
+void AEgoVehicle::SetGame(ADReyeVRGameMode *Game)
 {
-    this->DReyeVRLevel = Level;
-    check(DReyeVRLevel != nullptr);
+    DReyeVRGame = Game;
+    check(DReyeVRGame != nullptr);
+    DReyeVRGame->SetEgoVehicle(this);
+
+    DReyeVRGame->GetPawn()->BeginEgoVehicle(this, World);
+    LOG("Successfully assigned GameMode & controller pawn");
 }
 
-void AEgoVehicle::TickLevel(float DeltaSeconds)
+ADReyeVRGameMode *AEgoVehicle::GetGame()
 {
-    if (this->DReyeVRLevel != nullptr)
-        DReyeVRLevel->Tick(DeltaSeconds);
+    return DReyeVRGame;
 }
 
-/// ========================================== ///
-/// -----------------:OTHER:------------------ ///
-/// ========================================== ///
-
-void AEgoVehicle::Register()
+void AEgoVehicle::TickGame(float DeltaSeconds)
 {
-    FCarlaActor::IdType ID = EgoVehicleID;
-    FActorDescription Description;
-    Description.Class = ACarlaWheeledVehicle::StaticClass();
-    Description.Id = "vehicle.dreyevr.egovehicle";
-    Description.UId = ID;
-    // ensure this vehicle is denoted by the 'hero' attribute
-    FActorAttribute HeroRole;
-    HeroRole.Id = "role_name";
-    HeroRole.Type = EActorAttributeType::String;
-    HeroRole.Value = "hero";
-    Description.Variations.Add(HeroRole.Id, std::move(HeroRole));
-    // ensure the vehicle has attributes denoting number of wheels
-    FActorAttribute NumWheels;
-    NumWheels.Id = "number_of_wheels";
-    NumWheels.Type = EActorAttributeType::Int;
-    NumWheels.Value = "4";
-    Description.Variations.Add(NumWheels.Id, std::move(NumWheels));
-    FString RegistryTags = "EgoVehicle,DReyeVR";
-    Episode->RegisterActor(*this, Description, RegistryTags, ID);
+    if (this->DReyeVRGame != nullptr)
+        DReyeVRGame->Tick(DeltaSeconds);
 }
 
 /// ========================================== ///
@@ -752,15 +797,34 @@ void AEgoVehicle::Register()
 void AEgoVehicle::DebugLines() const
 {
 #if WITH_EDITOR
-    // Compute World positions and orientations
-    const FRotator WorldRot = FirstPersonCam->GetComponentRotation();
-    // Rotate and add the gaze ray to the origin
-    FVector CombinedGazePosn = CombinedOrigin + WorldRot.RotateVector(CombinedGaze);
 
-    // Use Absolute Ray Position to draw debug information
     if (bDrawDebugEditor)
     {
-        DrawDebugSphere(World, CombinedGazePosn, 4.0f, 12, FColor::Blue);
+        // Calculate gaze data (in world space) using eye tracker data
+        const DReyeVR::AggregateData *Data = EgoSensor->GetData();
+        // Compute World positions and orientations
+        const FRotator &WorldRot = FirstPersonCam->GetComponentRotation();
+        const FVector &WorldPos = FirstPersonCam->GetComponentLocation();
+
+        // First get the gaze origin and direction and vergence from the EyeTracker Sensor
+        const float RayLength = FMath::Max(1.f, Data->GetGazeVergence() / 100.f); // vergence to m (from cm)
+        const float VRMeterScale = 100.f;
+
+        // Both eyes
+        const FVector CombinedGaze = RayLength * VRMeterScale * Data->GetGazeDir();
+        const FVector CombinedOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin());
+
+        // Left eye
+        const FVector LeftGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::LEFT);
+        const FVector LeftOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::LEFT));
+
+        // Right eye
+        const FVector RightGaze = RayLength * VRMeterScale * Data->GetGazeDir(DReyeVR::Gaze::RIGHT);
+        const FVector RightOrigin = WorldPos + WorldRot.RotateVector(Data->GetGazeOrigin(DReyeVR::Gaze::RIGHT));
+
+        // Use Absolute Ray Position to draw debug information
+        // Rotate and add the gaze ray to the origin
+        DrawDebugSphere(World, CombinedOrigin + WorldRot.RotateVector(CombinedGaze), 4.0f, 12, FColor::Blue);
 
         // Draw individual rays for left and right eye
         DrawDebugLine(World,

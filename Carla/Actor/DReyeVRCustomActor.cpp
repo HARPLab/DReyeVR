@@ -76,7 +76,7 @@ bool ADReyeVRCustomActor::AssignSM(const FString &Path, UWorld *World)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Unable to create static mesh: %s"), *Path);
+        DReyeVR_LOG_ERROR("Unable to create static mesh: %s", *Path);
         return false;
     }
     ADReyeVRCustomActor::AllMeshCount++;
@@ -98,14 +98,13 @@ void ADReyeVRCustomActor::AssignMat(const FString &MaterialPath)
         for (int i = 0; i < MAX_POSSIBLE_MATERIALS; i++)
             ActorMesh->SetMaterial(i, DynamicMat);
     else
-        UE_LOG(LogTemp, Error, TEXT("Unable to access material asset: %s"), *MaterialPath)
+        DReyeVR_LOG_ERROR("Unable to access material asset: %s", *MaterialPath)
 }
 
 void ADReyeVRCustomActor::Initialize(const FString &Name)
 {
     Internals.Name = Name;
     ADReyeVRCustomActor::ActiveCustomActors[TCHAR_TO_UTF8(*Name)] = this;
-    // UE_LOG(LogTemp, Log, TEXT("Initialized custom actor: %s"), *Name);
 }
 
 void ADReyeVRCustomActor::BeginPlay()
@@ -122,7 +121,6 @@ void ADReyeVRCustomActor::BeginDestroy()
 void ADReyeVRCustomActor::Deactivate()
 {
     const std::string s = TCHAR_TO_UTF8(*Internals.Name);
-    // UE_LOG(LogTemp, Log, TEXT("Disabling custom actor: %s"), *Internals.Name);
     if (ADReyeVRCustomActor::ActiveCustomActors.find(s) != ADReyeVRCustomActor::ActiveCustomActors.end())
     {
         ADReyeVRCustomActor::ActiveCustomActors.erase(s);
@@ -136,7 +134,6 @@ void ADReyeVRCustomActor::Deactivate()
 
 void ADReyeVRCustomActor::Activate()
 {
-    // UE_LOG(LogTemp, Log, TEXT("Enabling custom actor: %s"), *Internals.Name);
     const std::string s = TCHAR_TO_UTF8(*Internals.Name);
     if (ADReyeVRCustomActor::ActiveCustomActors.find(s) == ADReyeVRCustomActor::ActiveCustomActors.end())
         ADReyeVRCustomActor::ActiveCustomActors[s] = this;

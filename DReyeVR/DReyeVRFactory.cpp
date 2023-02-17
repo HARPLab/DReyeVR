@@ -1,0 +1,144 @@
+#include "DReyeVRFactory.h"
+#include "Carla.h"                                     // to avoid linker errors
+#include "Carla/Actor/ActorBlueprintFunctionLibrary.h" // UActorBlueprintFunctionLibrary
+#include "Carla/Actor/VehicleParameters.h"             // FVehicleParameters
+#include "Carla/Game/CarlaEpisode.h"                   // UCarlaEpisode
+#include "EgoSensor.h"                                 // AEgoSensor
+#include "EgoVehicle.h"                                // AEgoVehicle
+
+#define EgoVehicleBP_Str "/Game/DReyeVR/EgoVehicle/BP_model3.BP_model3_C"
+
+// instead of vehicle.dreyevr.model3 or sensor.dreyevr.ego_sensor, we use "harplab" for category
+// => harplab.dreyevr_vehicle.model3 & harplab.dreyevr_sensor.ego_sensor
+// in PythonAPI use world.get_actors().filter("harplab.dreyevr_vehicle.*") or
+// world.get_blueprint_library().filter("harplab.dreyevr_sensor.*") and you won't accidentally get these actors when
+// performing filter("vehicle.*") or filter("sensor.*")
+#define CATEGORY TEXT("HARPLab")
+
+ADReyeVRFactory::ADReyeVRFactory(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
+{
+    // https://forums.unrealengine.com/t/cdo-constructor-failed-to-find-thirdperson-c-template-mannequin-animbp/99003
+    // get ego vehicle bp (can use UTF8_TO_TCHAR if making EgoVehicleBP_Str a variable)
+    static ConstructorHelpers::FObjectFinder<UClass> EgoVehicleBP(TEXT(EgoVehicleBP_Str));
+    EgoVehicleBPClass = EgoVehicleBP.Object;
+    ensure(EgoVehicleBPClass != nullptr);
+}
+
+TArray<FActorDefinition> ADReyeVRFactory::GetDefinitions()
+{
+    FActorDefinition EgoVehicleDef;
+    {
+        FVehicleParameters Parameters;
+        Parameters.Model = "Model3";
+        Parameters.ObjectType = EgoVehicleBP_Str;
+        Parameters.Class = AEgoVehicle::StaticClass();
+        Parameters.NumberOfWheels = 4;
+
+        ADReyeVRFactory::MakeVehicleDefinition(Parameters, EgoVehicleDef);
+    }
+
+    FActorDefinition EgoSensorDef;
+    {
+        const FString Id = "Ego_Sensor";
+        ADReyeVRFactory::MakeSensorDefinition(Id, EgoSensorDef);
+    }
+
+    return {EgoVehicleDef, EgoSensorDef};
+}
+
+// copied and modified from UActorBlueprintFunctionLibrary
+FActorDefinition MakeGenericDefinition(const FString &Category, const FString &Type, const FString &Id)
+{
+    FActorDefinition Definition;
+
+    TArray<FString> Tags = {Category.ToLower(), Type.ToLower(), Id.ToLower()};
+    Definition.Id = FString::Join(Tags, TEXT("."));
+    Definition.Tags = FString::Join(Tags, TEXT(","));
+    return Definition;
+}
+
+void ADReyeVRFactory::MakeVehicleDefinition(const FVehicleParameters &Parameters, FActorDefinition &Definition)
+{
+    // assign the ID/Tags with category (ex. "vehicle.tesla.model3" => "harplab.dreyevr.model3")
+    Definition = MakeGenericDefinition(CATEGORY, TEXT("DReyeVR_Vehicle"), Parameters.Model);
+    Definition.Class = Parameters.Class;
+
+    FActorVariation ActorRole;
+    {
+        ActorRole.Id = TEXT("role_name");
+        ActorRole.Type = EActorAttributeType::String;
+        ActorRole.RecommendedValues = {TEXT("ego_vehicle")}; // assume this is the CARLA "hero"
+        ActorRole.bRestrictToRecommended = false;
+    }
+    Definition.Variations.Emplace(ActorRole);
+
+    FActorVariation StickyControl;
+    {
+        StickyControl.Id = TEXT("sticky_control");
+        StickyControl.Type = EActorAttributeType::Bool;
+        StickyControl.bRestrictToRecommended = false;
+        StickyControl.RecommendedValues.Emplace(TEXT("false"));
+    }
+    Definition.Variations.Emplace(StickyControl);
+
+    FActorAttribute ObjectType;
+    {
+        ObjectType.Id = TEXT("object_type");
+        ObjectType.Type = EActorAttributeType::String;
+        ObjectType.Value = Parameters.ObjectType;
+    }
+    Definition.Attributes.Emplace(ObjectType);
+
+    FActorAttribute NumberOfWheels;
+    {
+        NumberOfWheels.Id = TEXT("number_of_wheels");
+        NumberOfWheels.Type = EActorAttributeType::Int;
+        NumberOfWheels.Value = FString::FromInt(Parameters.NumberOfWheels);
+    }
+    Definition.Attributes.Emplace(NumberOfWheels);
+
+    FActorAttribute Generation;
+    {
+        Generation.Id = TEXT("generation");
+        Generation.Type = EActorAttributeType::Int;
+        Generation.Value = FString::FromInt(Parameters.Generation);
+    }
+    Definition.Attributes.Emplace(Generation);
+}
+
+void ADReyeVRFactory::MakeSensorDefinition(const FString &Id, FActorDefinition &Definition)
+{
+    Definition = MakeGenericDefinition(CATEGORY, TEXT("DReyeVR_Sensor"), Id);
+    Definition.Class = AEgoSensor::StaticClass();
+}
+
+FActorSpawnResult ADReyeVRFactory::SpawnActor(const FTransform &SpawnAtTransform,
+                                              const FActorDescription &ActorDescription)
+{
+    auto *World = GetWorld();
+    if (World == nullptr)
+    {
+        LOG_ERROR("cannot spawn \"%s\" into an empty world.", *ActorDescription.Id);
+        return {};
+    }
+
+    AActor *SpawnedActor = nullptr;
+
+    FActorSpawnParameters SpawnParameters;
+    SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    if (ActorDescription.Class == AEgoVehicle::StaticClass())
+    {
+        LOG("Spawning EgoVehicle (\"%s\") at: %s", *ActorDescription.Id, *SpawnAtTransform.ToString());
+        SpawnedActor = World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnAtTransform, SpawnParameters);
+    }
+    else if (ActorDescription.Class == AEgoSensor::StaticClass())
+    {
+        LOG("Spawning EgoSensor (\"%s\") at: %s", *ActorDescription.Id, *SpawnAtTransform.ToString());
+        SpawnedActor = World->SpawnActor<AEgoSensor>(ActorDescription.Class, SpawnAtTransform, SpawnParameters);
+    }
+    else
+    {
+        LOG_ERROR("Unknown actor class in DReyeVR factory!");
+    }
+    return FActorSpawnResult(SpawnedActor);
+}

@@ -15,11 +15,19 @@ Build*
 # added by DReyeVR so the frame captures are ignored
 Unreal/CarlaUE4/FrameCap
 
+# added by DReyeVR to ignore plugins
+Unreal/CarlaUE4/Config/steamvr_ue_editor_app.json
+Unreal/CarlaUE4/Config/SteamVRBindings/
+Unreal/CarlaUE4/Plugins/LogitechWheelPlugin/
+Unreal/CarlaUE4/Plugins/SRanipal
+
 # added by DReyeVR to MacOS builds don't track the .xcworkspace
 Unreal/CarlaUE4/CarlaUE4.xcworkspace
 
 # added by DReyeVR to ignore this auto-generated file
 Unreal/CarlaUE4/Config/OptionalModules.ini
+!Unreal/CarlaUE4/Plugins
+cmake-build-debug
 
 /ExportedMaps
 /Import/*
@@ -60,3 +68,5 @@ _out*
 _site
 core
 profiler.csv
+CarlaUE4.xcworkspace
+OptionalModules.ini

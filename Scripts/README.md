@@ -156,18 +156,6 @@ Done check
 **************************************************
 ```
 
-## `make patch-sranipal`
-
-Patch SRanipal as described in [`patch_sranipal.py`](patch_sranipal.py)
-
-```bash
-# automatically check $CARLA_ROOT
-make patch-sranipal
-
-# optionally, patch SRanipal on a specific directory
-make patch-sranipal CARLA=../carla
-```
-
 ## `make r-install`
 
 ```bash

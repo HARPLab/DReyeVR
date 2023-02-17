@@ -1,5 +1,5 @@
 #include "DReyeVRPawn.h"
-#include "DReyeVRUtils.h"                      // ProjectGazeToScreen, CreatePostProcessingEffect
+#include "DReyeVRUtils.h"                      // CreatePostProcessingEffect
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
 #include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
@@ -22,6 +22,9 @@ ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(
 
     // spawn and construct the first person camera
     ConstructCamera();
+
+    // log
+    LOG("Spawning DReyeVR pawn for player0");
 }
 
 void ADReyeVRPawn::ReadConfigVariables()
@@ -70,7 +73,16 @@ void ADReyeVRPawn::BeginPlay()
     ensure(World != nullptr);
 }
 
-void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerController *PlayerIn)
+void ADReyeVRPawn::BeginPlayer(APlayerController *PlayerIn)
+{
+    Player = PlayerIn;
+    ensure(Player != nullptr);
+
+    // Setup the HUD
+    InitFlatHUD();
+}
+
+void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World)
 {
     /// NOTE: this should be run very early!
     // before anything that needs the EgoVehicle pointer (since this initializes it!)
@@ -79,17 +91,12 @@ void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World, APlayerC
     ensure(EgoVehicle != nullptr);
     EgoVehicle->SetPawn(this);
 
-    Player = PlayerIn;
-    ensure(Player != nullptr);
-
     // register inputs that require EgoVehicle
     ensure(InputComponent != nullptr);
     SetupEgoVehicleInputComponent(InputComponent, EgoVehicle);
 
+    check(World != nullptr);
     FirstPersonCam->RegisterComponentWithWorld(World);
-
-    // Setup the HUD
-    InitFlatHUD(Player);
 }
 
 void ADReyeVRPawn::BeginDestroy()
@@ -109,6 +116,9 @@ void ADReyeVRPawn::Tick(float DeltaTime)
 
     // Tick the logitech wheel
     TickLogiWheel();
+
+    // Tick spectator screen
+    TickSpectatorScreen(DeltaTime);
 }
 
 /// ========================================== ///
@@ -122,7 +132,7 @@ void ADReyeVRPawn::InitSteamVR()
     {
         FString HMD_Name = UHeadMountedDisplayFunctionLibrary::GetHMDDeviceName().ToString();
         FString HMD_Version = UHeadMountedDisplayFunctionLibrary::GetVersionString();
-        UE_LOG(LogTemp, Log, TEXT("HMD enabled: %s, version %s"), *HMD_Name, *HMD_Version);
+        LOG("SteamVR HMD enabled: %s, version %s", *HMD_Name, *HMD_Version);
         // Now we'll begin with setting up the VR Origin logic
         // this tracking origin is what moves the HMD camera to the right position
         UHeadMountedDisplayFunctionLibrary::SetTrackingOrigin(EHMDTrackingOrigin::Eye); // Also have Floor & Stage Level
@@ -130,7 +140,7 @@ void ADReyeVRPawn::InitSteamVR()
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("No head mounted device enabled!"));
+        LOG_WARN("No SteamVR head mounted device enabled!");
     }
 }
 
@@ -186,15 +196,25 @@ void ADReyeVRPawn::InitSpectator()
     }
 }
 
-void ADReyeVRPawn::DrawSpectatorScreen(const FVector &GazeOrigin, const FVector &GazeDir)
+void ADReyeVRPawn::TickSpectatorScreen(float DeltaSeconds)
 {
-    if (!bEnableSpectatorScreen || Player == nullptr || !bIsHMDConnected)
+    // first draw the UE4 spectator screen (the flat-screen window during VR-play)
+    if (bIsHMDConnected)
+    {
+        // Draw the spectator vr screen and overlay elements
+        DrawSpectatorScreen();
+    }
+    else // or overlay the HUD on the render window (flat-screen) if not playing in VR
+    {
+        // draws flat screen HUD if not in VR
+        DrawFlatHUD(DeltaSeconds);
+    }
+}
+
+void ADReyeVRPawn::DrawSpectatorScreen()
+{
+    if (!bEnableSpectatorScreen || !Player || !EgoVehicle || !bIsHMDConnected)
         return;
-
-    FVector2D ReticlePos = ProjectGazeToScreen(Player, GetCamera(), GazeOrigin, GazeDir);
-
-    /// NOTE: we like using this constant offset for visualization
-    ReticlePos += FVector2D(0.f, -0.5f * ReticleSize); // move reticle up by size/2 (texture in quadrant 4)
 
     // calculate View size (of open window). Note this is not the same as resolution
     FIntPoint ViewSize;
@@ -203,10 +223,22 @@ void ADReyeVRPawn::DrawSpectatorScreen(const FVector &GazeOrigin, const FVector 
     /// TODO: draw other things on the spectator screen?
     if (bDrawSpectatorReticle)
     {
+        // project the 3D world point to 2D using the player's viewport
+        FVector2D ReticlePos;
+        {
+            // get where in the world the intersection occurs
+            const FVector HitPoint = EgoVehicle->GetSensor()->GetData()->GetFocusActorPoint();
+            bool bPlayerViewportRelative = true;
+            UGameplayStatics::ProjectWorldToScreen(Player, HitPoint, ReticlePos, bPlayerViewportRelative);
+        }
+
+        /// HACK: correct for offset likely due to using left eye for camera projection
+        ReticlePos.X += 0.3f * ReticleSize;
+
         /// NOTE: the SetSpectatorScreenModeTexturePlusEyeLayout expects normalized positions on the screen
         // define min and max bounds (where the texture is actually drawn on screen)
-        const FVector2D TextureRectMin = ReticlePos / ViewSize;                 // top left
-        const FVector2D TextureRectMax = (ReticlePos + ReticleSize) / ViewSize; // bottom right
+        const FVector2D TextureRectMin = (ReticlePos - 0.5f * ReticleSize) / ViewSize; // top left
+        const FVector2D TextureRectMax = (ReticlePos + 0.5f * ReticleSize) / ViewSize; // bottom right
         auto Within01 = [](const float Num) { return 0.f <= Num && Num <= 1.f; };
         bool RectMinValid = Within01(TextureRectMin.X) && Within01(TextureRectMin.Y);
         bool RectMaxValid = Within01(TextureRectMax.X) && Within01(TextureRectMax.Y);
@@ -232,15 +264,16 @@ void ADReyeVRPawn::DrawSpectatorScreen(const FVector &GazeOrigin, const FVector 
 /// ----------------:FLATHUD:----------------- ///
 /// ========================================== ///
 
-void ADReyeVRPawn::InitFlatHUD(APlayerController *P)
+void ADReyeVRPawn::InitFlatHUD()
 {
-    check(P);
-    AHUD *Raw_HUD = P->GetHUD();
+    check(Player);
+    class AHUD *Raw_HUD = Player->GetHUD();
+    ensure(Raw_HUD);
     FlatHUD = Cast<ADReyeVRHUD>(Raw_HUD);
     if (FlatHUD)
-        FlatHUD->SetPlayer(P);
+        FlatHUD->SetPlayer(Player);
     else
-        UE_LOG(LogTemp, Warning, TEXT("Unable to initialize DReyeVR HUD!"));
+        LOG_WARN("Unable to initialize DReyeVR HUD!");
     // make sure to disable the flat hud when in VR (not supported, only displays on half of one eye screen)
     if (bIsHMDConnected)
     {
@@ -248,39 +281,46 @@ void ADReyeVRPawn::InitFlatHUD(APlayerController *P)
     }
 }
 
-void ADReyeVRPawn::DrawFlatHUD(float DeltaSeconds, const FVector &GazeOrigin, const FVector &GazeDir)
+void ADReyeVRPawn::DrawFlatHUD(float DeltaSeconds)
 {
-    if (FlatHUD == nullptr || Player == nullptr || bDrawFlatHud == false || bIsHMDConnected == true)
+    if (!FlatHUD || !Player || !EgoVehicle || !bDrawFlatHud || bIsHMDConnected)
         return;
-
-    const FVector &WorldPos = GetCamera()->GetComponentLocation();
-    const FRotator &WorldRot = GetCamera()->GetComponentRotation();
-    const float RayLengthScale = 10.f * 100.f; // 10m ray length
-    const FVector TargetStart = WorldPos + WorldRot.RotateVector(GazeOrigin);
-    const FVector TargetEnd = TargetStart + RayLengthScale * WorldRot.RotateVector(GazeDir);
 
     // calculate View size (of open window). Note this is not the same as resolution
     FIntPoint ViewSize;
     Player->GetViewportSize(ViewSize.X, ViewSize.Y);
-    // Get eye tracker variables
+
+    const auto *SensorData = EgoVehicle->GetSensor()->GetData();
+    check(SensorData != nullptr);
 
     // Draw elements of the HUD
     if (bDrawFlatReticle) // Draw reticle on flat-screen HUD
     {
+        // get where in the world the intersection occurs
+        const FVector HitPoint = SensorData->GetFocusActorPoint();
+
         const float Diameter = ReticleSize;
         const float Thickness = (ReticleSize / 2.f) / 10.f; // 10 % of radius
         // FlatHUD->DrawDynamicSquare(GazeEnd, Diameter, FColor(255, 0, 0, 255), Thickness);
-        FlatHUD->DrawDynamicCrosshair(TargetEnd, Diameter, FColor(255, 0, 0, 255), true, Thickness);
+        FlatHUD->DrawDynamicCrosshair(HitPoint, Diameter, FColor(255, 0, 0, 255), true, Thickness);
     }
+
     if (bDrawFPSCounter)
     {
         FlatHUD->DrawDynamicText(FString::FromInt(int(1.f / DeltaSeconds)), FVector2D(ViewSize.X - 100, 50),
                                  FColor(0, 255, 0, 213), 2);
     }
+
     if (bDrawGaze)
     {
+        const FVector &WorldPos = GetCamera()->GetComponentLocation();
+        const FRotator &WorldRot = GetCamera()->GetComponentRotation();
+        const FVector &GazeOrigin = SensorData->GetGazeOrigin();
+        const FVector RayStart = WorldPos + WorldRot.RotateVector(GazeOrigin);
+        const FVector RayEnd = SensorData->GetFocusActorPoint();
+
         // Draw line components in FlatHUD
-        FlatHUD->DrawDynamicLine(TargetStart, TargetEnd, FColor::Red, 3.0f);
+        FlatHUD->DrawDynamicLine(RayStart, RayEnd, FColor::Red, 3.0f);
     }
 }
 
@@ -299,13 +339,13 @@ void ADReyeVRPawn::InitLogiWheel()
         wchar_t *NameBuffer = (wchar_t *)malloc(n * sizeof(wchar_t));
         if (LogiGetFriendlyProductName(WheelDeviceIdx, NameBuffer, n) == false)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Unable to get Logi friendly name!"));
+            LOG_WARN("Unable to get Logi friendly name!");
             NameBuffer = L"Unknown";
         }
         std::wstring wNameStr(NameBuffer, n);
         std::string NameStr(wNameStr.begin(), wNameStr.end());
         FString LogiName(NameStr.c_str());
-        UE_LOG(LogTemp, Log, TEXT("Found a Logitech device (%s) connected on input %d"), *LogiName, WheelDeviceIdx);
+        LOG("Found a Logitech device (%s) connected on input %d", *LogiName, WheelDeviceIdx);
         free(NameBuffer); // no longer needed
     }
     else
@@ -317,7 +357,7 @@ void ADReyeVRPawn::InitLogiWheel()
         const FLinearColor MsgColour = FLinearColor(1, 0, 0, 1); // RED
         UKismetSystemLibrary::PrintString(World, LogiError, PrintToScreen, PrintToLog, MsgColour, ScreenDurationSec);
         if (PrintToLog)
-            UE_LOG(LogTemp, Warning, TEXT("%s"), *LogiError); // Error is RED
+            LOG_ERROR("%s", *LogiError); // Error is RED
     }
 #endif
 }
@@ -408,10 +448,10 @@ void ADReyeVRPawn::LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now)
         {
             if (!isDiff) // only gets triggered at MOST once
             {
-                UE_LOG(LogTemp, Log, TEXT("Logging joystick at t=%.3f"), UGameplayStatics::GetRealTimeSeconds(World));
+                LOG("Logging joystick at t=%.3f", UGameplayStatics::GetRealTimeSeconds(World));
                 isDiff = true;
             }
-            UE_LOG(LogTemp, Log, TEXT("Triggered \"%s\" from %d to %d"), *(VarNames[i]), OldVals[i], NowVals[i]);
+            LOG("Triggered \"%s\" from %d to %d", *(VarNames[i]), OldVals[i], NowVals[i]);
         }
     }
 
@@ -422,11 +462,10 @@ void ADReyeVRPawn::LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now)
         {
             if (!isDiff) // only gets triggered at MOST once
             {
-                UE_LOG(LogTemp, Log, TEXT("Logging joystick at t=%.3f"), UGameplayStatics::GetRealTimeSeconds(World));
+                LOG("Logging joystick at t=%.3f", UGameplayStatics::GetRealTimeSeconds(World));
                 isDiff = true;
             }
-            UE_LOG(LogTemp, Log, TEXT("Triggered \"rgbButtons[%d]\" from %d to %d"), int(i), int(OldVals[i]),
-                   int(NowVals[i]));
+            LOG("Triggered \"rgbButtons[%d]\" from %d to %d", int(i), int(OldVals[i]), int(NowVals[i]));
         }
     }
 
@@ -441,7 +480,7 @@ void ADReyeVRPawn::LogitechWheelUpdate()
 
     // only execute this in Windows, the Logitech plugin is incompatible with Linux
     if (LogiUpdate() == false) // update the logitech wheel
-        UE_LOG(LogTemp, Warning, TEXT("Logitech wheel %d failed to update!"), WheelDeviceIdx);
+        LOG_WARN("Logitech wheel %d failed to update!", WheelDeviceIdx);
     DIJOYSTATE2 *WheelState = LogiGetState(WheelDeviceIdx);
     if (bLogLogitechWheel)
         LogLogitechPluginStruct(WheelState);
@@ -588,7 +627,7 @@ void ADReyeVRPawn::SetupPlayerInputComponent(UInputComponent *PlayerInputCompone
 
 void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputComponent, AEgoVehicle *EV)
 {
-    UE_LOG(LogTemp, Log, TEXT("Initializing EgoVehicle relay mechanisms"));
+    LOG("Initializing EgoVehicle relay mechanisms");
     // this function sets up the direct relay mechanisms to call EgoVehicle input functions
     check(PlayerInputComponent != nullptr);
     check(EV != nullptr);
@@ -622,7 +661,7 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     if (EgoVehicle)                                                                                                    \
         FUNCTION;                                                                                                      \
     else                                                                                                               \
-        UE_LOG(LogTemp, Error, TEXT("EgoVehicle is NULL!"));
+        LOG_ERROR("EgoVehicle is NULL!");
 
 void ADReyeVRPawn::SetThrottleKbd(const float ThrottleInput)
 {
@@ -652,8 +691,8 @@ void ADReyeVRPawn::SetSteeringKbd(const float SteeringInput)
     else
     {
         // so the steering wheel does go to 0 when letting go
-        ensure(EgoVehicle != nullptr);
-        EgoVehicle->VehicleInputs.Steering = 0;
+        if (EgoVehicle != nullptr)
+            EgoVehicle->VehicleInputs.Steering = 0;
     }
 }
 
