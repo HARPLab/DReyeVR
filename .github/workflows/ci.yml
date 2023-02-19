@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: install
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-7 clang-8 ninja-build python3-pip libboost-python-dev libtiff5-dev libjpeg-dev libgeos-dev
+    - name: clone vanilla Carla
+      run: |
+        git clone https://github.com/carla-simulator/carla --depth 1 -b 0.9.13
+    - name: DReyeVR install
+      run: |
+        make install CARLA=carla
+    - name: DReyeVR check
+      run: |
+        make check CARLA=carla
+    - name: get Python requirements
+      working-directory: ./carla
+      run: |
+        pip3 install -q --user setuptools
+        pip3 install -q --user -r PythonAPI/test/requirements.txt
+        pip3 install -q --user -r PythonAPI/carla/requirements.txt
+    - name: Initial Carla setup
+      working-directory: ./carla
+      run: make setup
+    - name: Build LibCarla
+      working-directory: ./carla
+      run: make LibCarla
+    - name: Build Carla PythonAPI
+      working-directory: ./carla
+      run: make PythonAPI
+    - name: Build Carla examples
+      working-directory: ./carla
+      run: make examples
+    - name: Run Carla Unit tests
+      working-directory: ./carla
+      run: make check ARGS="--all --gtest_args=--gtest_filter=-*_mt"

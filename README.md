@@ -6,7 +6,7 @@
 [Submission Video Demonstration (YouTube)](https://www.youtube.com/watch?v=yGIPSDOMGpY)
 <!-- Welcome to the DReyeVR wiki! -->
 
-[![Build Status](https://github.com/HARPLab/DReyeVR-Dev/actions/workflows/ci.yml/badge.svg)](https://github.com/HARPLab/DReyeVR-Dev/actions/workflows/ci.yml)
+[![Build Status](https://github.com/HARPLab/DReyeVR/actions/workflows/ci.yml/badge.svg)](https://github.com/HARPLab/DReyeVR/actions/workflows/ci.yml)
 
 This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree/0.9.13) simulator to add virtual reality integration, a first-person maneuverable ego-vehicle, eye tracking support, and several immersion enhancements.
 
