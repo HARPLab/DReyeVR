@@ -83,14 +83,14 @@ void ADReyeVRGameMode::BeginPlay()
     // start input mapping
     SetupPlayerInputComponent();
 
-    // spawn the DReyeVR pawn and possess it
+    // spawn the DReyeVR pawn and possess it (first)
     SetupDReyeVRPawn();
 
-    // Initialize DReyeVR spectator
-    SetupSpectator();
-
-    // Initialize the DReyeVR EgoVehicle (and Sensor)
+    // Initialize the DReyeVR EgoVehicle and Sensor (second)
     SetupEgoVehicle();
+
+    // Initialize DReyeVR spectator (third)
+    SetupSpectator();
 }
 
 void ADReyeVRGameMode::SetupDReyeVRPawn()
@@ -559,11 +559,6 @@ void ADReyeVRGameMode::SpawnEgoVehicle(const FTransform &SpawnPt)
         HeroRole.Type = EActorAttributeType::String;
         HeroRole.Value = "hero";
         DReyeVRDescr.Variations.Add(HeroRole.Id, std::move(HeroRole));
-    }
-
-    if (Episode == nullptr)
-    {
-        LOG_ERROR("Null Episode in world!");
     }
     // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
     EgoVehiclePtr = static_cast<AEgoVehicle *>(Episode->SpawnActor(SpawnPt, DReyeVRDescr));
