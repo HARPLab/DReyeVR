@@ -93,5 +93,6 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
     double ReplayTimeFactorMin = 0.0;     // minimum playback of 0 (paused)
     double ReplayTimeFactorMax = 4.0;     // maximum of 4.0x playback
     bool bReplaySync = false;             // false allows for interpolation
+    bool bUseCarlaSpectator = false;      // use the Carla spectator or spawn our own
     bool bRecorderInitiated = false;      // allows tick-wise checking for replayer/recorder
 };

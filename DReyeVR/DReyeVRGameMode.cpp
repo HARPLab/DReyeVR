@@ -61,6 +61,7 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Game", "SpawnEgoVehicleTransform", SpawnEgoVehicleTransform);
 
     // Recorder/replayer
+    ReadConfigValue("Replayer", "UseCarlaSpectator", bUseCarlaSpectator);
     bool bEnableReplayInterpolation = false;
     ReadConfigValue("Replayer", "ReplayInterpolation", bEnableReplayInterpolation);
     bReplaySync = !bEnableReplayInterpolation; // synchronous => no interpolation!
@@ -153,6 +154,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
 
 void ADReyeVRGameMode::SetupSpectator()
 {
+    if (bUseCarlaSpectator)
     { // look for existing spectator in world
         UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
         if (Episode != nullptr)
@@ -170,7 +172,7 @@ void ADReyeVRGameMode::SetupSpectator()
     }
     else
     {
-        LOG_WARN("No available spectator actor in world... spawning one");
+        LOG("Spawning DReyeVR Spectator Pawn in the world");
         FVector SpawnLocn;
         FRotator SpawnRotn;
         if (EgoVehiclePtr != nullptr)

@@ -126,15 +126,43 @@ FActorSpawnResult ADReyeVRFactory::SpawnActor(const FTransform &SpawnAtTransform
 
     FActorSpawnParameters SpawnParameters;
     SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    auto SpawnSingleton = [World, SpawnParameters](UClass *ActorClass, const FString &Id, const FTransform &SpawnAt,
+                                                   const std::function<AActor *()> &SpawnFn) -> AActor * {
+        // function to spawn a singleton: only one actor can exist in the world at once
+        ensure(World != nullptr);
+        AActor *SpawnedSingleton = nullptr;
+        TArray<AActor *> Found;
+        UGameplayStatics::GetAllActorsOfClass(World, ActorClass, Found);
+        if (Found.Num() == 0)
+        {
+            LOG("Spawning DReyeVR actor (\"%s\") at: %s", *Id, *SpawnAt.ToString());
+            SpawnedSingleton = SpawnFn();
+        }
+        else
+        {
+            LOG_WARN("Requested to spawn another DReyeVR actor (\"%s\") but one already exists in the world!", *Id);
+            ensure(Found.Num() == 1); // should only have one other that was previously spawned
+            SpawnedSingleton = Found[0];
+        }
+        return SpawnedSingleton;
+    };
+
     if (ActorDescription.Class == AEgoVehicle::StaticClass())
     {
-        LOG("Spawning EgoVehicle (\"%s\") at: %s", *ActorDescription.Id, *SpawnAtTransform.ToString());
-        SpawnedActor = World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnAtTransform, SpawnParameters);
+        // check if an EgoVehicle already exists, if so, don't spawn another.
+        /// NOTE: multi-ego-vehicle is not officially supported by DReyeVR, but it could be an interesting extension
+        SpawnedActor = SpawnSingleton(ActorDescription.Class, ActorDescription.Id, SpawnAtTransform, [&]() {
+            // EgoVehicle needs the special EgoVehicleBPClass since they depend on the EgoVehicle Blueprint
+            return World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnAtTransform, SpawnParameters);
+        });
     }
     else if (ActorDescription.Class == AEgoSensor::StaticClass())
     {
-        LOG("Spawning EgoSensor (\"%s\") at: %s", *ActorDescription.Id, *SpawnAtTransform.ToString());
-        SpawnedActor = World->SpawnActor<AEgoSensor>(ActorDescription.Class, SpawnAtTransform, SpawnParameters);
+        // there should only ever be one DReyeVR sensor in the world!
+        SpawnedActor = SpawnSingleton(ActorDescription.Class, ActorDescription.Id, SpawnAtTransform, [&]() {
+            return World->SpawnActor<AEgoSensor>(ActorDescription.Class, SpawnAtTransform, SpawnParameters);
+        });
     }
     else
     {

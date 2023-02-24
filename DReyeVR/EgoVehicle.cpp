@@ -304,7 +304,7 @@ void AEgoVehicle::SetPawn(ADReyeVRPawn *PawnIn)
     ensure(FirstPersonCam != nullptr);
     FAttachmentTransformRules F(EAttachmentRule::KeepRelative, false);
     Pawn->AttachToComponent(VRCameraRoot, F);
-    Pawn->GetCamera()->AttachToComponent(VRCameraRoot, F);
+    FirstPersonCam->AttachToComponent(VRCameraRoot, F);
     // Then set the actual camera to be at its origin (attached to VRCameraRoot)
     FirstPersonCam->SetRelativeLocation(FVector::ZeroVector);
     FirstPersonCam->SetRelativeRotation(FRotator::ZeroRotator);
@@ -438,19 +438,13 @@ void AEgoVehicle::ReplayTick()
         // see https://docs.unrealengine.com/4.26/en-US/API/Runtime/Engine/Engine/ETeleportType/
         SetActorTransform(ReplayTransform, false, nullptr, ETeleportType::TeleportPhysics);
 
-        if (bCameraFollowHMD)
+        // set the camera reenactment orientation
         {
-            // assign first person camera orientation and location (absolute)
-            const FTransform ReplayCameraTransAbs(Replay->GetCameraRotationAbs(), // FRotator (Rotation)
-                                                  Replay->GetCameraLocationAbs(), // FVector (Location)
-                                                  FVector::OneVector);            // FVector (Scale3D)
-            FirstPersonCam->SetWorldTransform(ReplayCameraTransAbs, false, nullptr, ETeleportType::TeleportPhysics);
-        }
-        else
-        {
-            // reset to forward view
-            FirstPersonCam->SetRelativeLocation(FVector::ZeroVector);
-            FirstPersonCam->SetRelativeRotation(FRotator::ZeroRotator);
+            const FTransform CameraOrientation =
+                bCameraFollowHMD // follow HMD reenacts all the head movmeents that were recorded
+                    ? FTransform(Replay->GetCameraRotation(), Replay->GetCameraLocation(), FVector::OneVector)
+                    : FTransform::Identity; // otherwise just point forward (neutral position)
+            FirstPersonCam->SetRelativeTransform(CameraOrientation, false, nullptr, ETeleportType::TeleportPhysics);
         }
 
         // overwrite vehicle inputs to use the replay data
@@ -486,8 +480,6 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
                                            class UPlanarReflectionComponent *Reflection,
                                            class USkeletalMeshComponent *VehicleMesh)
 {
-    LOG("Initializing %s mirror", *Name)
-
     check(MirrorSM != nullptr);
     MirrorSM->SetupAttachment(VehicleMesh);
     MirrorSM->SetRelativeLocation(MirrorTransform.GetLocation());
@@ -495,7 +487,7 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
     MirrorSM->SetRelativeScale3D(MirrorTransform.GetScale3D());
     MirrorSM->SetGenerateOverlapEvents(false); // don't collide with itself
     MirrorSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    MirrorSM->SetVisibility(true);
+    MirrorSM->SetVisibility(Enabled);
 
     check(Reflection != nullptr);
     Reflection->SetupAttachment(MirrorSM);
@@ -512,7 +504,7 @@ void AEgoVehicle::MirrorParams::Initialize(class UStaticMeshComponent *MirrorSM,
     Reflection->ScreenPercentage = ScreenPercentage; // change this to reduce quality & improve performance
     Reflection->bShowPreviewPlane = false;
     Reflection->HideComponent(VehicleMesh);
-    Reflection->SetVisibility(true);
+    Reflection->SetVisibility(Enabled);
     /// TODO: use USceneCaptureComponent::ShowFlags to define what gets rendered in the mirror
     // https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/FEngineShowFlags/
 }
@@ -522,7 +514,6 @@ void AEgoVehicle::ConstructMirrors()
 
     class USkeletalMeshComponent *VehicleMesh = GetMesh();
     /// Rear mirror
-    if (RearMirrorParams.Enabled)
     {
         static ConstructorHelpers::FObjectFinder<UStaticMesh> RearSM(
             TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/RearMirror_model3.RearMirror_model3'"));
@@ -542,12 +533,11 @@ void AEgoVehicle::ConstructMirrors()
         RearMirrorChassisSM->SetRelativeScale3D(RearMirrorChassisTransform.GetScale3D());
         RearMirrorChassisSM->SetGenerateOverlapEvents(false); // don't collide with itself
         RearMirrorChassisSM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        RearMirrorChassisSM->SetVisibility(true);
+        RearMirrorChassisSM->SetVisibility(RearMirrorParams.Enabled);
         RearMirrorSM->SetupAttachment(RearMirrorChassisSM);
         RearReflection->HideComponent(RearMirrorChassisSM); // don't show this in the reflection
     }
     /// Left mirror
-    if (LeftMirrorParams.Enabled)
     {
         static ConstructorHelpers::FObjectFinder<UStaticMesh> LeftSM(
             TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/LeftMirror_model3.LeftMirror_model3'"));
@@ -557,7 +547,6 @@ void AEgoVehicle::ConstructMirrors()
         LeftMirrorParams.Initialize(LeftMirrorSM, LeftReflection, VehicleMesh);
     }
     /// Right mirror
-    if (RightMirrorParams.Enabled)
     {
         static ConstructorHelpers::FObjectFinder<UStaticMesh> RightSM(
             TEXT("StaticMesh'/Game/DReyeVR/EgoVehicle/model3/Mirrors/RightMirror_model3.RightMirror_model3'"));

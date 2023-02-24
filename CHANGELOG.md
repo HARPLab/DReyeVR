@@ -3,6 +3,10 @@
 - Adding missing includes for TrafficSign RoadInfoSignal in SignComponent
 - Replacing `DReyeVRData.inl` with `DReyeVRData.cpp` and corresponding virtual classes
 - Add GitHub workflow for installing DReyeVR atop Carla and building LibCarla/PythonAPI (not CarlaUE4 which requires UnrealEngine)
+- Fix bug where disabling mirrors causes a crash since the BP_model3 blueprint would be broken on construction
+- Fix bug where replays would spawn another EgoVehicle/EgoSensor in the world (following the Carla spec) which caused multiple overlapping EgoVehicles to be in the world at once. Now we enforced in the Factory function that they are singletons
+- Fix bug with replay interpolation not following our EgoVehicle by ticking the pose reenactment in the Carla tick rather than EgoVehicle::Tick
+- Fix bug with spectator being reenacted by Carla, preferring to use our own ASpectator
 
 ## DReyeVR 0.1.0 (for Carla 0.9.13)
 - Replace existing `LevelScript` (`ADReyeVRLevel`) with `GameMode` (`ADReyeVRGameMode`). This allows us to not need to carry the (large) map blueprint files (ue4 binary) and we can use the vanilla Carla maps without modification. By default we spawn the EgoVehicle in the first of the recommended Carla locations, but this default behavior can be changed in the PythonAPI. For instance, you can delay spawning the EgoVehicle until via PythonAPI where you can specify the spawn transform. Existing functionality is preserved using `find_ego_vehicle` and `find_ego_sensor` which spawn the DReyeVR EgoVehicle if it does not exist in the world. 
