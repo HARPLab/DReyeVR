@@ -87,8 +87,11 @@ void AEgoSensor::BeginPlay()
 
 void AEgoSensor::BeginDestroy()
 {
-    DestroyEyeTracker();
     Super::BeginDestroy();
+
+    DestroyEyeTracker();
+
+    LOG("EgoSensor has been destroyed");
 }
 
 void AEgoSensor::ManualTick(float DeltaSeconds)

@@ -72,7 +72,6 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("SteeringWheel", "InitLocation", InitWheelLocation);
     ReadConfigValue("SteeringWheel", "InitRotation", InitWheelRotation);
     ReadConfigValue("SteeringWheel", "MaxSteerAngleDeg", MaxSteerAngleDeg);
-    ReadConfigValue("SteeringWheel", "MaxSteerVelocity", MaxSteerVelocity);
     ReadConfigValue("SteeringWheel", "SteeringScale", SteeringAnimScale);
     // other/cosmetic
     ReadConfigValue("EgoVehicle", "DrawDebugEditor", bDrawDebugEditor);
@@ -105,6 +104,26 @@ void AEgoVehicle::BeginPlay()
     LOG("Initialized DReyeVR EgoVehicle");
 }
 
+void AEgoVehicle::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    // https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/EEndPlayReason__Type/
+    if (EndPlayReason == EEndPlayReason::Destroyed)
+    {
+        LOG("DReyeVR EgoVehicle is being destroyed! You'll need to spawn another one!");
+    }
+
+    if (GetGame())
+    {
+        GetGame()->SetEgoVehicle(nullptr);
+        GetGame()->PossessSpectator();
+    }
+
+    if (this->Pawn)
+    {
+        this->Pawn->SetEgoVehicle(nullptr);
+    }
+}
+
 void AEgoVehicle::BeginDestroy()
 {
     Super::BeginDestroy();
@@ -112,6 +131,8 @@ void AEgoVehicle::BeginDestroy()
     // destroy all spawned entities
     if (EgoSensor)
         EgoSensor->Destroy();
+
+    LOG("EgoVehicle has been destroyed");
 }
 
 // Called every frame
@@ -740,10 +761,9 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
     }
     else
     {
-        float DeltaAngle = (TargetAngle - CurrentRotation.Roll);
-
-        // place a speed-limit on the steering wheel
-        DeltaAngle = FMath::Clamp(DeltaAngle, -MaxSteerVelocity, MaxSteerVelocity);
+        float WheelAngleDeg = GetWheelSteerAngle(EVehicleWheelLocation::Front_Wheel);
+        // float MaxWheelAngle = GetMaximumSteerAngle();
+        float DeltaAngle = 10.f * (2.0f * WheelAngleDeg - CurrentRotation.Roll);
 
         // create the new rotation using the deltas
         NewRotation += DeltaTime * FRotator(0.f, 0.f, DeltaAngle);

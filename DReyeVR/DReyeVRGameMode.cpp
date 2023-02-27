@@ -201,7 +201,17 @@ void ADReyeVRGameMode::SetupSpectator()
 void ADReyeVRGameMode::BeginDestroy()
 {
     Super::BeginDestroy();
-    LOG("Finished Game");
+
+    if (DReyeVR_Pawn)
+        DReyeVR_Pawn->Destroy();
+
+    if (EgoVehiclePtr)
+        EgoVehiclePtr->Destroy();
+
+    if (SpectatorPtr)
+        SpectatorPtr->Destroy();
+
+    LOG("DReyeVRGameMode has been destroyed");
 }
 
 void ADReyeVRGameMode::Tick(float DeltaSeconds)

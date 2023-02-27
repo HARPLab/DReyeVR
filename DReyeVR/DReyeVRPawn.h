@@ -31,6 +31,11 @@ class ADReyeVRPawn : public APawn
     void BeginPlayer(APlayerController *PlayerIn);
     void BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World);
 
+    void SetEgoVehicle(AEgoVehicle *Vehicle)
+    {
+        EgoVehicle = Vehicle;
+    }
+
     APlayerController *GetPlayer()
     {
         return Player;
