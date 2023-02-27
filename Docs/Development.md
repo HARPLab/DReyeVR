@@ -22,6 +22,68 @@ make install CARLA=../carla # install things not tracked by git such as blueprin
 # now, git should show changes relative to our upstream DReyeVR branch rather than CARLA 0.9.13
 ```
 
+## Reverse install
+
+Once you have made some changes in the Carla codebase that relate to DReyeVR, it is tedious to manually copy all these changes back into the DReyeVR repo (if you wanted to upstream them). As part of our [`make`](../Scripts/README.md) system, we provide a "reverse install" (`r-install`) procedure to mirror the `install` function and copy all the corresponding files that were installed by DReyeVR (from `make install`) back into DReyeVR:
+
+<details>
+
+<summary> Click to open example `make rev` output</summary>
+
+```bash
+make r-install CARLA=../carla # equivalent to make rev
+make rev CARLA=../carla
+
+Proceeding on /PATH/TO/CARLA (git branch)
+/PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/ -- found
+/PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/EgoVehicle.h -- found
+/PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/EgoVehicle.h -> /Users/gustavo/carla/DReyeVR-Dev/DReyeVR/EgoVehicle.h
+/PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/FlatHUD.cpp -- found
+/PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/FlatHUD.cpp -> /Users/gustavo/carla/DReyeVR-Dev/DReyeVR/FlatHUD.cpp
+...etc.
+...
+Done Reverse Install!
+```
+</details>
+<br>
+
+Note that the files that are copied back into DReyeVR follow those defined by the DReyeVR <--> Carla file correspondence defined in [`Paths/*.csv`](../Scripts/Paths/), so if you have modified a completely new file (not tracked by DReyeVR) you'll need to manually add that file to the DReyeVR repo and update the correspondences file (.csv).
+
+## Typical workflow
+
+The workflow we have designed for our development process on DReyeVR includes using our fork of carla (`DReyeVR-0.9.13` branch) alongside a cloned `DReyeVR` repo that we can use to both push and pull from upstream.
+
+<details>
+
+<summary>Click to open terminal example</summary>
+
+```bash
+> ls
+carla.harp/    # our HarpLab fork for primary development
+DReyeVR        # our DReyeVR installation
+
+cd carla.harp
+... # make some changes in carla.harp
+make launch && make package # ensure carla still works with these changes
+
+cd ../DReyeVR
+make rev CARLA=../carla.harp # "reverse-install" changes from carla.harp to DReyeVR
+git stuff # do all sorts of upstreaming and whatnot.
+
+----------------- # if changes have been made upstream for you to install
+cd DReyeVR/
+git pull # upstream changes
+make clean CARLA=../carla.harp   # optional to reset carla.harp to a clean git state
+make install CARLA=../carla.harp # install new DReyeVR changes over it
+cd ../carla.harp && make launch && make package && etc.
+
+# optionally, you can keep a carla.vanilla around to test that a fresh install of your updated DReyeVR repo works on carla
+make install CARLA=../carla.vanilla
+```
+
+</details>
+<br>
+
 # Understanding the Carla + DReyeVR codebase whereabouts
 These are the main places you'll want to look at when developing atop Carla:
 
