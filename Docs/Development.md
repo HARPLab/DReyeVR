@@ -19,6 +19,8 @@ cd ../DReyeVR/ # assumed DReyeVR repo is adjacent to carla repo
 # (in DReyeVR repo)
 make install CARLA=../carla # install things not tracked by git such as blueprint/binary files
 
+cd ../carla # switch back to carla dir
+git status
 # now, git should show changes relative to our upstream DReyeVR branch rather than CARLA 0.9.13
 ```
 
@@ -28,11 +30,11 @@ Once you have made some changes in the Carla codebase that relate to DReyeVR, it
 
 <details>
 
-<summary> Click to open example `make rev` output</summary>
+<summary> Click to open example make output</summary>
 
 ```bash
-make r-install CARLA=../carla # equivalent to make rev
-make rev CARLA=../carla
+make r-install CARLA=../carla # equivalent to "make rev"
+make rev CARLA=../carla       # alias for r-install
 
 Proceeding on /PATH/TO/CARLA (git branch)
 /PATH/TO/CARLA/Unreal/CarlaUE4/Source/CarlaUE4/DReyeVR/ -- found
@@ -83,6 +85,8 @@ make install CARLA=../carla.vanilla
 
 </details>
 <br>
+
+![Directories](Figures/Dev/Directories.jpg)
 
 # Understanding the Carla + DReyeVR codebase whereabouts
 These are the main places you'll want to look at when developing atop Carla:
