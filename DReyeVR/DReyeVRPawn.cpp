@@ -71,6 +71,7 @@ void ADReyeVRPawn::BeginPlay()
 
     World = GetWorld();
     ensure(World != nullptr);
+    FirstPersonCam->RegisterComponentWithWorld(World);
 }
 
 void ADReyeVRPawn::BeginPlayer(APlayerController *PlayerIn)
@@ -87,16 +88,13 @@ void ADReyeVRPawn::BeginEgoVehicle(AEgoVehicle *Vehicle, UWorld *World)
     /// NOTE: this should be run very early!
     // before anything that needs the EgoVehicle pointer (since this initializes it!)
 
-    EgoVehicle = Vehicle;
+    SetEgoVehicle(Vehicle);
     ensure(EgoVehicle != nullptr);
     EgoVehicle->SetPawn(this);
 
     // register inputs that require EgoVehicle
     ensure(InputComponent != nullptr);
     SetupEgoVehicleInputComponent(InputComponent, EgoVehicle);
-
-    check(World != nullptr);
-    FirstPersonCam->RegisterComponentWithWorld(World);
 }
 
 void ADReyeVRPawn::BeginDestroy()
@@ -105,6 +103,8 @@ void ADReyeVRPawn::BeginDestroy()
 
     if (bIsLogiConnected)
         DestroyLogiWheel(false);
+
+    LOG("DReyeVRPawn has been destroyed");
 }
 
 void ADReyeVRPawn::Tick(float DeltaTime)

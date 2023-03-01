@@ -61,6 +61,7 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     ReadConfigValue("Game", "SpawnEgoVehicleTransform", SpawnEgoVehicleTransform);
 
     // Recorder/replayer
+    ReadConfigValue("Replayer", "UseCarlaSpectator", bUseCarlaSpectator);
     bool bEnableReplayInterpolation = false;
     ReadConfigValue("Replayer", "ReplayInterpolation", bEnableReplayInterpolation);
     bReplaySync = !bEnableReplayInterpolation; // synchronous => no interpolation!
@@ -82,14 +83,14 @@ void ADReyeVRGameMode::BeginPlay()
     // start input mapping
     SetupPlayerInputComponent();
 
-    // spawn the DReyeVR pawn and possess it
+    // spawn the DReyeVR pawn and possess it (first)
     SetupDReyeVRPawn();
 
-    // Initialize DReyeVR spectator
-    SetupSpectator();
-
-    // Initialize the DReyeVR EgoVehicle (and Sensor)
+    // Initialize the DReyeVR EgoVehicle and Sensor (second)
     SetupEgoVehicle();
+
+    // Initialize DReyeVR spectator (third)
+    SetupSpectator();
 }
 
 void ADReyeVRGameMode::SetupDReyeVRPawn()
@@ -153,6 +154,7 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
 
 void ADReyeVRGameMode::SetupSpectator()
 {
+    if (bUseCarlaSpectator)
     { // look for existing spectator in world
         UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
         if (Episode != nullptr)
@@ -170,7 +172,7 @@ void ADReyeVRGameMode::SetupSpectator()
     }
     else
     {
-        LOG_WARN("No available spectator actor in world... spawning one");
+        LOG("Spawning DReyeVR Spectator Pawn in the world");
         FVector SpawnLocn;
         FRotator SpawnRotn;
         if (EgoVehiclePtr != nullptr)
@@ -199,7 +201,17 @@ void ADReyeVRGameMode::SetupSpectator()
 void ADReyeVRGameMode::BeginDestroy()
 {
     Super::BeginDestroy();
-    LOG("Finished Game");
+
+    if (DReyeVR_Pawn)
+        DReyeVR_Pawn->Destroy();
+
+    if (EgoVehiclePtr)
+        EgoVehiclePtr->Destroy();
+
+    if (SpectatorPtr)
+        SpectatorPtr->Destroy();
+
+    LOG("DReyeVRGameMode has been destroyed");
 }
 
 void ADReyeVRGameMode::Tick(float DeltaSeconds)
@@ -557,11 +569,6 @@ void ADReyeVRGameMode::SpawnEgoVehicle(const FTransform &SpawnPt)
         HeroRole.Type = EActorAttributeType::String;
         HeroRole.Value = "hero";
         DReyeVRDescr.Variations.Add(HeroRole.Id, std::move(HeroRole));
-    }
-
-    if (Episode == nullptr)
-    {
-        LOG_ERROR("Null Episode in world!");
     }
     // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
     EgoVehiclePtr = static_cast<AEgoVehicle *>(Episode->SpawnActor(SpawnPt, DReyeVRDescr));
