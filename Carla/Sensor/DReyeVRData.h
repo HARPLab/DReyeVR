@@ -12,6 +12,16 @@
 #include <string>
 #include <unordered_map>
 
+#include "Carla/Actor/ActorInfo.h"
+#include "Carla/Actor/ActorData.h"
+#include "Carla/Vehicle/CarlaWheeledVehicle.h"
+#include "Carla/Walker/WalkerController.h"
+#include "Carla/Traffic/TrafficLightState.h"
+
+#include "Carla/Actor/ActorDefinition.h"
+#include "Carla/Actor/ActorDescription.h"
+#include "Carla/Actor/ActorRegistry.h"
+
 namespace DReyeVR
 {
 struct EyeData
@@ -120,6 +130,29 @@ enum class Eye
     LEFT,
 };
 
+struct AwarenessActor
+{
+    int64_t ActorId;
+    FVector ActorLocation;
+    FVector ActorVelocity;
+    int64_t Answer = 0;
+
+    void Read(std::ifstream &InFile);
+    void Write(std::ofstream &OutFile) const;
+    FString ToString() const;
+};
+
+struct AwarenessInfo
+{
+    int64_t VisibleTotal = 0;
+    std::vector<FCarlaActor*> VisibleRaw;
+    std::vector<AwarenessActor> Visible;
+    int UserInput = 0;
+    void Read(std::ifstream &InFile);
+    void Write(std::ofstream &OutFile) const;
+    FString ToString() const;
+};
+
 class AggregateData // all DReyeVR sensor data is held here
 {
   public:
@@ -155,6 +188,15 @@ class AggregateData // all DReyeVR sensor data is held here
     float GetFocusActorDistance() const;
     const DReyeVR::UserInputs &GetUserInputs() const;
 
+    // Awareness
+    bool AwarenessMode = true;
+    const DReyeVR::AwarenessInfo &GetAwarenessData() const;
+    void SetAwarenessData(const int64_t NewVisibleTotal, 
+                          const std::vector<DReyeVR::AwarenessActor> &NewVisible,
+                          const std::vector<FCarlaActor*> &NewVisibleRaw,
+                          const int64_t NewUserInput);
+
+
     ////////////////////:SETTERS://////////////////////
     void UpdateCamera(const FVector &NewCameraLoc, const FRotator &NewCameraRot);
     void UpdateCameraAbs(const FVector &NewCameraLocAbs, const FRotator &NewCameraRotAbs);
@@ -173,6 +215,7 @@ class AggregateData // all DReyeVR sensor data is held here
     struct EgoVariables EgoVars;
     struct FocusInfo FocusData;
     struct UserInputs Inputs;
+    struct AwarenessInfo AwarenessData;
 };
 
 class CustomActorData

@@ -17,6 +17,7 @@
 #include "FlatHUD.h"                                  // ADReyeVRHUD
 #include "ImageUtils.h"                               // CreateTexture2D
 #include "WheeledVehicle.h"                           // VehicleMovementComponent
+#include "AwarenessManager.h"                         // Awareness 
 #include <stdio.h>
 #include <vector>
 
@@ -182,6 +183,17 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void CameraUp();
     void CameraDown();
 
+    // Awareness input
+    void AwarenessFwdV();
+    void AwarenessBackV();
+    void AwarenessLeftV();
+    void AwarenessRightV();
+    void AwarenessFwdW();
+    void AwarenessBackW();
+    void AwarenessLeftW();
+    void AwarenessRightW();
+    
+
     // changing camera views
     void PressNextCameraView();
     void ReleaseNextCameraView();
@@ -233,6 +245,19 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     float SteeringAnimScale;
 
     ////////////////:OTHER:////////////////
+
+    // Actor registry
+    int EgoVehicleID;
+    UCarlaEpisode *Episode = nullptr;
+
+    // Awareness mode
+    FAwarenessManager *AwarenessManager = nullptr;
+    bool AwarenessModeEnabled;
+    bool AwarenessVelMode;
+    bool AwarenessPosMode;
+    void render_info(const DReyeVR::AwarenessInfo AwData, float DeltaTime);
+
+    // Other
     void DebugLines() const;
     bool bDrawDebugEditor = false;
 };

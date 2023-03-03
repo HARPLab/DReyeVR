@@ -46,6 +46,9 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
     // Initialize the steering wheel
     ConstructSteeringWheel();
 
+    AwarenessManager = new FAwarenessManager(this, AwarenessModeEnabled, 
+                                         AwarenessVelMode, AwarenessPosMode);
+
     LOG("Finished constructing %s", *FString(this->GetName()));
 }
 
@@ -82,6 +85,10 @@ void AEgoVehicle::ReadConfigVariables()
     ReadConfigValue("VehicleInputs", "ScaleBrakeInput", ScaleBrakeInput);
     // replay
     ReadConfigValue("Replayer", "CameraFollowHMD", bCameraFollowHMD);
+    // awareness mode
+    ReadConfigValue("AwarenessMode", "AwarenessModeEnabled", AwarenessModeEnabled);
+    ReadConfigValue("AwarenessMode", "AwarenessVelMode", AwarenessVelMode);
+    ReadConfigValue("AwarenessMode", "AwarenessPosMode", AwarenessPosMode);
 }
 
 void AEgoVehicle::BeginPlay()
@@ -92,6 +99,7 @@ void AEgoVehicle::BeginPlay()
     // Get information about the world
     World = GetWorld();
     ensure(World != nullptr);
+    Episode = UCarlaStatics::GetCurrentEpisode(World);
 
     // initialize
     InitAIPlayer();
@@ -101,6 +109,8 @@ void AEgoVehicle::BeginPlay()
 
     // get the GameMode script
     SetGame(Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World)));
+
+    if (AwarenessManager) AwarenessManager->SetAwarenessManager(Episode, World, EgoSensor);
 
     LOG("Initialized DReyeVR EgoVehicle");
 }
@@ -112,6 +122,12 @@ void AEgoVehicle::BeginDestroy()
     // destroy all spawned entities
     if (EgoSensor)
         EgoSensor->Destroy();
+    
+    // destroy awareness manager
+    if (AwarenessManager) {
+        delete AwarenessManager;
+    }
+
 }
 
 // Called every frame
@@ -139,6 +155,11 @@ void AEgoVehicle::Tick(float DeltaSeconds)
 
     // Update the world level
     TickGame(DeltaSeconds);
+
+    // Tick awareness manager
+    if (AwarenessManager) {
+        AwarenessManager->Tick(DeltaSeconds);
+    }
 
     // Play sound that requires constant ticking
     TickSounds();
@@ -412,6 +433,9 @@ void AEgoVehicle::InitSensor()
     EgoSensor->SetEgoVehicle(this);
     if (DReyeVRGame)
         EgoSensor->SetGame(DReyeVRGame);
+
+    // Awareness
+    EgoSensor->GetData()->AwarenessMode = AwarenessModeEnabled;
 }
 
 void AEgoVehicle::ReplayTick()
@@ -429,6 +453,8 @@ void AEgoVehicle::ReplayTick()
     {
         // this gets reached when the simulator is replaying data from a carla log
         const DReyeVR::AggregateData *Replay = EgoSensor->GetData();
+
+        //if (AwarenessManager) const DReyeVR::AwarenessInfo AwarenessData = Replay->GetAwarenessData();
 
         // include positional update here, else there is lag/jitter between the camera and the vehicle
         // since the Carla Replayer tick differs from the EgoVehicle tick
@@ -793,6 +819,31 @@ void AEgoVehicle::TickGame(float DeltaSeconds)
 /// ========================================== ///
 /// ---------------:COSMETIC:----------------- ///
 /// ========================================== ///
+
+void AEgoVehicle::render_info(const DReyeVR::AwarenessInfo AwData, float DeltaTime) {
+    std::vector<FCarlaActor*> VisibleRaw = AwData.VisibleRaw;
+    std::cout << "****** *" << VisibleRaw.size() << std::endl;
+    for (int i = 0; i < VisibleRaw.size(); i++) {
+        std::cout << "!!!" << std::endl;
+        FCarlaActor* Actor = VisibleRaw[i];
+        FVector BBox_Offset, BBox_Extent;
+        int64_t id = Actor->GetActorId();
+        FString id_s = FString::Printf(TEXT("%d"), id);
+        Actor->GetActor()->GetActorBounds(true, BBox_Offset, BBox_Extent, false);
+        float Height = 2 * BBox_Extent.Z; // extent is only half the "volume" (extension from center)
+        FVector Pos = Actor->GetActor()->GetActorLocation() - this->GetActorLocation();
+        DrawDebugString(World, Pos, id_s, this, FColor::Blue, DeltaTime * 5);
+
+        FString s = "";
+        int64_t Answer = AwData.Visible[i].Answer;
+        if (Answer & 1) s += 'F';
+        if (Answer & 2) s += 'R';
+        if (Answer & 4) s += 'B';
+        if (Answer & 8) s += 'L';
+        DrawDebugString(World, Pos + Height / 2, s, this, FColor::Red, DeltaTime * 2);
+    }
+}
+
 
 void AEgoVehicle::DebugLines() const
 {

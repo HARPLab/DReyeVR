@@ -52,6 +52,64 @@ void AEgoVehicle::CameraDown()
     CameraPositionAdjust(FVector::DownVector);
 }
 
+// Awareness input
+
+void AEgoVehicle::AwarenessFwdV() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedFwdV = true;
+    }
+}
+
+void AEgoVehicle::AwarenessRightV() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedRightV = true;
+    }
+}
+
+void AEgoVehicle::AwarenessBackV() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedBackV = true;
+    }
+}
+
+void AEgoVehicle::AwarenessLeftV() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedLeftV = true;
+    }
+}
+
+void AEgoVehicle::AwarenessFwdW() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedFwdW = true;
+    }
+}
+
+void AEgoVehicle::AwarenessRightW() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedRightW = true;
+    }
+}
+
+void AEgoVehicle::AwarenessBackW() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedBackW = true;
+    }
+}
+
+void AEgoVehicle::AwarenessLeftW() 
+{
+    if (AwarenessManager != NULL) {
+        AwarenessManager->PressedLeftW = true;
+    }
+}
+
 void AEgoVehicle::CameraPositionAdjust(const FVector &Disp)
 {
     // preserves adjustment even after changing view

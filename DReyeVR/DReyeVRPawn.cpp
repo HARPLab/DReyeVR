@@ -532,13 +532,26 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     AccelerationPedalLast = AccelerationPedal;
     BrakePedalLast = BrakePedal;
 
-    // Button presses (turn signals, reverse)
-    if (WheelState->rgbButtons[0] || WheelState->rgbButtons[1] || // Any of the 4 face pads
-        WheelState->rgbButtons[2] || WheelState->rgbButtons[3])
-        EgoVehicle->PressReverse();
-    else
-        EgoVehicle->ReleaseReverse();
+    // awareness 
+    if (WheelState->rgbButtons[0]) 
+        EgoVehicle->AwarenessFwdV();
+    else if (WheelState->rgbButtons[1]) 
+        EgoVehicle->AwarenessFwdV();
+    else if (WheelState->rgbButtons[2]) 
+        EgoVehicle->AwarenessFwdV();
+    else if (WheelState->rgbButtons[3]) 
+        EgoVehicle->AwarenessFwdV();
+        
+    if (WheelState->rgdwPOV[0] == 0) // positive in X
+        EgoVehicle->AwarenessFwdV();
+    else if (WheelState->rgdwPOV[0] == 18000) // negative in X
+        EgoVehicle->AwarenessBackV();
+    else if (WheelState->rgdwPOV[0] == 9000) // positive in Y
+        EgoVehicle->AwarenessRightV();
+    else if (WheelState->rgdwPOV[0] == 27000) // negative in Y
+        EgoVehicle->AwarenessLeftV();
 
+    // Button presses (turn signals, reverse)
     if (WheelState->rgbButtons[4])
         EgoVehicle->PressTurnSignalR();
     else
@@ -552,14 +565,6 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     // if (WheelState->rgbButtons[23]) // big red button on right side of g923
 
     // EgoVehicle VRCamerRoot base position adjustment
-    if (WheelState->rgdwPOV[0] == 0) // positive in X
-        EgoVehicle->CameraFwd();
-    else if (WheelState->rgdwPOV[0] == 18000) // negative in X
-        EgoVehicle->CameraBack();
-    else if (WheelState->rgdwPOV[0] == 9000) // positive in Y
-        EgoVehicle->CameraRight();
-    else if (WheelState->rgdwPOV[0] == 27000) // negative in Y
-        EgoVehicle->CameraLeft();
     else if (WheelState->rgbButtons[19]) // positive in Z
         EgoVehicle->CameraUp();
     else if (WheelState->rgbButtons[20]) // negative in Z
@@ -655,6 +660,15 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     PlayerInputComponent->BindAction("CameraRight_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraRight);
     PlayerInputComponent->BindAction("CameraUp_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraUp);
     PlayerInputComponent->BindAction("CameraDown_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraDown);
+    // awareness
+    PlayerInputComponent->BindAction("AwarenessFwdV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessFwdV);
+    PlayerInputComponent->BindAction("AwarenessBackV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessBackV);
+    PlayerInputComponent->BindAction("AwarenessLeftV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessLeftV);
+    PlayerInputComponent->BindAction("AwarenessRightV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessRightV);
+    PlayerInputComponent->BindAction("AwarenessFwdW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessFwdW);
+    PlayerInputComponent->BindAction("AwarenessBackW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessBackW);
+    PlayerInputComponent->BindAction("AwarenessLeftW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessLeftW);
+    PlayerInputComponent->BindAction("AwarenessRightW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessRightW);
 }
 
 #define CHECK_EGO_VEHICLE(FUNCTION)                                                                                    \
