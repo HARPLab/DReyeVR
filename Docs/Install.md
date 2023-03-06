@@ -13,14 +13,22 @@
   ```bash
   git clone https://github.com/HARPLab/DReyeVR --depth 1
   ```
-- You'll first need to install [Unreal Engine 4.26 (HARPLab fork)](https://github.com/HARPLab/UnrealEngine) from source
-  <!-- - We recommend you clone UnrealEngine ([HarpLab fork of Carla fork](https://github.com/HARPLab/UnrealEngine)) as follows: -->
+- You'll first need to install [Unreal Engine 4.26 (CARLA fork)](https://github.com/CarlaUnreal/UnrealEngine) from source
   ```bash
-  git clone https://github.com/HARPLab/UnrealEngine -b DReyeVR-0.9.13 --depth 1
+  git clone https://github.com/CarlaUnreal/UnrealEngine
+  # set this location to your $UE4_ROOT environment variable
   ```
-  - **IMPORTANT:** if the link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github) to get access to UnrealEngine and all of its forks. 
+
+  **IMPORTANT** on DReyeVR for Carla 0.9.13 you'll need to revert the UE4 repository to a supported version (for DReyeVR). This is to optimize the DX11 rendering performance which in our testing has been the optimal render backend for VR. 
+  ```bash
+  # in $UE4_ROOT
+  git checkout d40ec35474e8793b4eea60dba6c4f051186e458e
+  # or git reset --hard d40ec35474e8793b4eea60dba6c4f051186e458e
+  ```
+
+  - **IMPORTANT:** if the `git clone` link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github) to get access to UnrealEngine and all of its forks. 
   - UE4 build instructions for your system can be found here: [Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/#unreal-engine), [Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/#unreal-engine), [Mac*](https://github.com/GustavoSilvera/carla/blob/m1/Docs/build_mac.md#unreal-engine-fork )
-  - NOTE: We only keep our own HARPLab fork of Carla's fork to preserve version compatibility and enable minor features that Carla doesn't need (ex. foveated rendering).
+  <!-- - NOTE: We only keep our own HARPLab fork of Carla's fork to preserve version compatibility and enable minor features that Carla doesn't need (ex. foveated rendering). -->
 
 - You'll then need to clone and build a [vanilla Carla 0.9.13](https://carla.readthedocs.io/en/0.9.13/#building-carla)
   ```bash
