@@ -564,11 +564,11 @@ void ADReyeVRPawn::LogitechWheelUpdate()
 
     // if (WheelState->rgbButtons[23]) // big red button on right side of g923
 
-    // EgoVehicle VRCamerRoot base position adjustment
-    else if (WheelState->rgbButtons[19]) // positive in Z
-        EgoVehicle->CameraUp();
-    else if (WheelState->rgbButtons[20]) // negative in Z
-        EgoVehicle->CameraDown();
+    // // EgoVehicle VRCamerRoot base position adjustment
+    // else if (WheelState->rgbButtons[19]) // positive in Z
+    //     EgoVehicle->CameraUp();
+    // else if (WheelState->rgbButtons[20]) // negative in Z
+    //     EgoVehicle->CameraDown();
 }
 
 void ADReyeVRPawn::ApplyForceFeedback() const
