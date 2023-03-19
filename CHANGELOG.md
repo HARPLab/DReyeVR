@@ -1,3 +1,9 @@
+## DReyeVR 0.1.2 (for Carla 0.9.13)
+- Update documentation to refer to CarlaUnreal UE4 fork rather than HarpLab fork
+- Apply patches for installation of zlib (broken link) and xerces (broken link & `-Dtranscoder=windows` flag) and PythonAPI
+- Fix crash on BeginPlay when EgoVehicle blueprint is already present in map (before world start)
+- Prefer building PythonAPI with `python` rather than Windows built-in `py -3` (good if using conda) but fallback if `python` is not available 
+
 ## DReyeVR 0.1.1 (for Carla 0.9.13)
 - Update documentation, add developer-centric in-depth documentation
 - Adding missing includes for TrafficSign RoadInfoSignal in SignComponent
