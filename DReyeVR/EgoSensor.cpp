@@ -87,8 +87,11 @@ void AEgoSensor::BeginPlay()
 
 void AEgoSensor::BeginDestroy()
 {
-    DestroyEyeTracker();
     Super::BeginDestroy();
+
+    DestroyEyeTracker();
+
+    LOG("EgoSensor has been destroyed");
 }
 
 void AEgoSensor::ManualTick(float DeltaSeconds)
@@ -345,15 +348,14 @@ void AEgoSensor::ComputeTraceFocusInfo(const ECollisionChannel TraceChannel, flo
         /// TODO: add more suffixes here.
         ActorName += Suffix;
     }
-    // update internal data structure (see DReyeVRData::FocusInfo for default constructor)
-    FocusInfoData = {
-        Hit.Actor,    // pointer to actor being hit (if any, else nullptr)
-        Hit.Location, // absolute (world) location of hit
-        Hit.Normal,   // normal of hit surface (if hit)
-        ActorName,    // name of the actor being hit (if any, else "None")
-        Hit.Distance, // distance from ray start
-        bDidHit,      // whether or not there was a hit
-    };
+
+    // update internal data structure (see DReyeVRData::FocusInfo)
+    FocusInfoData.Actor = Hit.Actor;        // pointer to actor being hit (if any, else nullptr)
+    FocusInfoData.HitPoint = Hit.Location;  // absolute (world) location of hit
+    FocusInfoData.Normal = Hit.Normal;      // normal of hit surface (if hit)
+    FocusInfoData.ActorNameTag = ActorName; // name of the actor being hit (if any, else "None")
+    FocusInfoData.Distance = Hit.Distance;  // distance from ray start
+    FocusInfoData.bDidHit = bDidHit;        // whether or not there was a hit
 }
 
 float AEgoSensor::ComputeVergence(const FVector &L0, const FVector &LDir, const FVector &R0, const FVector &RDir) const

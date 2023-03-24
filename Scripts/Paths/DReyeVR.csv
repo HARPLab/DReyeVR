@@ -9,6 +9,6 @@ Content,Unreal/CarlaUE4/
 LibCarla,/
 PythonAPI,/
 Carla,Unreal/CarlaUE4/Plugins/Carla/Source/
-Tools/BuildTools/*.sh,Util/BuildTools/
+Util,/
 Scripts/Other/.gitignore,/
 Shaders/*.uasset,Unreal/CarlaUE4/Plugins/Carla/Content/PostProcessingMaterials/

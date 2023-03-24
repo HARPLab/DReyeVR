@@ -78,6 +78,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
   protected:
     // Called when the game starts (spawned) or ends (destroyed)
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void BeginDestroy() override;
 
     // World variables

@@ -306,11 +306,10 @@ bool CarlaReplayerHelper::ProcessReplayerPosition(CarlaRecorderPosition Pos1, Ca
     // set new transform
     FTransform Trans(Rotation, Location, FVector(1, 1, 1));
 
-    /// TODO: ensure there is only one DReyeVR ego vehicle in the world
-    if (CarlaActor->GetActor()->GetName().ToLower().Contains("dreyevr"))
+    if (CarlaActor->GetActorInfo()->Description.Id.StartsWith("harplab.dreyevr_vehicle."))
     {
-      /// NOTE: for our DReyeVR ego-vehicle which is unique, do not apply the ActorTransform here
-      // but rather, use the most current sensor data in its own Tick (See AEgoVehicle::ReplayUpdate)
+      // our DReyeVR vehicle does not get applied its transform here but rather in its ReplayTick()
+      // method so that everything that the EgoVehicle ticks can be synchronized (e.x. camera position, wheels, etc.)
       return true;
     }
 

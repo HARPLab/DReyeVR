@@ -1,6 +1,4 @@
 #pragma once
-#ifndef DREYEVR_SENSOR_DATA
-#define DREYEVR_SENSOR_DATA
 
 #include "Carla/Recorder/CarlaRecorderHelpers.h" // WriteValue, WriteFVector, WriteFString, ...
 #include "Materials/MaterialInstanceDynamic.h"   // UMaterialInstanceDynamic
@@ -24,25 +22,38 @@
 
 namespace DReyeVR
 {
-struct EyeData
+
+struct CARLA_API DataSerializer
+{
+    DataSerializer() = default;
+    virtual ~DataSerializer() = default;
+
+    virtual void Read(std::ifstream &InFile) = 0;
+    virtual void Write(std::ofstream &OutFile) const = 0;
+    virtual FString ToString() const = 0;
+};
+
+struct CARLA_API EyeData : public DataSerializer
 {
     FVector GazeDir = FVector::ZeroVector;
     FVector GazeOrigin = FVector::ZeroVector;
     bool GazeValid = false;
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct CombinedEyeData : EyeData
+struct CARLA_API CombinedEyeData : EyeData
 {
     float Vergence = 0.f; // in cm (default UE4 units)
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct SingleEyeData : EyeData
+struct CARLA_API SingleEyeData : EyeData
 {
     float EyeOpenness = 0.f;
     bool EyeOpennessValid = false;
@@ -50,12 +61,12 @@ struct SingleEyeData : EyeData
     FVector2D PupilPosition = FVector2D::ZeroVector;
     bool PupilPositionValid = false;
 
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct EgoVariables
+struct CARLA_API EgoVariables : public DataSerializer
 {
     // World coordinate Ego vehicle location & rotation
     FVector VehicleLocation = FVector::ZeroVector;
@@ -68,12 +79,13 @@ struct EgoVariables
     FRotator CameraRotationAbs = FRotator::ZeroRotator;
     // Ego variables
     float Velocity = 0.f; // note this is in cm/s (default UE4 units)
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct UserInputs
+struct CARLA_API UserInputs : public DataSerializer
 {
     // User inputs
     float Throttle = 0.f;
@@ -85,12 +97,12 @@ struct UserInputs
     bool HoldHandbrake = false;
     // Add more inputs here!
 
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct FocusInfo
+struct CARLA_API FocusInfo : public DataSerializer
 {
     // substitute for SRanipal FFocusInfo in SRanipal_Eyes_Enums.h
     TWeakObjectPtr<class AActor> Actor;
@@ -100,21 +112,22 @@ struct FocusInfo
     float Distance;
     bool bDidHit;
 
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
-struct EyeTracker
+struct CARLA_API EyeTracker : public DataSerializer
 {
     int64_t TimestampDevice = 0; // timestamp from the eye tracker device (with its own clock)
     int64_t FrameSequence = 0;   // "Frame sequence" of SRanipal or just the tick frame in UE4
     CombinedEyeData Combined;
     SingleEyeData Left;
     SingleEyeData Right;
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 };
 
 enum class Gaze
@@ -153,7 +166,9 @@ struct AwarenessInfo
     FString ToString() const;
 };
 
-class AggregateData // all DReyeVR sensor data is held here
+
+// all DReyeVR sensor data is held here
+class CARLA_API AggregateData : public DataSerializer
 {
   public:
     AggregateData() = default;
@@ -205,9 +220,9 @@ class AggregateData // all DReyeVR sensor data is held here
                 const struct FocusInfo &NewFocus, const struct UserInputs &NewInputs);
 
     ////////////////////:SERIALIZATION://////////////////////
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
 
   private:
     int64_t TimestampCarlaUE4; // Carla Timestamp (EgoSensor Tick() event) in milliseconds
@@ -218,7 +233,7 @@ class AggregateData // all DReyeVR sensor data is held here
     struct AwarenessInfo AwarenessData;
 };
 
-class CustomActorData
+class CARLA_API CustomActorData : public DataSerializer
 {
   public:
     FString Name; // unique actor name of this actor
@@ -229,7 +244,7 @@ class CustomActorData
     // visual properties
     FString MeshPath;
     // material properties
-    struct MaterialParamsStruct
+    struct CARLA_API MaterialParamsStruct : public DataSerializer
     {
         /// for an explanation of these, see MaterialParamsStruct::Apply
         // in DReyeVRData.inl
@@ -243,9 +258,10 @@ class CustomActorData
         FLinearColor Emissive = 500.f * FLinearColor::Red;
         FString MaterialPath;
         void Apply(class UMaterialInstanceDynamic *Material) const;
-        void Read(std::ifstream &InFile);
-        void Write(std::ofstream &OutFile) const;
-        FString ToString() const;
+
+        void Read(std::ifstream &InFile) override;
+        void Write(std::ofstream &OutFile) const override;
+        FString ToString() const override;
     };
     MaterialParamsStruct MaterialParams;
     // other
@@ -253,15 +269,10 @@ class CustomActorData
 
     CustomActorData() = default;
 
-    void Read(std::ifstream &InFile);
-    void Write(std::ofstream &OutFile) const;
-    FString ToString() const;
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
     std::string GetUniqueName() const;
 };
 
 }; // namespace DReyeVR
-
-// implementation file(s)
-#include "Carla/Sensor/DReyeVRData.inl" // AggregateData functions
-
-#endif

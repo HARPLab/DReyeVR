@@ -13,14 +13,22 @@
   ```bash
   git clone https://github.com/HARPLab/DReyeVR --depth 1
   ```
-- You'll first need to install [Unreal Engine 4.26 (HARPLab fork)](https://github.com/HARPLab/UnrealEngine) from source
-  <!-- - We recommend you clone UnrealEngine ([HarpLab fork of Carla fork](https://github.com/HARPLab/UnrealEngine)) as follows: -->
+- You'll first need to install [Unreal Engine 4.26 (CARLA fork)](https://github.com/CarlaUnreal/UnrealEngine) from source
   ```bash
-  git clone https://github.com/HARPLab/UnrealEngine -b DReyeVR-0.9.13 --depth 1
+  git clone https://github.com/CarlaUnreal/UnrealEngine
+  # set this location to your $UE4_ROOT environment variable
   ```
-  - **IMPORTANT:** if the link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github) to get access to UnrealEngine and all of its forks. 
+
+  **IMPORTANT** on DReyeVR for Carla 0.9.13 you'll need to revert the UE4 repository to a supported version (for DReyeVR). This is to optimize the DX11 rendering performance which in our testing has been the optimal render backend for VR. 
+  ```bash
+  # in $UE4_ROOT
+  git checkout d40ec35474e8793b4eea60dba6c4f051186e458e
+  # or git reset --hard d40ec35474e8793b4eea60dba6c4f051186e458e
+  ```
+
+  - **IMPORTANT:** if the `git clone` link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github) to get access to UnrealEngine and all of its forks. 
   - UE4 build instructions for your system can be found here: [Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/#unreal-engine), [Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/#unreal-engine), [Mac*](https://github.com/GustavoSilvera/carla/blob/m1/Docs/build_mac.md#unreal-engine-fork )
-  - NOTE: We only keep our own HARPLab fork of Carla's fork to preserve version compatibility and enable minor features that Carla doesn't need (ex. foveated rendering).
+  <!-- - NOTE: We only keep our own HARPLab fork of Carla's fork to preserve version compatibility and enable minor features that Carla doesn't need (ex. foveated rendering). -->
 
 - You'll then need to clone and build a [vanilla Carla 0.9.13](https://carla.readthedocs.io/en/0.9.13/#building-carla)
   ```bash
@@ -283,18 +291,7 @@ make check CARLA=../carla
           ```bat
           conda activate carla13
           ```
-      2. When trying to `make PythonAPI` you'll need to apply [this fix](https://github.com/carla-simulator/carla/issues/2881#issuecomment-699452386) (Replace `py` with `python` in `BuildPythonAPI.bat`)
-          ```bat
-          ...
-          rem previously called "py -3 setup.py ..." --> replace with just "python setup.py ..."
-          if %BUILD_FOR_PYTHON3%==true (
-              echo Building Python API for Python 3.
-              python setup.py bdist_egg bdist_wheel             
-              if %errorlevel% neq 0 goto error_build_wheel
-          )
-          ```
-          - This is because Carla (by default) installs the PythonAPI to the native Python client that comes pre-installed with every Windows machine. This goes 100% against compartmentalizing python environments so we have to patch this file to proceed.
-      3. Add carla to "path" to locate the PythonAPI and ScenarioRunner. But since Anaconda [does not use the traditional `PYTHONPATH`](https://stackoverflow.com/questions/37006114/anaconda-permanently-include-external-packages-like-in-pythonpath) you'll need to:
+      2. Add carla to "path" to locate the PythonAPI and ScenarioRunner. But since Anaconda [does not use the traditional `PYTHONPATH`](https://stackoverflow.com/questions/37006114/anaconda-permanently-include-external-packages-like-in-pythonpath) you'll need to:
           - 3.1. Create a file `carla.pth` in `\PATH\TO\ANACONDA\envs\carla\Lib\site-packages\`
           - 3.2. Insert the following content into `carla.pth`:
             ```bat
@@ -305,22 +302,22 @@ make check CARLA=../carla
               C:\PATH\TO\CARLA\PythonAPI\examples
               C:\PATH\TO\SCENARIO_RUNNER\
             ```
-      4. Install the specific carla wheel (`whl`) to Anaconda
+      3. Install the specific carla wheel (`whl`) to Anaconda
           ```bash
-          conda activate carla
+          conda activate carla13
           pip install --no-deps --force-reinstall PATH\TO\CARLA\PythonAPI\carla\dist\carla-0.9.13-cp37-cp37m-win_amd64.whl
 
           # if applicable (and you installed Scenario runner)
           cd %SCENARIO_RUNNER_ROOT%
           pip install -r requirements.txt # install all SR dependencies
           ```
-      5. Finally, there are some problems with `shapely` (SR dependency) and Conda. Luckily the solution is simple:
+      4. Finally, you might run into problems with `shapely` (scenario-runner dependency) and Conda. Luckily the solution is simple:
           - Copy the files:
             - `PATH\TO\ANACONDA\envs\carla13\Lib\site-packages\shapely\DLLs\geos.dll`
             - `PATH\TO\ANACONDA\envs\carla13\Lib\site-packages\shapely\DLLs\geos_c.dll`
           - To destination:
             - `PATH\TO\ANACONDA\envs\carla13\Library\bin\`
-      6. Now finally, you should be able to verify all PythonAPI actions work as expected via:
+      5. Now finally, you should be able to verify all PythonAPI actions work as expected via:
           ```bat
           conda activate carla13
           python
