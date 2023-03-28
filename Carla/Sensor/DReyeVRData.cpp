@@ -237,7 +237,7 @@ FString EyeTracker::ToString() const
 /// -------------:AWARENESSACTOR:------------- ///
 /// ========================================== ///
 
-inline void AwarenessActor::Read(std::ifstream &InFile)
+void AwarenessActor::Read(std::ifstream &InFile)
 {
     ReadValue<int64_t>(InFile, ActorId);
     ReadFVector(InFile, ActorLocation);
@@ -245,7 +245,7 @@ inline void AwarenessActor::Read(std::ifstream &InFile)
     ReadValue<int64_t>(InFile, Answer);
 }
 
-inline void AwarenessActor::Write(std::ofstream &OutFile) const
+void AwarenessActor::Write(std::ofstream &OutFile) const
 {
     WriteValue<int64_t>(OutFile, ActorId);
     WriteFVector(OutFile, ActorLocation);
@@ -253,7 +253,7 @@ inline void AwarenessActor::Write(std::ofstream &OutFile) const
     WriteValue<int64_t>(OutFile, Answer);
 }
 
-inline FString AwarenessActor::ToString() const
+FString AwarenessActor::ToString() const
 {
     FString Print;
     Print += FString::Printf(TEXT("Id:%d,"), ActorId);
@@ -267,7 +267,7 @@ inline FString AwarenessActor::ToString() const
 /// -------------:AWARENESSINFO:-------_------ ///
 /// ========================================== ///
 
-inline FString AwarenessInfo::ToString() const
+FString AwarenessInfo::ToString() const
 {
     FString Print;
     Print += FString::Printf(TEXT("VisibleTotal:%d,"), VisibleTotal);
@@ -280,7 +280,7 @@ inline FString AwarenessInfo::ToString() const
     return Print;
 }
 
-inline void AwarenessInfo::Read(std::ifstream &InFile)
+void AwarenessInfo::Read(std::ifstream &InFile)
 {
     ReadValue<int64_t>(InFile, VisibleTotal);
     Visible.clear();
@@ -292,7 +292,7 @@ inline void AwarenessInfo::Read(std::ifstream &InFile)
     ReadValue<int>(InFile, UserInput);
 }
 
-inline void AwarenessInfo::Write(std::ofstream &OutFile) const
+void AwarenessInfo::Write(std::ofstream &OutFile) const
 {
     WriteValue<int64_t>(OutFile, VisibleTotal);
     for (int i = 0; i < VisibleTotal; i++) {
@@ -495,12 +495,12 @@ const DReyeVR::UserInputs &AggregateData::GetUserInputs() const
 
 // Awareness
 
-inline const DReyeVR::AwarenessInfo &AggregateData::GetAwarenessData() const
+const DReyeVR::AwarenessInfo &AggregateData::GetAwarenessData() const
 {
     return AwarenessData;
 }
 
-inline void AggregateData::SetAwarenessData(const int64_t NewVisibleTotal, const std::vector<DReyeVR::AwarenessActor> &NewVisible, const std::vector<FCarlaActor*> &NewVisibleRaw, int64_t NewUserInput)
+void AggregateData::SetAwarenessData(const int64_t NewVisibleTotal, const std::vector<DReyeVR::AwarenessActor> &NewVisible, const std::vector<FCarlaActor*> &NewVisibleRaw, int64_t NewUserInput)
 {
   AwarenessData.VisibleTotal = NewVisibleTotal;
   AwarenessData.Visible = NewVisible;
