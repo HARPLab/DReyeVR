@@ -129,8 +129,9 @@ class ADReyeVRPawn : public APawn
 #if USE_LOGITECH_PLUGIN
     struct DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
     void LogLogitechPluginStruct(const struct DIJOYSTATE2 *Now);
-    void LogitechWheelUpdate();      // for logitech wheel integration
-    void ApplyForceFeedback() const; // for logitech wheel integration
+    void LogitechWheelUpdate();                              // for logitech wheel integration
+    void ManageButtonPresses(const DIJOYSTATE2 &WheelState); // for managing button presses
+    void ApplyForceFeedback() const;                         // for logitech wheel integration
     float WheelRotationLast, AccelerationPedalLast, BrakePedalLast;
 #endif
     bool bIsLogiConnected = false; // check if Logi device is connected (on BeginPlay)

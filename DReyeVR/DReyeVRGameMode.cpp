@@ -53,17 +53,16 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     };
 
     // read config variables
-    ReadConfigValue("Game", "AutomaticallySpawnEgo", bDoSpawnEgoVehicle);
-    ReadConfigValue("Game", "EgoVolumePercent", EgoVolumePercent);
-    ReadConfigValue("Game", "NonEgoVolumePercent", NonEgoVolumePercent);
-    ReadConfigValue("Game", "AmbientVolumePercent", AmbientVolumePercent);
-    ReadConfigValue("Game", "DoSpawnEgoVehicleTransform", bDoSpawnEgoVehicleTransform);
-    ReadConfigValue("Game", "SpawnEgoVehicleTransform", SpawnEgoVehicleTransform);
+    bDoSpawnEgoVehicle = GeneralParams.Get<bool>("Game", "AutomaticallySpawnEgo");
+    EgoVolumePercent = GeneralParams.Get<float>("Sound", "EgoVolumePercent");
+    NonEgoVolumePercent = GeneralParams.Get<float>("Sound", "NonEgoVolumePercent");
+    AmbientVolumePercent = GeneralParams.Get<float>("Sound", "AmbientVolumePercent");
+    bDoSpawnEgoVehicleTransform = GeneralParams.Get<bool>("Game", "DoSpawnEgoVehicleTransform");
+    SpawnEgoVehicleTransform = GeneralParams.Get<FTransform>("Game", "SpawnEgoVehicleTransform");
 
     // Recorder/replayer
-    ReadConfigValue("Replayer", "UseCarlaSpectator", bUseCarlaSpectator);
-    bool bEnableReplayInterpolation = false;
-    ReadConfigValue("Replayer", "ReplayInterpolation", bEnableReplayInterpolation);
+    bUseCarlaSpectator = GeneralParams.Get<bool>("Replayer", "UseCarlaSpectator");
+    bool bEnableReplayInterpolation = GeneralParams.Get<bool>("Replayer", "ReplayInterpolation");
     bReplaySync = !bEnableReplayInterpolation; // synchronous => no interpolation!
 }
 
@@ -154,15 +153,23 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
 
 void ADReyeVRGameMode::SetupSpectator()
 {
+    // always disable the Carla spectator from DReyeVR use
+    UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
+    APawn *CarlaSpectator = nullptr;
+    if (Episode != nullptr)
+    {
+        CarlaSpectator = Episode->GetSpectatorPawn();
+        if (CarlaSpectator != nullptr)
+            CarlaSpectator->SetActorHiddenInGame(true);
+    }
+
+    // whether or not to use Carla spectator
     if (bUseCarlaSpectator)
-    { // look for existing spectator in world
-        UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
-        if (Episode != nullptr)
-            SpectatorPtr = Episode->GetSpectatorPawn();
+    {
+        if (CarlaSpectator != nullptr)
+            SpectatorPtr = CarlaSpectator;
         else if (Player != nullptr)
-        {
             SpectatorPtr = Player->GetPawn();
-        }
     }
 
     // spawn if necessary
@@ -284,6 +291,7 @@ void ADReyeVRGameMode::PossessEgoVehicle()
 
     LOG("Possessing DReyeVR EgoVehicle");
     Player->Possess(DReyeVR_Pawn);
+    DReyeVR_Pawn->BeginEgoVehicle(EgoVehiclePtr, GetWorld()); // to re-enable inputs
 }
 
 void ADReyeVRGameMode::PossessSpectator()
@@ -445,7 +453,7 @@ void ADReyeVRGameMode::SetupReplayer()
         Replayer->SetSyncMode(bReplaySync);
         if (bReplaySync)
         {
-            LOG_WARN("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)");
+            LOG("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)");
         }
         bRecorderInitiated = true;
     }
@@ -487,7 +495,7 @@ void ADReyeVRGameMode::DrawBBoxes()
             FVector BoxExtent;
             A->GetActorBounds(true, Origin, BoxExtent, false);
             // LOG("Origin: %s Extent %s"), *Origin.ToString(), *BoxExtent.ToString());
-            // divide by 100 to get from m to cm, multiply by 2 bc the cube is scaled in both X and Y
+            // divide by 100 to get from cm to m, multiply by 2 bc the cube is scaled in both X and Y
             BBox->SetActorScale3D(2 * BoxExtent / 100.f);
             BBox->SetActorLocation(Origin);
             // extent already covers the rotation aspect since the bbox is dynamic and axis aligned
@@ -557,7 +565,7 @@ void ADReyeVRGameMode::SpawnEgoVehicle(const FTransform &SpawnPt)
 {
     UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
     check(Episode != nullptr);
-    FActorDefinition EgoVehicleDefn = FindDefnInRegistry(Episode, AEgoVehicle::StaticClass());
+    FActorDefinition EgoVehicleDefn = FindEgoVehicleDefinition(Episode);
     FActorDescription DReyeVRDescr;
     { // create a Description from the Definition to spawn the actor
         DReyeVRDescr.UId = EgoVehicleDefn.UId;

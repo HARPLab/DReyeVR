@@ -116,7 +116,7 @@ This will allow you to create a plain simple static mesh (cyan underline) from t
 Now that we have a reasonable steering wheel model as a simple static mesh, it is easy to spawn it and attach it to the ego-vehicle (currently without a steering wheel) in code. Managing it in code is nice because it will allow us to `SetRelativeRotation` of the mesh dynamically on every tick, allowing it to be responsive to our inputs at runtime. 
 
 The first step to Spawn the steering wheel in code is to find its mesh in the editor. Right click on the static mesh (cyan underline) and select `Copy Reference`. For me it looks like this:
-- `"StaticMesh'/Game/DReyeVR/EgoVehicle/model3/SteeringWheel/Wheel_StaticMeshl_model3.Wheel_StaticMeshl_model3'"`
+- `"StaticMesh'/Game/DReyeVR/EgoVehicle/TeslaM3/SteeringWheel/Wheel_StaticMeshl_model3.Wheel_StaticMeshl_model3'"`
 
 (Note that we won't be needing any of the other steering wheel assets anymore, feel free to delete them)
 

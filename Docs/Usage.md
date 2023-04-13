@@ -228,7 +228,7 @@ Summary:
 # Using our custom config file
 Throughout development, we found that modifying even small things in DReyeVR have a LONG cycle time for recompilation/re-linking/re-cooking/etc. so we wanted an approach that could greatly ease this burden while still providing flexibility.
 
-This is why we developed the [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini) param file and associated helper functions in [`DReyeVRUtils.h`](../DReyeVR/DReyeVRUtils.h) so we could simply read the file at runtime and modify small params from the internal code without recompilation. 
+This is why we developed the [`ConfigFile`](../DReyeVR/ConfigFile.h) class and corresponding [`DReyeVRConfig.ini`](../Configs/DReyeVRConfig.ini) (and per-vehicle) "params" so we could read the file at runtime to set variables in the simulator without recompilation. 
 
 The procedure to use our params API is simple:
 ```c++
@@ -242,34 +242,44 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
   float MyFavouriteNumber; // <--Your new param
 }
 ```
-Then, in that class' constructor (typically) or BeginPlay, or technically anywhere in the source, since this occurs at runtime (but you usually don't want to use uninitialized data members)
 
-```c++
-// ex: EgoVehicle.cpp:
-AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(ObjectInitializer)
-{
-    // don't modify, just note this is called in the constructor
-    ReadConfigVariables(); 
+Then, choose which type of config file this variable falls into, currently we have two kinds of primary config files: simulator-wide `GeneralParams`, and per-vehicle `VehicleParams`. 
 
-    ... // existing code
-}
+The `GeneralParams` can be thought of as a global simulator-wide configuration file that can be accessed from anywhere, while the `VehicleParams` are specifically for a particular EgoVehicle (such as locations/specifications) that can be found in [`Config/EgoVehicles/`](../Config/EgoVehicles/) that matches the available DReyeVR EgoVehicles. To learn more about these see [EgoVehicle.md](EgoVehicles.md).
 
-void AEgoVehicle::ReadConfigVariables()
-{
-    ... // existing code
-
-    // ReadConfigValue("YourSectionHeader", "YourVariableName", Variable);
-    ReadConfigValue("MyFavourites", "Number", MyFavouriteNumber);
-}
-```
-
-Then, in the config file, you can simply add this variable in the section and variable described from `ReadConfigValue` as follows
+(For general params)
 ```ini
 [MyFavourites]
 Number=867.5309 # You can also write comments!
 ```
+Then, anywhere you want, you can get the parameter by specifying both the section and variable name: 
+
+```c++
+void AEgoVehicle::SomeFunction()
+{
+  // can use this format to assign directly into a variable
+  MyFavouriteNumber = GeneralParams.Get<float>("MyFavourites", "Number");
+
+  // or pass the variable by reference and get whether or not the Get operation was successful
+  bool bSuccess = GeneralParams.Get("MyFavourites", "Number", MyFavouriteNumber);
+
+}
+```
+
+If you are using vehicle-specific params, then this needs to be in the context of some EgoVehicle
+```c++
+
+void SomeClass::SomeOtherFunction(AEgoVehicle *Vehicle){
+  // VehicleParams is a public member of 
+  const ConfigFile &VehicleSpecificParams = Vehicle->GetVehicleParams();
+  int VehicleParam = VehicleSpecificParams.Get<int>("VehicleParamSection", "VariableName");
+}
+```
+
 
 And, just like the other variables in the file, you can bunch and organize them together under the same section header.
+
+Another useful feature we built-in is to import, export, and compare the config files. This is useful because we can track the config file(s) that were used while a particular example was recorded, then if you are trying to replay this scenario with *different* configuration parameters (ex. using a different vehicle, or with mirrors enabled when they werent in the recording), some warnings will be presented when comparing (diff) the recorded config file (saved in the .log file) and the live one (what is currently running).
 
 # Synchronized replay frame capture
 ## Motivations
@@ -308,6 +318,7 @@ We have written other guides as well that serve more particular needs:
 - See [`Shaders/README.md`](../Shaders/README.md) to view our post-processing shaders and learn how to use them
 - See [`Docs/CustomActor.md`](CustomActor.md) to use our CustomActor classes to use fully-recordable 3D dynamic elements in your scene
 - See [`Docs/Model.md`](Model.md) to see how we added a responsive steering wheel to the vehicle mesh
+- See [`EgoVehicle.md`](EgoVehicle.md) to add your own custom EgoVehicle model to DReyeVR
 - See [`Docs/LODs.md`](LODs.md) to learn how we tune the Level-Of-Detail modes for vehicles for a more enjoyable VR experience
 
 

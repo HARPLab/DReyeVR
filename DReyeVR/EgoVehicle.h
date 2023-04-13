@@ -12,7 +12,7 @@
 #include "Components/SceneComponent.h"                // USceneComponent
 #include "CoreMinimal.h"                              // Unreal functions
 #include "DReyeVRGameMode.h"                          // ADReyeVRGameMode
-#include "DReyeVRUtils.h"                             // ReadConfigValue
+#include "DReyeVRUtils.h"                             // GeneralParams.Get
 #include "EgoSensor.h"                                // AEgoSensor
 #include "FlatHUD.h"                                  // ADReyeVRHUD
 #include "ImageUtils.h"                               // CreateTexture2D
@@ -47,6 +47,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void SetVolume(const float VolumeIn);
 
     // Getters
+    const FString &GetVehicleType() const;
     FVector GetCameraOffset() const;
     FVector GetCameraPosn() const;
     FVector GetNextCameraPosn(const float DeltaSeconds) const;
@@ -55,6 +56,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     UCameraComponent *GetCamera();
     const DReyeVR::UserInputs &GetVehicleInputs() const;
     const class AEgoSensor *GetSensor() const;
+    const struct ConfigFile &GetVehicleParams() const;
 
     // autopilot API
     void SetAutopilot(const bool AutopilotOn);
@@ -71,6 +73,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void SetCameraRootPose(const FString &PoseName); // index into named FTransform
     void SetCameraRootPose(size_t PoseIdx);          // index into ordered FTransform
     const FTransform &GetCameraRootPose() const;
+    void BeginThirdPersonCameraInit();
     void NextCameraView();
     void PrevCameraView();
 
@@ -80,33 +83,38 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     virtual void BeginDestroy() override;
 
+    // custom configuration file for vehicle-specific parameters
+    struct ConfigFile VehicleParams;
+
     // World variables
     class UWorld *World;
 
   private:
-    void ConstructRigidBody();
+    template <typename T> T *CreateEgoObject(const FString &Name, const FString &Suffix = "");
+    FString VehicleType; // initially empty (set in GetVehicleType())
 
-    ////////////////:CAMERA:////////////////
-    void ConstructCameraRoot(); // needs to be called in the constructor
-    UPROPERTY(Category = Camera, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+  private: // camera
+    UPROPERTY(Category = Camera, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class USceneComponent *VRCameraRoot;
     UPROPERTY(Category = Camera, EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UCameraComponent *FirstPersonCam;
-    FTransform CameraPose, CameraPoseOffset;                      // camera pose (location & rotation) and manual offset
-    std::vector<std::pair<FString, FTransform>> CameraTransforms; // collection of named transforms from params
-    size_t CurrentCameraTransformIdx = 0;
+    void ConstructCameraRoot();                 // needs to be called in the constructor
+    FTransform CameraPose, CameraPoseOffset;    // camera pose (location & rotation) and manual offset
+    TMap<FString, FTransform> CameraTransforms; // collection of named transforms from params
+    TArray<FString> CameraPoseKeys;             // to iterate through them
+    size_t CurrentCameraTransformIdx = 0;       // to index in CameraPoseKeys which indexes into CameraTransforms
     bool bCameraFollowHMD = true; // disable this (in params) to replay without following the player's HMD (replay-only)
 
-    ////////////////:SENSOR:////////////////
+  private: // sensor
     void ReplayTick();
     void InitSensor();
     class AEgoSensor *EgoSensor; // custom sensor helper that holds logic for extracting useful data
     void UpdateSensor(const float DeltaTime);
 
-    ///////////////:DREYEVRPAWN://///////////
+  private: // pawn
     class ADReyeVRPawn *Pawn = nullptr;
 
-    ////////////////:MIRRORS:////////////////
+  private: // mirrors
     void ConstructMirrors();
     struct MirrorParams
     {
@@ -135,19 +143,20 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     class UStaticMeshComponent *RearMirrorChassisSM;
     FTransform RearMirrorChassisTransform;
 
-    ////////////////:AICONTROLLER:////////////////
+  private: // AI controller
     class AWheeledVehicleAIController *AI_Player = nullptr;
     void InitAIPlayer();
     bool bAutopilotEnabled = false;
     void TickAutopilot();
 
-    ////////////////:INPUTS:////////////////
+  private: // inputs
     /// NOTE: since there are so many functions here, they are defined in EgoInputs.cpp
     struct DReyeVR::UserInputs VehicleInputs; // struct for user inputs
-    // Vehicle control functions
-    void SetSteering(const float SteeringInput);
-    void SetThrottle(const float ThrottleInput);
-    void SetBrake(const float BrakeInput);
+    // Vehicle control functions (additive for multiple input modalities (kbd/logi))
+    void AddSteering(float SteeringInput);
+    void AddThrottle(float ThrottleInput);
+    void AddBrake(float BrakeInput);
+    void TickVehicleInputs();
     bool bReverse;
 
     // "button presses" should have both a "Press" and "Release" function
@@ -169,10 +178,6 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void ReleaseTurnSignalR();
     float RightSignalTimeToDie; // how long until the blinkers go out
     bool bCanPressTurnSignalR = true;
-    // handbrake
-    void PressHandbrake();
-    void ReleaseHandbrake();
-    bool bCanPressHandbrake = true;
 
     // Camera control functions (offset by some amount)
     void CameraPositionAdjust(const FVector &Disp);
@@ -182,6 +187,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     void CameraRight();
     void CameraUp();
     void CameraDown();
+    void CameraPositionAdjust(bool bForward, bool bRight, bool bBackwards, bool bLeft, bool bUp, bool bDown);
 
     // changing camera views
     void PressNextCameraView();
@@ -196,18 +202,29 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     float ScaleThrottleInput;
     float ScaleBrakeInput;
 
-    ////////////////:SOUNDS:////////////////
-    void ConstructEgoSounds(); // needs to be called in the constructor
+  private: // sounds
     UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UAudioComponent *GearShiftSound; // nice for toggling reverse
     UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UAudioComponent *TurnSignalSound; // good for turn signals
+    UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    class UAudioComponent *EgoEngineRevSound; // driver feedback on throttle
+    UPROPERTY(Category = "Audio", EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+    class UAudioComponent *EgoCrashSound; // crashing with another actor
+    void ConstructEgoSounds();            // needs to be called in the constructor
+    virtual void TickSounds(float DeltaSeconds) override;
 
-    ////////////////:LEVEL:////////////////
+    // manually overriding these from ACarlaWheeledVehicle
+    void ConstructEgoCollisionHandler(); // needs to be called in the constructor
+    UFUNCTION()
+    void OnEgoOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherActor, UPrimitiveComponent *OtherComp,
+                           int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult);
+
+  private: // gamemode/level
     void TickGame(float DeltaSeconds);
     class ADReyeVRGameMode *DReyeVRGame;
 
-    ////////////////:DASH:////////////////
+  private: // dashboard
     // Text Render components (Like the HUD but part of the mesh and works in VR)
     void ConstructDashText(); // needs to be called in the constructor
     UPROPERTY(Category = "Dash", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
@@ -218,22 +235,27 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     UPROPERTY(Category = "Dash", EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UTextRenderComponent *GearShifter;
     void UpdateDash();
-    FVector DashboardLocnInVehicle{110, 0, 105}; // can change via params
-    bool bUseMPH;
-    float SpeedometerScale; // scale from CM/s to MPH or KPH depending on bUseMPH
+    float SpeedometerScale = CmPerSecondToXPerHour(true); // scale from CM/s to MPH or KPH (default MPH)
 
-    ////////////////:STEERINGWHEEL:////////////////
-    void ConstructSteeringWheel(); // needs to be called in the constructor
+  private: // steering wheel
     UPROPERTY(Category = Steering, EditDefaultsOnly, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
     class UStaticMeshComponent *SteeringWheel;
+    void ConstructSteeringWheel(); // needs to be called in the constructor
+    void DestroySteeringWheel();
     void TickSteeringWheel(const float DeltaTime);
-    FVector InitWheelLocation;
-    FRotator InitWheelRotation;
     float MaxSteerAngleDeg;
     float MaxSteerVelocity;
     float SteeringAnimScale;
+    // wheel face buttons
+    void InitWheelButtons();
+    void UpdateWheelButton(ADReyeVRCustomActor *Button, bool bEnabled);
+    class ADReyeVRCustomActor *Button_ABXY_A, *Button_ABXY_B, *Button_ABXY_X, *Button_ABXY_Y;
+    class ADReyeVRCustomActor *Button_DPad_Up, *Button_DPad_Down, *Button_DPad_Left, *Button_DPad_Right;
+    bool bInitializedButtons = false;
+    const FLinearColor ButtonNeutralCol = 0.2f * FLinearColor::White;
+    const FLinearColor ButtonPressedCol = 1.5f * FLinearColor::White;
 
-    ////////////////:OTHER:////////////////
+  private: // other
     void DebugLines() const;
     bool bDrawDebugEditor = false;
 };

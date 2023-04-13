@@ -30,26 +30,26 @@ ADReyeVRPawn::ADReyeVRPawn(const FObjectInitializer &ObjectInitializer) : Super(
 void ADReyeVRPawn::ReadConfigVariables()
 {
     // camera
-    ReadConfigValue("CameraParams", "FieldOfView", FieldOfView);
+    GeneralParams.Get("CameraParams", "FieldOfView", FieldOfView);
     /// NOTE: all the postprocessing params are used in DReyeVRUtils::CreatePostProcessingParams
 
     // input scaling
-    ReadConfigValue("VehicleInputs", "InvertMouseY", InvertMouseY);
-    ReadConfigValue("VehicleInputs", "ScaleMouseY", ScaleMouseY);
-    ReadConfigValue("VehicleInputs", "ScaleMouseX", ScaleMouseX);
+    GeneralParams.Get("VehicleInputs", "InvertMouseY", InvertMouseY);
+    GeneralParams.Get("VehicleInputs", "ScaleMouseY", ScaleMouseY);
+    GeneralParams.Get("VehicleInputs", "ScaleMouseX", ScaleMouseX);
 
     // HUD
-    ReadConfigValue("EgoVehicleHUD", "HUDScaleVR", HUDScaleVR);
-    ReadConfigValue("EgoVehicleHUD", "DrawFPSCounter", bDrawFPSCounter);
-    ReadConfigValue("EgoVehicleHUD", "DrawFlatReticle", bDrawFlatReticle);
-    ReadConfigValue("EgoVehicleHUD", "ReticleSize", ReticleSize);
-    ReadConfigValue("EgoVehicleHUD", "DrawGaze", bDrawGaze);
-    ReadConfigValue("EgoVehicleHUD", "DrawSpectatorReticle", bDrawSpectatorReticle);
-    ReadConfigValue("EgoVehicleHUD", "EnableSpectatorScreen", bEnableSpectatorScreen);
+    GeneralParams.Get("EgoVehicleHUD", "HUDScaleVR", HUDScaleVR);
+    GeneralParams.Get("EgoVehicleHUD", "DrawFPSCounter", bDrawFPSCounter);
+    GeneralParams.Get("EgoVehicleHUD", "DrawFlatReticle", bDrawFlatReticle);
+    GeneralParams.Get("EgoVehicleHUD", "ReticleSize", ReticleSize);
+    GeneralParams.Get("EgoVehicleHUD", "DrawGaze", bDrawGaze);
+    GeneralParams.Get("EgoVehicleHUD", "DrawSpectatorReticle", bDrawSpectatorReticle);
+    GeneralParams.Get("EgoVehicleHUD", "EnableSpectatorScreen", bEnableSpectatorScreen);
 
     // wheel hardware
-    ReadConfigValue("Hardware", "DeviceIdx", WheelDeviceIdx);
-    ReadConfigValue("Hardware", "LogUpdates", bLogLogitechWheel);
+    GeneralParams.Get("Hardware", "DeviceIdx", WheelDeviceIdx);
+    GeneralParams.Get("Hardware", "LogUpdates", bLogLogitechWheel);
 }
 
 void ADReyeVRPawn::ConstructCamera()
@@ -180,20 +180,30 @@ void ADReyeVRPawn::InitReticleTexture()
 
 void ADReyeVRPawn::InitSpectator()
 {
-    if (bIsHMDConnected)
+    if (!bIsHMDConnected)
+        return;
+    // see https://docs.unrealengine.com/4.26/en-US/SharingAndReleasing/XRDevelopment/VR/DevelopVR/VRSpectatorScreen/
+    auto SpectatorScreenMode = ESpectatorScreenMode::Disabled; // black window
+    if (bEnableSpectatorScreen)
     {
-        if (bEnableSpectatorScreen)
+        // draws the left eye view cropped to the entire window
+        SpectatorScreenMode = ESpectatorScreenMode::SingleEyeCroppedToFill;
+        if (bDrawSpectatorReticle)
         {
             InitReticleTexture(); // generate array of pixel values
-            check(ReticleTexture);
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(ESpectatorScreenMode::TexturePlusEye);
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenTexture(ReticleTexture);
-        }
-        else
-        {
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(ESpectatorScreenMode::Disabled);
+            if (ReticleTexture != nullptr)
+            {
+                // draws the full screen view of the left eye (same as SingleEyeCroppedToFill) plus a texture overlaid
+                SpectatorScreenMode = ESpectatorScreenMode::TexturePlusEye;
+                UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenTexture(ReticleTexture);
+            }
+            else
+            {
+                LOG_ERROR("Reticle texture is null! Unable to use for spectator screen");
+            }
         }
     }
+    UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(SpectatorScreenMode);
 }
 
 void ADReyeVRPawn::TickSpectatorScreen(float DeltaSeconds)
@@ -482,6 +492,7 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     if (LogiUpdate() == false) // update the logitech wheel
         LOG_WARN("Logitech wheel %d failed to update!", WheelDeviceIdx);
     DIJOYSTATE2 *WheelState = LogiGetState(WheelDeviceIdx);
+    ensure(WheelState != nullptr);
     if (bLogLogitechWheel)
         LogLogitechPluginStruct(WheelState);
     /// NOTE: obtained these from LogitechWheelInputDevice.cpp:~111
@@ -521,10 +532,9 @@ void ADReyeVRPawn::LogitechWheelUpdate()
         }
         else
         {
-            // take over the vehicle control completely
-            EgoVehicle->SetSteering(WheelRotation);
-            EgoVehicle->SetThrottle(AccelerationPedal);
-            EgoVehicle->SetBrake(BrakePedal);
+            EgoVehicle->AddSteering(WheelRotation);
+            EgoVehicle->AddThrottle(AccelerationPedal);
+            EgoVehicle->AddBrake(BrakePedal);
         }
     }
     // save the last values for the wheel & pedals
@@ -532,38 +542,53 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     AccelerationPedalLast = AccelerationPedal;
     BrakePedalLast = BrakePedal;
 
-    // Button presses (turn signals, reverse)
-    if (WheelState->rgbButtons[0] || WheelState->rgbButtons[1] || // Any of the 4 face pads
-        WheelState->rgbButtons[2] || WheelState->rgbButtons[3])
+    ManageButtonPresses(*WheelState);
+}
+
+void ADReyeVRPawn::ManageButtonPresses(const DIJOYSTATE2 &WheelState)
+{
+    const bool bABXY_A = static_cast<bool>(WheelState.rgbButtons[0]);
+    const bool bABXY_B = static_cast<bool>(WheelState.rgbButtons[2]);
+    const bool bABXY_X = static_cast<bool>(WheelState.rgbButtons[1]);
+    const bool bABXY_Y = static_cast<bool>(WheelState.rgbButtons[3]);
+
+    if (bABXY_A || bABXY_B || bABXY_X || bABXY_Y)
         EgoVehicle->PressReverse();
     else
         EgoVehicle->ReleaseReverse();
 
-    if (WheelState->rgbButtons[4])
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_A, bABXY_A);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_B, bABXY_B);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_X, bABXY_X);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_Y, bABXY_Y);
+
+    bool bTurnSignalR = static_cast<bool>(WheelState.rgbButtons[4]);
+    bool bTurnSignalL = static_cast<bool>(WheelState.rgbButtons[5]);
+
+    if (bTurnSignalR)
         EgoVehicle->PressTurnSignalR();
     else
         EgoVehicle->ReleaseTurnSignalR();
 
-    if (WheelState->rgbButtons[5])
+    if (bTurnSignalL)
         EgoVehicle->PressTurnSignalL();
     else
         EgoVehicle->ReleaseTurnSignalL();
 
-    // if (WheelState->rgbButtons[23]) // big red button on right side of g923
+    // if (WheelState.rgbButtons[23]) // big red button on right side of g923
 
-    // EgoVehicle VRCamerRoot base position adjustment
-    if (WheelState->rgdwPOV[0] == 0) // positive in X
-        EgoVehicle->CameraFwd();
-    else if (WheelState->rgdwPOV[0] == 18000) // negative in X
-        EgoVehicle->CameraBack();
-    else if (WheelState->rgdwPOV[0] == 9000) // positive in Y
-        EgoVehicle->CameraRight();
-    else if (WheelState->rgdwPOV[0] == 27000) // negative in Y
-        EgoVehicle->CameraLeft();
-    else if (WheelState->rgbButtons[19]) // positive in Z
-        EgoVehicle->CameraUp();
-    else if (WheelState->rgbButtons[20]) // negative in Z
-        EgoVehicle->CameraDown();
+    const bool bDPad_Up = (WheelState.rgdwPOV[0] == 0);
+    const bool bDPad_Right = (WheelState.rgdwPOV[0] == 9000);
+    const bool bDPad_Down = (WheelState.rgdwPOV[0] == 18000);
+    const bool bDPad_Left = (WheelState.rgdwPOV[0] == 27000);
+    const bool bPositive = static_cast<bool>(WheelState.rgbButtons[19]);
+    const bool bNegative = static_cast<bool>(WheelState.rgbButtons[20]);
+
+    EgoVehicle->CameraPositionAdjust(bDPad_Up, bDPad_Right, bDPad_Down, bDPad_Left, bPositive, bNegative);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Up, bDPad_Up);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Right, bDPad_Right);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Left, bDPad_Left);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Down, bDPad_Down);
 }
 
 void ADReyeVRPawn::ApplyForceFeedback() const
@@ -616,10 +641,6 @@ void ADReyeVRPawn::SetupPlayerInputComponent(UInputComponent *PlayerInputCompone
     check(InputComponent);
 
     /// NOTE: an Action is a digital input, an Axis is an analog input
-    // steering and throttle analog inputs (axes)
-    PlayerInputComponent->BindAxis("Steer_DReyeVR", this, &ADReyeVRPawn::SetSteeringKbd);
-    PlayerInputComponent->BindAxis("Throttle_DReyeVR", this, &ADReyeVRPawn::SetThrottleKbd);
-    PlayerInputComponent->BindAxis("Brake_DReyeVR", this, &ADReyeVRPawn::SetBrakeKbd);
     /// Mouse X and Y input for looking up and turning
     PlayerInputComponent->BindAxis("MouseLookUp_DReyeVR", this, &ADReyeVRPawn::MouseLookUp);
     PlayerInputComponent->BindAxis("MouseTurn_DReyeVR", this, &ADReyeVRPawn::MouseTurn);
@@ -631,6 +652,10 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     // this function sets up the direct relay mechanisms to call EgoVehicle input functions
     check(PlayerInputComponent != nullptr);
     check(EV != nullptr);
+    // steering and throttle analog inputs (axes)
+    PlayerInputComponent->BindAxis("Steer_DReyeVR", EV, &AEgoVehicle::AddSteering);
+    PlayerInputComponent->BindAxis("Throttle_DReyeVR", EV, &AEgoVehicle::AddThrottle);
+    PlayerInputComponent->BindAxis("Brake_DReyeVR", EV, &AEgoVehicle::AddBrake);
     // button actions (press & release)
     PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressReverse);
     PlayerInputComponent->BindAction("ToggleReverse_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseReverse);
@@ -638,8 +663,6 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseTurnSignalL);
     PlayerInputComponent->BindAction("TurnSignalLeft_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressTurnSignalL);
     PlayerInputComponent->BindAction("TurnSignalRight_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseTurnSignalR);
-    PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressHandbrake);
-    PlayerInputComponent->BindAction("HoldHandbrake_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseHandbrake);
     // camera view adjustments
     PlayerInputComponent->BindAction("NextCameraView_DReyeVR", IE_Pressed, EV, &AEgoVehicle::PressNextCameraView);
     PlayerInputComponent->BindAction("NextCameraView_DReyeVR", IE_Released, EV, &AEgoVehicle::ReleaseNextCameraView);
@@ -655,45 +678,6 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     PlayerInputComponent->BindAction("CameraRight_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraRight);
     PlayerInputComponent->BindAction("CameraUp_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraUp);
     PlayerInputComponent->BindAction("CameraDown_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraDown);
-}
-
-#define CHECK_EGO_VEHICLE(FUNCTION)                                                                                    \
-    if (EgoVehicle)                                                                                                    \
-        FUNCTION;                                                                                                      \
-    else                                                                                                               \
-        LOG_ERROR("EgoVehicle is NULL!");
-
-void ADReyeVRPawn::SetThrottleKbd(const float ThrottleInput)
-{
-    if (ThrottleInput != 0)
-    {
-        bOverrideInputsWithKbd = true;
-        CHECK_EGO_VEHICLE(EgoVehicle->SetThrottle(ThrottleInput))
-    }
-}
-
-void ADReyeVRPawn::SetBrakeKbd(const float BrakeInput)
-{
-    if (BrakeInput != 0)
-    {
-        bOverrideInputsWithKbd = true;
-        CHECK_EGO_VEHICLE(EgoVehicle->SetBrake(BrakeInput))
-    }
-}
-
-void ADReyeVRPawn::SetSteeringKbd(const float SteeringInput)
-{
-    if (SteeringInput != 0)
-    {
-        bOverrideInputsWithKbd = true;
-        CHECK_EGO_VEHICLE(EgoVehicle->SetSteering(SteeringInput))
-    }
-    else
-    {
-        // so the steering wheel does go to 0 when letting go
-        if (EgoVehicle != nullptr)
-            EgoVehicle->VehicleInputs.Steering = 0;
-    }
 }
 
 /// ========================================== ///

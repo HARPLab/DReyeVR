@@ -23,16 +23,35 @@ import carla
 
 
 def find_ego_vehicle(world: carla.libcarla.World) -> Optional[carla.libcarla.Vehicle]:
-    DReyeVR_vehicle = None
-    ego_vehicles = list(world.get_actors().filter("harplab.dreyevr_vehicle.*"))
-    if len(ego_vehicles) >= 1:
-        DReyeVR_vehicle = ego_vehicles[0]  # TODO: support for multiple ego vehicles?
+    DReyeVR_vehicles: str = "harplab.dreyevr_vehicle.*"
+    ego_vehicles_in_world = list(world.get_actors().filter(DReyeVR_vehicles))
+    if len(ego_vehicles_in_world) >= 1:
+        print(f"Found an EgoVehicle in the world ({ego_vehicles_in_world})")
+        return ego_vehicles_in_world[0]
+
+    DReyeVR_vehicle: Optional[carla.libcarla.Vehicle] = None
+    available_ego_vehicles = world.get_blueprint_library().filter(DReyeVR_vehicles)
+    if len(available_ego_vehicles) == 1:
+        bp = available_ego_vehicles[0]
+        print(f'Spawning only available EgoVehicle: "{bp.id}"')
     else:
-        model: str = "harplab.dreyevr_vehicle.model3"
-        print(f'No EgoVehicle found, spawning one: "{model}"')
-        bp = world.get_blueprint_library().find(model)
-        transform = world.get_map().get_spawn_points()[0]
-        DReyeVR_vehicle = world.spawn_actor(bp, transform)
+        print(
+            f"Found {len(available_ego_vehicles)} available EgoVehicles. Which one to use?"
+        )
+        for i, ego in enumerate(available_ego_vehicles):
+            print(f"\t[{i}] - {ego.id}")
+        print()
+        i: int = int(
+            input(f"Pick EgoVehicle to spawn [0-{len(available_ego_vehicles) - 1}]: ")
+        )
+        assert 0 <= i < len(available_ego_vehicles)
+        bp = available_ego_vehicles[i]
+    i: int = 0
+    spawn_pts = world.get_map().get_spawn_points()
+    while DReyeVR_vehicle is None:
+        print(f'Spawning DReyeVR EgoVehicle: "{bp.id}" at {spawn_pts[i]}')
+        DReyeVR_vehicle = world.spawn_actor(bp, transform=spawn_pts[i])
+        i = (i + 1) % len(spawn_pts)
     return DReyeVR_vehicle
 
 

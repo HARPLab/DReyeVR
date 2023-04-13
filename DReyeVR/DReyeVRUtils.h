@@ -2,145 +2,49 @@
 #define DREYEVR_UTIL
 
 #include "Carla/Sensor/ShaderBasedSensor.h" // FSensorShader
+#include "ConfigFile.h"                     // ConfigFile class
 #include "CoreMinimal.h"
 #include "Engine/Texture2D.h"              // UTexture2D
 #include "HighResScreenshot.h"             // FHighResScreenshotConfig
 #include "ImageWriteQueue.h"               // TImagePixelData
 #include "ImageWriteTask.h"                // FImageWriteTask
 #include <carla/image/CityScapesPalette.h> // CityScapesPalette
-#include <fstream>                         // std::ifstream
-#include <sstream>                         // std::istringstream
-#include <string>
-#include <unordered_map>
 
-/// this is the file where we'll read all DReyeVR specific configs
-static const FString ConfigFilePath =
-    FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()), TEXT("Config"), TEXT("DReyeVRConfig.ini"));
+// instead of vehicle.dreyevr.model3 or sensor.dreyevr.ego_sensor, we use "harplab" for category
+// => harplab.dreyevr_vehicle.model3 & harplab.dreyevr_sensor.ego_sensor
+// in PythonAPI use world.get_actors().filter("harplab.dreyevr_vehicle.*") or
+// world.get_blueprint_library().filter("harplab.dreyevr_sensor.*") and you won't accidentally get these actors when
+// performing filter("vehicle.*") or filter("sensor.*")
+static const FString DReyeVRCategory("HarpLab");
 
-struct ParamString
+static FString UE4RefToClassPath(const FString &UE4ReferencePath)
 {
-    ParamString() = default;
-
-    FString DataStr = ""; // string representation of the data to parse into primitives
-    bool bIsDirty = true; // whether or not the data has been read (clean) or not (dirty)
-
-    template <typename T> inline T DecipherToType() const
-    {
-        // supports FVector, FVector2D, FLinearColor, FQuat, and FRotator,
-        // basically any UE4 type that has a ::InitFromString method
-        T Ret;
-        if (Ret.InitFromString(DataStr) == false)
-        {
-            LOG_ERROR("Unable to decipher \"%s\" to a type", *DataStr);
-        }
-        return Ret;
-    }
-
-    template <> inline bool DecipherToType<bool>() const
-    {
-        return DataStr.ToBool();
-    }
-
-    template <> inline int DecipherToType<int>() const
-    {
-        return FCString::Atoi(*DataStr);
-    }
-
-    template <> inline float DecipherToType<float>() const
-    {
-        return FCString::Atof(*DataStr);
-    }
-
-    template <> inline FString DecipherToType<FString>() const
-    {
-        return DataStr;
-    }
-
-    template <> inline FName DecipherToType<FName>() const
-    {
-        return FName(*DataStr);
-    }
-};
-
-static std::unordered_map<std::string, ParamString> Params = {};
-
-static std::string CreateVariableName(const std::string &Section, const std::string &Variable)
-{
-    return Section + "/" + Variable; // encoding the variable alongside its section
-}
-static std::string CreateVariableName(const FString &Section, const FString &Variable)
-{
-    return CreateVariableName(std::string(TCHAR_TO_UTF8(*Section)), std::string(TCHAR_TO_UTF8(*Variable)));
+    // converts (reference) strings of the type "Type'/Game/PATH/asset.asset'" to "/Game/PATH/asset.asset_C"
+    // for use in ConstructorHelpers::FClassFinder<UObject>
+    const FString NoneStr = FString(""); // replace with empty string ("")
+    const FString SingleQuoteStr = FString("'");
+    // find the start position in the string (ignore the type (Blueprint, SkeletalMesh, Skeleton, AnimBP, etc.))
+    const int StartPos = UE4ReferencePath.Find(SingleQuoteStr, ESearchCase::CaseSensitive, ESearchDir::FromStart, 0);
+    FString Ret = UE4ReferencePath.RightChop(StartPos);
+    Ret.ReplaceInline(*SingleQuoteStr, *NoneStr, ESearchCase::CaseSensitive);
+    Ret += "_C"; // to force class type suffix
+    return Ret;
 }
 
-static void ReadDReyeVRConfig()
+static FString CleanNameForDReyeVR(const FString &RawName)
 {
-    /// TODO: add feature to "hot-reload" new params during runtime
-    LOG_WARN("Reading config from %s", *ConfigFilePath);
-    /// performs a single pass over the config file to collect all variables into Params
-    std::ifstream ConfigFile(TCHAR_TO_ANSI(*ConfigFilePath));
-    if (ConfigFile)
-    {
-        std::string Line;
-        std::string Section = "";
-        while (std::getline(ConfigFile, Line))
-        {
-            // std::string stdKey = std::string(TCHAR_TO_UTF8(*Key));
-            if (Line[0] == '#' || Line[0] == ';') // ignore comments
-                continue;
-            std::istringstream iss_Line(Line);
-            if (Line[0] == '[') // test section
-            {
-                std::getline(iss_Line, Section, ']');
-                Section = Section.substr(1); // skip leading '['
-                continue;
-            }
-            std::string Key;
-            if (std::getline(iss_Line, Key, '=')) // gets left side of '=' into FileKey
-            {
-                std::string Value;
-                if (std::getline(iss_Line, Value, '#')) // gets left side of '#' for comments
-                {
-                    std::string VariableName = CreateVariableName(Section, Key);
-                    bool bHasQuotes = false;
-                    Params[VariableName].DataStr = FString(Value.c_str()).TrimStartAndEnd().TrimQuotes(&bHasQuotes);
-                }
-            }
-        }
-    }
-    else
-    {
-        LOG_ERROR("Unable to open the config file %s", *ConfigFilePath);
-    }
-    // for (auto &e : Params){
-    //     LOG_WARN("%s: %s", *FString(e.first.c_str()), *e.second);
-    // }
-}
+    // should be equivalent to GetClass()->GetDisplayNameText().ToString()
+    // for our purposes (spawning different type EgoVehicles)
+    FString CleanName = RawName;
+    CleanName.RemoveSpacesInline(); // one word
+#define DELETE_INLINE(x) CleanName.ReplaceInline(*FString(x), *FString(""), ESearchCase::CaseSensitive);
+    DELETE_INLINE("BP_");   // might start w/ BP_XYZ
+    DELETE_INLINE("BP");    // might start w/ BPXYZ
+    DELETE_INLINE("_C");    // might end with _C
+    DELETE_INLINE("Ego");   // default object is EgoVehicle
+    DELETE_INLINE("SKEL_"); // skeleton class starts with SKEL_
 
-static void EnsureConfigsUpdated()
-{
-    // used to ensure the configs file has been read and contents updated
-    if (Params.size() == 0)
-        ReadDReyeVRConfig();
-}
-
-template <typename T> static void ReadConfigValue(const FString &Section, const FString &Variable, T &Value)
-{
-    EnsureConfigsUpdated();
-    const std::string VariableName = CreateVariableName(Section, Variable);
-    if (Params.find(VariableName) == Params.end())
-    {
-        LOG_ERROR("No variable matching \"%s\" found for type", *FString(VariableName.c_str()));
-        return;
-    }
-    auto &Param = Params[VariableName];
-    Value = Param.DecipherToType<T>();
-
-    if (Param.bIsDirty)
-    {
-        LOG("Read \"%s\" => %s", *FString(VariableName.c_str()), *Param.DataStr);
-    }
-    Param.bIsDirty = false; // has just been read
+    return CleanName;
 }
 
 static FActorDefinition FindDefnInRegistry(const UCarlaEpisode *Episode, const UClass *ClassType)
@@ -155,6 +59,39 @@ static FActorDefinition FindDefnInRegistry(const UCarlaEpisode *Episode, const U
         if (Defn.Class == ClassType)
         {
             LOG("Found appropriate definition registered at UId: %d as \"%s\"", Defn.UId, *Defn.Id);
+            FoundDefinition = Defn;
+            bFoundDef = true;
+            break; // assumes the first is the ONLY one matching this class (Ex. EgoVehicle, EgoSensor)
+        }
+    }
+    if (!bFoundDef)
+    {
+        LOG_ERROR("Unable to find appropriate definition in registry!");
+    }
+    return FoundDefinition;
+}
+
+static FActorDefinition FindEgoVehicleDefinition(const UCarlaEpisode *Episode)
+{
+
+    FString LoadVehicle = "TeslaM3"; // default vehicle
+    if (GeneralParams.Get<FString>("EgoVehicle", "VehicleType", LoadVehicle))
+    {
+        LOG("Loading new default EgoVehicle: \"%s\"", *LoadVehicle);
+    }
+    // searches through the registers actors (definitions) to find one with the matching class type
+    check(Episode != nullptr);
+
+    FActorDefinition FoundDefinition;
+    bool bFoundDef = false;
+    for (const auto &Defn : Episode->GetActorDefinitions())
+    {
+        const auto &LowerId = Defn.Id.ToLower(); // perform string comparisons on lowercase (ignore case)
+        // contains both the DReyeVR category (HarpLab) and specific EgoVehicle
+        if (LowerId.Contains(DReyeVRCategory.ToLower()) && LowerId.Contains(LoadVehicle.ToLower()))
+        {
+            LOG("Found appropriate definition for \"%s\" registered at UId: %d as \"%s\"", //
+                *LoadVehicle, Defn.UId, *Defn.Id);
             FoundDefinition = Defn;
             bFoundDef = true;
             break; // assumes the first is the ONLY one matching this class (Ex. EgoVehicle, EgoSensor)
@@ -389,35 +326,27 @@ static size_t GetNumberOfShaders()
 static FPostProcessSettings CreatePostProcessingParams(const std::vector<FSensorShader> &Shaders)
 {
     // modifying from here: https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/FPostProcessSettings/
-    float TmpParam;
     FPostProcessSettings PP;
     PP.bOverride_VignetteIntensity = true;
-    ReadConfigValue("CameraParams", "VignetteIntensity", TmpParam);
-    PP.VignetteIntensity = TmpParam;
+    PP.VignetteIntensity = GeneralParams.Get<float>("CameraParams", "VignetteIntensity");
 
     PP.bOverride_ScreenPercentage = true;
-    ReadConfigValue("CameraParams", "ScreenPercentage", TmpParam);
-    PP.ScreenPercentage = TmpParam;
+    PP.ScreenPercentage = GeneralParams.Get<float>("CameraParams", "ScreenPercentage");
 
     PP.bOverride_BloomIntensity = true;
-    ReadConfigValue("CameraParams", "BloomIntensity", TmpParam);
-    PP.BloomIntensity = TmpParam;
+    PP.BloomIntensity = GeneralParams.Get<float>("CameraParams", "BloomIntensity");
 
     PP.bOverride_SceneFringeIntensity = true;
-    ReadConfigValue("CameraParams", "SceneFringeIntensity", TmpParam);
-    PP.SceneFringeIntensity = TmpParam;
+    PP.SceneFringeIntensity = GeneralParams.Get<float>("CameraParams", "SceneFringeIntensity");
 
     PP.bOverride_LensFlareIntensity = true;
-    ReadConfigValue("CameraParams", "LensFlareIntensity", TmpParam);
-    PP.LensFlareIntensity = TmpParam;
+    PP.LensFlareIntensity = GeneralParams.Get<float>("CameraParams", "LensFlareIntensity");
 
     PP.bOverride_GrainIntensity = true;
-    ReadConfigValue("CameraParams", "GrainIntensity", TmpParam);
-    PP.GrainIntensity = TmpParam;
+    PP.GrainIntensity = GeneralParams.Get<float>("CameraParams", "GrainIntensity");
 
     PP.bOverride_MotionBlurAmount = true;
-    ReadConfigValue("CameraParams", "MotionBlurIntensity", TmpParam);
-    PP.MotionBlurAmount = TmpParam;
+    PP.MotionBlurAmount = GeneralParams.Get<float>("CameraParams", "MotionBlurIntensity");
 
     // append shaders to this postprocess effect
     for (const FSensorShader &ShaderInfo : Shaders)

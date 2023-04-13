@@ -110,6 +110,7 @@ See [`Docs/Install.md`](Docs/Install.md) to:
 - See [`Sounds.md`](Docs/Sounds.md) to use our custom sounds to CARLA and create your own
 - See [`CustomActor.md`](Docs/CustomActor.md) to use our CustomActor API and spawn "Overlay" actors
 - See [`Model.md`](Docs/Model.md) to learn how we added a dynamic steering wheel to the ego vehicle
+- See [`EgoVehicle.md`](Docs/EgoVehicle.md) to add your own custom EgoVehicle model to DReyeVR
 - See [`Signs.md`](Docs/Signs.md) to add custom in-world directional signs and spawn them
 - See [`LODs.md`](Docs/LODs.md) to learn about LOD modes for tuning your VR experience
 <!-- - See [`SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla -->

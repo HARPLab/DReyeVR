@@ -39,7 +39,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void SetEgoVehicle(class AEgoVehicle *EgoVehicle); // provide access to EgoVehicle (and by extension its camera)
     void SetGame(class ADReyeVRGameMode *Game);        // provides access to ADReyeVRGameMode
 
-    void UpdateData(const DReyeVR::AggregateData &RecorderData, const double Per) override;
+    void UpdateData(const DReyeVR::ConfigFileData &RecorderData, const double Per) override;
     void UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per) override;
 
     // function where replayer requests a screenshot

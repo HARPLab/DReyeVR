@@ -32,6 +32,10 @@ void CarlaReplayer::Stop(bool bKeepActors)
 
     // callback
     Helper.ProcessReplayerFinish(bKeepActors, IgnoreHero, IsHeroMap);
+
+    // turn off DReyeVR replay
+    if (EgoSensor)
+      EgoSensor->StopReplaying();
   }
 
   File.close();
@@ -145,6 +149,9 @@ std::string CarlaReplayer::ReplayFile(std::string Filename, double TimeStart, do
   LastReplay.TimeStart = TimeStart;
   LastReplay.Duration = Duration;
   LastReplay.ThisFollowId = ThisFollowId;
+
+  // make sure we are using an up-to-date EgoSensor
+  InitEgoSensor();
 
   // check to stop if we are replaying another
   if (Enabled)
@@ -291,6 +298,77 @@ void CarlaReplayer::CheckPlayAfterMapLoaded(void)
   Enabled = true;
 }
 
+void CarlaReplayer::InitEgoSensor()
+{
+  check(Episode != nullptr);
+  EgoSensor = ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld());
+  if (EgoSensor == nullptr) {
+    DReyeVR_LOG_ERROR("No EgoSensor available!");
+    return;
+  }
+}
+
+template<>
+void CarlaReplayer::ProcessDReyeVR<DReyeVR::AggregateData>(double Per, double DeltaTime)
+{
+  uint16_t Total;
+  // read number of DReyeVR entries
+  ReadValue<uint16_t>(File, Total); // read number of events
+  check(Total == 1); // should be only one Agg data
+  for (uint16_t i = 0; i < Total; ++i)
+  {
+    struct DReyeVRDataRecorder<DReyeVR::AggregateData> Instance;
+    Instance.Read(File);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::AggregateData>(EgoSensor, Instance.Data, Per);
+  }
+}
+
+template<>
+void CarlaReplayer::ProcessDReyeVR<DReyeVR::ConfigFileData>(double Per, double DeltaTime)
+{
+  uint16_t Total;
+  // read number of DReyeVR entries
+  ReadValue<uint16_t>(File, Total); // read number of events
+  check(Total == 1); // should be only one ConfigFile data
+  for (uint16_t i = 0; i < Total; ++i)
+  {
+    struct DReyeVRDataRecorder<DReyeVR::ConfigFileData> Instance;
+    Instance.Read(File);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::ConfigFileData>(EgoSensor, Instance.Data, Per);
+  }
+}
+
+template<>
+void CarlaReplayer::ProcessDReyeVR<DReyeVR::CustomActorData>(double Per, double DeltaTime)
+{
+  uint16_t Total;
+  ReadValue<uint16_t>(File, Total); // read number of events
+  CustomActorsVisited.clear();
+  for (uint16_t i = 0; i < Total; ++i)
+  {
+    struct DReyeVRDataRecorder<DReyeVR::CustomActorData> Instance;
+    Instance.Read(File);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::CustomActorData>(EgoSensor, Instance.Data, Per);
+    auto Name = Instance.GetUniqueName();
+    CustomActorsVisited.insert(Name); // to track lifetime
+  }
+
+  for (auto It = ADReyeVRCustomActor::ActiveCustomActors.begin(); It != ADReyeVRCustomActor::ActiveCustomActors.end();){
+    const std::string &ActiveActorName = It->first;
+    if (CustomActorsVisited.find(ActiveActorName) == CustomActorsVisited.end()) // currently alive actor who was not visited... time to disable
+    {
+      // now this has to be garbage collected
+      auto Next = std::next(It, 1); // iterator following the last removed element
+      It->second->Deactivate();
+      It = Next;
+    }
+    else
+    {
+      ++It; // increment iterator if not erased
+    }
+  }
+}
+
 void CarlaReplayer::ProcessToTime(double Time, bool IsFirstTime)
 {
   double Per = 0.0f;
@@ -401,18 +479,26 @@ void CarlaReplayer::ProcessToTime(double Time, bool IsFirstTime)
         ProcessWeather();
         break;
 
-      // DReyeVR eye logging data
+      // DReyeVR ego sensor data
       case static_cast<char>(CarlaRecorderPacketId::DReyeVR):
         if (bFrameFound)
-          ProcessDReyeVRData<DReyeVRDataRecorder<DReyeVR::AggregateData>>(Per, Time, true);
+          ProcessDReyeVR<DReyeVR::AggregateData>(Per, Time);
         else
           SkipPacket();
         break;
 
-      // DReyeVR eye logging data
+      // DReyeVR custom actor data
       case static_cast<char>(CarlaRecorderPacketId::DReyeVRCustomActor):
         if (bFrameFound)
-          ProcessDReyeVRData<DReyeVRDataRecorder<DReyeVR::CustomActorData>>(Per, Time, false);
+          ProcessDReyeVR<DReyeVR::CustomActorData>(Per, Time);
+        else
+          SkipPacket();
+        break;
+      
+      // DReyeVR config file data
+      case static_cast<char>(CarlaRecorderPacketId::DReyeVRConfigFile):
+        if (bFrameFound)
+          ProcessDReyeVR<DReyeVR::ConfigFileData>(Per, Time);
         else
           SkipPacket();
         break;
@@ -647,49 +733,6 @@ void CarlaReplayer::ProcessWeather(void)
   }
 }
 
-template <typename T> void CarlaReplayer::ProcessDReyeVRData(double Per, double DeltaTime, bool bShouldBeOnlyOne)
-{
-  uint16_t Total;
-  // custom DReyeVR packets
-
-  // read Total DReyeVR events
-  ReadValue<uint16_t>(File, Total); // read number of events
-
-  Visited.clear();
-  for (uint16_t i = 0; i < Total; ++i)
-  {
-    T DReyeVRDataInstance;
-    DReyeVRDataInstance.Read(File);
-    Helper.ProcessReplayerDReyeVRData<T>(DReyeVRDataInstance, Per);
-    if (!bShouldBeOnlyOne)
-    {
-      auto Name = DReyeVRDataInstance.GetUniqueName();
-      Visited.insert(Name);
-    }
-  }
-  if (bShouldBeOnlyOne)
-  {
-    check(Total == 1);
-  }
-  else
-  {
-    for (auto It = ADReyeVRCustomActor::ActiveCustomActors.begin(); It != ADReyeVRCustomActor::ActiveCustomActors.end();){
-      const std::string &ActiveActorName = It->first;
-      if (Visited.find(ActiveActorName) == Visited.end()) // currently alive actor who was not visited... time to disable
-      {
-        // now this has to be garbage collected
-        auto Next = std::next(It, 1); // iterator following the last removed element
-        It->second->Deactivate();
-        It = Next;
-      }
-      else
-      {
-        ++It; // increment iterator if not erased
-      }
-    }
-  }
-}
-
 void CarlaReplayer::ProcessPositions(bool IsFirstTime)
 {
   uint16_t i, Total;
@@ -823,12 +866,8 @@ void CarlaReplayer::ProcessFrameByFrame()
   if (SyncCurrentFrameId > 0)
     LastTime = FrameStartTimes[SyncCurrentFrameId - 1];
   ProcessToTime(FrameStartTimes[SyncCurrentFrameId] - LastTime, (SyncCurrentFrameId == 0));
-  if (ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld()))
-    // have the vehicle camera take a screenshot to record the replay
-    ADReyeVRSensor::GetDReyeVRSensor()->TakeScreenshot();
-  else
-    DReyeVR_LOG_ERROR("No DReyeVR sensor available!");
-
+  if (EgoSensor) // take screenshot of this frame
+    EgoSensor->TakeScreenshot();
   // progress to the next frame
   if (SyncCurrentFrameId < FrameStartTimes.size() - 1)
     SyncCurrentFrameId++;

@@ -280,15 +280,10 @@ void ACarlaRecorder::AddDReyeVRData()
   // Add the latest instance of the DReyeVR snapshot to our data
   DReyeVRAggData.Add(DReyeVRDataRecorder<DReyeVR::AggregateData>(ADReyeVRSensor::Data));
 
-  TArray<AActor *> FoundActors;
-  if (Episode != nullptr && Episode->GetWorld() != nullptr)
+  for (auto &ActiveCAs : ADReyeVRCustomActor::ActiveCustomActors)
   {
-      UGameplayStatics::GetAllActorsOfClass(Episode->GetWorld(), ADReyeVRCustomActor::StaticClass(), FoundActors);
-  }
-  for (AActor *A : FoundActors)
-  {
-    ADReyeVRCustomActor *CustomActor = Cast<ADReyeVRCustomActor>(A);
-    if (CustomActor != nullptr && CustomActor->IsActive())
+    ADReyeVRCustomActor *CustomActor = ActiveCAs.second;
+    if (CustomActor != nullptr && CustomActor->IsActive() && CustomActor->GetShouldRecord())
     {
       DReyeVRCustomActorData.Add(DReyeVRDataRecorder<DReyeVR::CustomActorData>(&(CustomActor->GetInternals())));
     }
@@ -393,6 +388,9 @@ std::string ACarlaRecorder::Start(std::string Name, FString MapName, bool Additi
   // add current weather for start of recording
   AddStartingWeather();
 
+  // add DReyeVR config files (only at the beginning of recording)
+  DReyeVRConfigFileData.Add(ADReyeVRSensor::ConfigFile);
+
   return std::string(Filename);
 }
 
@@ -427,6 +425,7 @@ void ACarlaRecorder::Clear(void)
   TrafficLightTimes.Clear();
   DReyeVRAggData.Clear();
   DReyeVRCustomActorData.Clear();
+  DReyeVRConfigFileData.Clear();
   Weathers.Clear();
 }
 
@@ -469,6 +468,14 @@ void ACarlaRecorder::Write(double DeltaSeconds)
 
   // custom DReyeVR Actor data write
   DReyeVRCustomActorData.Write(File);
+
+  // only write this once (at the beginning)
+  static bool bWroteConfigFile = false;
+  if (!bWroteConfigFile) {
+    // DReyeVR configuration/parameters
+    DReyeVRConfigFileData.Write(File);
+    bWroteConfigFile = true;
+  }
 
   // weather state
   Weathers.Write(File);

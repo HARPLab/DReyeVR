@@ -1,3 +1,12 @@
+## DReyeVR 0.2.0 (for Carla 0.9.13)
+- Add face button indicators on the steering wheel
+- Revamping `ConfigFile` class rather than a static `ReadConfigFile` helper function
+- Adding Config-file check as part of the tracked DReyeVRData, gives you a warning if your loaded ConfigFile is different from the one that was used during recording (so you can match your replay config with that which was recorded)
+- Adding per-vehicle configuration files in `Content/DReyeVR/EgoVehicle` that can be selected via parameters. Allows parameterization of all EgoVehicle components, magic numbers (ex. location of camera, mirrors, engine), sound files, mirror meshes, steering wheel types, and enable/disable these on a highly granular basis
+- Revamp EgoVehicle input controls to use parent (ACarlaWheeledVehicle) controls and flush
+- Disabling (turning invisible) default Carla spectator in map
+- Added tutorial for custom EgoVehicle
+
 ## DReyeVR 0.1.2 (for Carla 0.9.13)
 - Update documentation to refer to CarlaUnreal UE4 fork rather than HarpLab fork
 - Apply patches for installation of zlib (broken link) and xerces (broken link & `-Dtranscoder=windows` flag) and PythonAPI

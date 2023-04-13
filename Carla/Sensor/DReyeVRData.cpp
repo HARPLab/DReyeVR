@@ -234,6 +234,30 @@ FString EyeTracker::ToString() const
 }
 
 /// ========================================== ///
+/// ------------:CONFIGFILEDATA:-------------- ///
+/// ========================================== ///
+
+void ConfigFileData::Set(const std::string &Contents)
+{
+    StringContents = FString(Contents.c_str());
+}
+
+void ConfigFileData::Read(std::ifstream &InFile)
+{
+    ReadFString(InFile, StringContents);
+}
+
+void ConfigFileData::Write(std::ofstream &OutFile) const
+{
+    WriteFString(OutFile, StringContents);
+}
+
+FString ConfigFileData::ToString() const
+{
+    return StringContents;
+}
+
+/// ========================================== ///
 /// -------------:AGGREGATEDATA:-------------- ///
 /// ========================================== ///
 
@@ -443,8 +467,8 @@ void AggregateData::UpdateVehicle(const FVector &NewVehicleLoc, const FRotator &
 }
 
 void AggregateData::Update(int64_t NewTimestamp, const struct EyeTracker &NewEyeData,
-                                  const struct EgoVariables &NewEgoVars, const struct FocusInfo &NewFocus,
-                                  const struct UserInputs &NewInputs)
+                           const struct EgoVariables &NewEgoVars, const struct FocusInfo &NewFocus,
+                           const struct UserInputs &NewInputs)
 {
     TimestampCarlaUE4 = NewTimestamp;
     EyeTrackerData = NewEyeData;
@@ -482,11 +506,6 @@ FString AggregateData::ToString() const
     print += FString::Printf(TEXT("  [DReyeVR]EgoVariables:%s,\n"), *EgoVars.ToString());
     print += FString::Printf(TEXT("  [DReyeVR]UserInputs:%s,\n"), *Inputs.ToString());
     return print;
-}
-
-std::string AggregateData::GetUniqueName() const
-{
-    return "DReyeVRSensorAggregateData";
 }
 
 /// ========================================== ///

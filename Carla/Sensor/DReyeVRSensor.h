@@ -32,6 +32,7 @@ class CARLA_API ADReyeVRSensor : public ASensor
     // everything stored in the sensor is held in this struct
     /// TODO: make this non-static and use a smarter scheme for cross-class communication
     static class DReyeVR::AggregateData *Data;
+    static class DReyeVR::ConfigFileData *ConfigFile;
 
     class DReyeVR::AggregateData *GetData()
     {
@@ -46,6 +47,7 @@ class CARLA_API ADReyeVRSensor : public ASensor
 
     bool IsReplaying() const;
     virtual void UpdateData(const class DReyeVR::AggregateData &RecorderData, const double Per); // starts replaying
+    virtual void UpdateData(const class DReyeVR::ConfigFileData &RecorderData, const double Per);
     virtual void UpdateData(const class DReyeVR::CustomActorData &RecorderData, const double Per);
     void StopReplaying();
     virtual void TakeScreenshot()

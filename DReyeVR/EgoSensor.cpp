@@ -1,7 +1,7 @@
 #include "EgoSensor.h"
 
 #include "Carla/Game/CarlaStatics.h"    // GetCurrentEpisode
-#include "DReyeVRUtils.h"               // ReadConfigValue, ComputeClosestToRayIntersection
+#include "DReyeVRUtils.h"               // GeneralParams.Get, ComputeClosestToRayIntersection
 #include "EgoVehicle.h"                 // AEgoVehicle
 #include "Kismet/GameplayStatics.h"     // UGameplayStatics::ProjectWorldToScreen
 #include "Kismet/KismetMathLibrary.h"   // Sin, Cos, Normalize
@@ -43,25 +43,25 @@ AEgoSensor::AEgoSensor(const FObjectInitializer &ObjectInitializer) : Super(Obje
 
 void AEgoSensor::ReadConfigVariables()
 {
-    ReadConfigValue("EgoSensor", "StreamSensorData", bStreamData);
-    ReadConfigValue("EgoSensor", "MaxTraceLenM", MaxTraceLenM);
-    ReadConfigValue("EgoSensor", "DrawDebugFocusTrace", bDrawDebugFocusTrace);
+    GeneralParams.Get("EgoSensor", "StreamSensorData", bStreamData);
+    GeneralParams.Get("EgoSensor", "MaxTraceLenM", MaxTraceLenM);
+    GeneralParams.Get("EgoSensor", "DrawDebugFocusTrace", bDrawDebugFocusTrace);
 
     // variables corresponding to the action of screencapture during replay
-    ReadConfigValue("Replayer", "RecordAllShaders", bRecordAllShaders);
-    ReadConfigValue("Replayer", "RecordAllPoses", bRecordAllPoses);
-    ReadConfigValue("Replayer", "RecordFrames", bCaptureFrameData);
-    ReadConfigValue("Replayer", "FileFormatJPG", bFileFormatJPG);
-    ReadConfigValue("Replayer", "LinearGamma", bFrameCapForceLinearGamma);
-    ReadConfigValue("Replayer", "FrameWidth", FrameCapWidth);
-    ReadConfigValue("Replayer", "FrameHeight", FrameCapHeight);
-    ReadConfigValue("Replayer", "FrameDir", FrameCapLocation);
-    ReadConfigValue("Replayer", "FrameName", FrameCapFilename);
+    GeneralParams.Get("Replayer", "RecordAllShaders", bRecordAllShaders);
+    GeneralParams.Get("Replayer", "RecordAllPoses", bRecordAllPoses);
+    GeneralParams.Get("Replayer", "RecordFrames", bCaptureFrameData);
+    GeneralParams.Get("Replayer", "FileFormatJPG", bFileFormatJPG);
+    GeneralParams.Get("Replayer", "LinearGamma", bFrameCapForceLinearGamma);
+    GeneralParams.Get("Replayer", "FrameWidth", FrameCapWidth);
+    GeneralParams.Get("Replayer", "FrameHeight", FrameCapHeight);
+    GeneralParams.Get("Replayer", "FrameDir", FrameCapLocation);
+    GeneralParams.Get("Replayer", "FrameName", FrameCapFilename);
 
 #if USE_FOVEATED_RENDER
     // foveated rendering variables
-    ReadConfigValue("VariableRateShading", "Enabled", bEnableFovRender);
-    ReadConfigValue("VariableRateShading", "UsingEyeTracking", bUseEyeTrackingVRS);
+    GeneralParams.Get("VariableRateShading", "Enabled", bEnableFovRender);
+    GeneralParams.Get("VariableRateShading", "UsingEyeTracking", bUseEyeTrackingVRS);
 #endif
 }
 
@@ -373,6 +373,12 @@ void AEgoSensor::SetEgoVehicle(class AEgoVehicle *NewEgoVehicle)
     Vehicle = NewEgoVehicle;
     Camera = Vehicle->GetCamera();
     check(Vehicle);
+
+    // Also check that the ConfigFileData variable can be written to with Vehicle params
+    check(ConfigFile);
+    // track both the VehicleParams and GeneralParams
+    const auto ConfigFileStr = Vehicle->GetVehicleParams().Export() + GeneralParams.Export();
+    ConfigFile->Set(ConfigFileStr); // track this config file once
 }
 
 void AEgoSensor::SetGame(class ADReyeVRGameMode *GameIn)
@@ -553,10 +559,21 @@ void AEgoSensor::TickFoveatedRender()
 /// ----------------:REPLAY:------------------ ///
 /// ========================================== ///
 
-void AEgoSensor::UpdateData(const DReyeVR::AggregateData &RecorderData, const double Per)
+// don't need to override the base ADReyeVRSensor::UpdateData<DReyeVR::AggregateData>();
+
+void AEgoSensor::UpdateData(const DReyeVR::ConfigFileData &RecordedParams, const double Per)
 {
-    // call the parent function
-    ADReyeVRSensor::UpdateData(RecorderData, Per);
+    // compare the incoming (recording) ConfigFile with our current (live) one
+    const std::string RecordingExport = TCHAR_TO_UTF8(*RecordedParams.ToString());
+    const struct ConfigFile Recorded = ConfigFile::Import(RecordingExport);
+
+    // includes both the vehicle params and general params
+    struct ConfigFile LiveConfig;
+    LiveConfig.Insert(Vehicle->GetVehicleParams());
+    LiveConfig.Insert(GeneralParams);
+
+    bool bPrintWarnings = true;
+    LiveConfig.IsSubset(Recorded, bPrintWarnings); // don't care if Recorded has entries that we dont
 }
 
 void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per)
