@@ -119,7 +119,7 @@ void ALSM::IdentifyNewActors(const ActorList &actor_list) {
     ActorPtr actor = *iter;
     ActorId actor_id = actor->GetId();
     // Identify any new hero vehicle
-    if (actor->GetTypeId().front() == 'v') {
+    if (actor->GetTypeId().front() == 'v' || actor->GetTypeId().rfind("harplab.dreyevr_vehicle.") == 0) {
      if (hero_actors.size() == 0u || hero_actors.find(actor_id) == hero_actors.end()) {
       for (auto&& attribute: actor->GetAttributes()) {
         if (attribute.GetId() == "role_name" && attribute.GetValue() == "hero") {
@@ -294,7 +294,7 @@ void ALSM::UpdateUnregisteredActorsData() {
     std::vector<SimpleWaypointPtr> nearest_waypoints;
 
     bool state_entry_not_present = !simulation_state.ContainsActor(actor_id);
-    if (type_id.front() == 'v') {
+    if (type_id.front() == 'v' || type_id.rfind("harplab.dreyevr_vehicle.") == 0) { // include DReyeVR vehicle
       auto vehicle_ptr = boost::static_pointer_cast<cc::Vehicle>(actor_ptr);
       kinematic_state.speed_limit = vehicle_ptr->GetSpeedLimit();
 
