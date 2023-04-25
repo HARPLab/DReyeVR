@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import sys
 import glob
 import os
+import time
 
 try:
     sys.path.append(
@@ -37,20 +38,39 @@ def find_ego_vehicle(world: carla.libcarla.World) -> Optional[carla.libcarla.Veh
 
 
 def find_ego_sensor(world: carla.libcarla.World) -> Optional[carla.libcarla.Sensor]:
-    sensor = None
-    ego_sensors = list(world.get_actors().filter("harplab.dreyevr_sensor.*"))
-    if len(ego_sensors) >= 1:
-        sensor = ego_sensors[0]  # TODO: support for multiple ego sensors?
-    elif find_ego_vehicle(world) is None:
-        raise Exception(
-            "No EgoVehicle (nor EgoSensor) found in the world! EgoSensor needs EgoVehicle as parent"
-        )
-    return sensor
+    def get_world_sensors() -> list:
+        return list(world.get_actors().filter("harplab.dreyevr_sensor.*"))
+
+    ego_sensors: list = get_world_sensors()
+    if len(ego_sensors) == 0:
+        # no EgoSensors found in world, trying to spawn EgoVehicle (which spawns an EgoSensor)
+        if find_ego_vehicle(world) is None:  # tries to spawn an EgoVehicle
+            raise Exception(
+                "No EgoVehicle (nor EgoSensor) found in the world! EgoSensor needs EgoVehicle as parent"
+            )
+    # in case we had to spawn the EgoVehicle, this effect is not instant and might take some time
+    # to account for this, we allow some time (max_wait_sec) to continuously ping the server for
+    # an updated actor list with the EgoSensor in it.
+
+    start_t: float = time.time()
+    # maximum time to keep checking for EgoSensor spawning after EgoVehicle
+    maximum_wait_sec: float = 10.0  # might take a while to spawn EgoVehicle (esp in VR)
+    while len(ego_sensors) == 0 and time.time() - start_t < maximum_wait_sec:
+        # EgoVehicle should now be present, so we can try again
+        ego_sensors = get_world_sensors()
+        time.sleep(0.1)  # tick to allow the server some time to breathe
+    if len(ego_sensors) == 0:
+        raise Exception("Unable to find EgoSensor in the world!")
+    assert len(ego_sensors) > 0  # should have spawned with EgoVehicle at least
+    if len(ego_sensors) > 1:
+        print("[WARN] There are >1 EgoSensors in the world! Defaulting to first")
+    return ego_sensors[0]  # always return the first one?
 
 
 class DReyeVRSensor:
     def __init__(self, world: carla.libcarla.World):
         self.ego_sensor: carla.sensor.dreyevrsensor = find_ego_sensor(world)
+        assert self.ego_sensor is not None  # sanity check
         self.data: Dict[str, Any] = {}
         print("initialized DReyeVRSensor PythonAPI client")
 
