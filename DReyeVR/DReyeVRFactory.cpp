@@ -3,6 +3,7 @@
 #include "Carla/Actor/ActorBlueprintFunctionLibrary.h" // UActorBlueprintFunctionLibrary
 #include "Carla/Actor/VehicleParameters.h"             // FVehicleParameters
 #include "Carla/Game/CarlaEpisode.h"                   // UCarlaEpisode
+#include "DReyeVRGameMode.h"                           // ADReyeVRGameMode
 #include "EgoSensor.h"                                 // AEgoSensor
 #include "EgoVehicle.h"                                // AEgoVehicle
 
@@ -138,6 +139,11 @@ FActorSpawnResult ADReyeVRFactory::SpawnActor(const FTransform &SpawnAtTransform
             // EgoVehicle needs the special EgoVehicleBPClass since they depend on the EgoVehicle Blueprint
             return World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnAtTransform, SpawnParameters);
         });
+
+        // update the GameMode's EgoVehicle in case it was spawned by someone else
+        auto *Game = Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World));
+        if (Game != nullptr)
+            Game->SetEgoVehicle(Cast<AEgoVehicle>(SpawnedActor));
     }
     else if (ActorDescription.Class == AEgoSensor::StaticClass())
     {

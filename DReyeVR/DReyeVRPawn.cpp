@@ -1,5 +1,6 @@
 #include "DReyeVRPawn.h"
 #include "DReyeVRUtils.h"                      // CreatePostProcessingEffect
+#include "EgoVehicle.h"                        // AEgoVehicle
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
 #include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
