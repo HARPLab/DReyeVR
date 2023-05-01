@@ -85,16 +85,27 @@ void ADReyeVRGameMode::BeginPlay()
 
     // spawn the DReyeVR pawn and possess it (first)
     SetupDReyeVRPawn();
+    ensure(GetPawn() != nullptr);
 
     // Initialize the DReyeVR EgoVehicle and Sensor (second)
-    SetupEgoVehicle();
+    if (bDoSpawnEgoVehicle)
+    {
+        SetupEgoVehicle();
+        ensure(GetEgoVehicle() != nullptr);
+    }
 
     // Initialize DReyeVR spectator (third)
     SetupSpectator();
+    ensure(GetSpectator() != nullptr);
 }
 
 void ADReyeVRGameMode::SetupDReyeVRPawn()
 {
+    if (DReyeVR_Pawn.IsValid())
+    {
+        LOG("Not spawning new DReyeVR pawn");
+        return;
+    }
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = this;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -131,11 +142,6 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
     if (EgoVehiclePtr.IsValid())
     {
         LOG("Not spawning new EgoVehicle");
-        if (EgoVehiclePtr.IsExplicitlyNull())
-        {
-            LOG("EgoVehicle unavailable, possessing spectator by default")
-            PossessSpectator(); // NOTE: need to call SetupSpectator before this!
-        }
         return true;
     }
 
@@ -165,6 +171,12 @@ bool ADReyeVRGameMode::SetupEgoVehicle()
 
 void ADReyeVRGameMode::SetupSpectator()
 {
+    if (SpectatorPtr.IsValid())
+    {
+        LOG("Not spawning new Spectator");
+        return;
+    }
+
     // always disable the Carla spectator from DReyeVR use
     UCarlaEpisode *Episode = UCarlaStatics::GetCurrentEpisode(GetWorld());
     APawn *CarlaSpectator = nullptr;
@@ -184,20 +196,23 @@ void ADReyeVRGameMode::SetupSpectator()
             SpectatorPtr = Player.Get()->GetPawn();
     }
 
-    // spawn if necessary
-    if (SpectatorPtr.IsValid())
-    {
-        LOG("Found available spectator in world");
-    }
-    else
+    // spawn the Spectator pawn
     {
         LOG("Spawning DReyeVR Spectator Pawn in the world");
         FVector SpawnLocn;
         FRotator SpawnRotn;
-        if (GetEgoVehicle() != nullptr)
+        if (EgoVehiclePtr.IsValid())
         {
             SpawnLocn = EgoVehiclePtr.Get()->GetCameraPosn();
             SpawnRotn = EgoVehiclePtr.Get()->GetCameraRot();
+        }
+        else
+        {
+            // spawn above the vehicle recommended spawn pt
+            FTransform RecommendedPt = GetSpawnPoint();
+            SpawnLocn = RecommendedPt.GetLocation();
+            SpawnLocn.Z += 10.f * 100.f; // up in the air 10m ish
+            SpawnRotn = RecommendedPt.Rotator();
         }
         // create new spectator pawn
         FActorSpawnParameters SpawnParams;
@@ -215,6 +230,33 @@ void ADReyeVRGameMode::SetupSpectator()
         SpectatorPtr.Get()->SetActorEnableCollision(false);            // no collisions
         LOG("Successfully initiated spectator actor");
     }
+
+    // automatically possess the spectator ptr if no ego vehicle present!
+    if (!EgoVehiclePtr.IsValid())
+    {
+        PossessSpectator();
+    }
+}
+
+APawn *ADReyeVRGameMode::GetSpectator()
+{
+    return SafePtrGet<APawn>("Spectator", SpectatorPtr, [&](void) { SetupSpectator(); });
+}
+
+AEgoVehicle *ADReyeVRGameMode::GetEgoVehicle()
+{
+    return SafePtrGet<AEgoVehicle>("EgoVehicle", EgoVehiclePtr, [&](void) { SetupEgoVehicle(); });
+}
+
+APlayerController *ADReyeVRGameMode::GetPlayer()
+{
+    return SafePtrGet<APlayerController>("Player", Player,
+                                         [&](void) { Player = GetWorld()->GetFirstPlayerController(); });
+}
+
+ADReyeVRPawn *ADReyeVRGameMode::GetPawn()
+{
+    return SafePtrGet<ADReyeVRPawn>("Pawn", DReyeVR_Pawn, [&](void) { SetupDReyeVRPawn(); });
 }
 
 void ADReyeVRGameMode::BeginDestroy()
@@ -223,15 +265,15 @@ void ADReyeVRGameMode::BeginDestroy()
 
     if (DReyeVR_Pawn.IsValid())
         DReyeVR_Pawn.Get()->Destroy();
-    DReyeVR_Pawn.Reset(); // release object
+    DReyeVR_Pawn = nullptr; // release object and assign to null
 
     if (EgoVehiclePtr.IsValid())
         EgoVehiclePtr.Get()->Destroy();
-    EgoVehiclePtr.Reset(); // release object
+    EgoVehiclePtr = nullptr;
 
     if (SpectatorPtr.IsValid())
         SpectatorPtr.Get()->Destroy();
-    SpectatorPtr.Reset(); // release object
+    SpectatorPtr = nullptr;
 
     LOG("DReyeVRGameMode has been destroyed");
 }
@@ -276,6 +318,7 @@ void ADReyeVRGameMode::PossessEgoVehicle()
 {
     if (GetEgoVehicle() == nullptr || GetPawn() == nullptr || GetPlayer() == nullptr)
         return;
+
     check(EgoVehiclePtr.IsValid());
     check(DReyeVR_Pawn.IsValid());
     check(Player.IsValid());
@@ -297,6 +340,7 @@ void ADReyeVRGameMode::PossessSpectator()
 {
     if (GetSpectator() == nullptr || GetPlayer() == nullptr)
         return;
+
     check(SpectatorPtr.IsValid());
     check(Player.IsValid());
 
@@ -323,6 +367,7 @@ void ADReyeVRGameMode::HandoffDriverToAI()
 {
     if (GetEgoVehicle() == nullptr)
         return;
+
     check(EgoVehiclePtr.IsValid());
 
     { // check if autopilot already enabled
@@ -437,7 +482,7 @@ void ADReyeVRGameMode::SetupReplayer()
         Replayer->SetSyncMode(bReplaySync);
         if (bReplaySync)
         {
-            LOG_WARN("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)");
+            LOG("Replay operating in frame-wise (1:1) synchronous mode (no replay interpolation)");
         }
         bRecorderInitiated = true;
     }

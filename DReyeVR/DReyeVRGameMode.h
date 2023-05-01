@@ -4,7 +4,7 @@
 #include "Carla/Game/CarlaGameModeBase.h"   // ACarlaGameModeBase
 #include "Carla/Sensor/DReyeVRData.h"       // DReyeVR::
 #include "DReyeVRPawn.h"                    // ADReyeVRPawn
-#include "DReyeVRUtils.h"                   // SafePtrGet<>
+#include "DReyeVRUtils.h"                   // SafePtrGet<T>
 #include <unordered_map>                    // std::unordered_map
 
 #include "DReyeVRGameMode.generated.h"
@@ -25,26 +25,10 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
 
     virtual void Tick(float DeltaSeconds) override;
 
-    APawn *GetSpectator()
-    {
-        return SafePtrGet<APawn>("Spectator", SpectatorPtr, [&](void) { SetupSpectator(); });
-    }
-
-    AEgoVehicle *GetEgoVehicle()
-    {
-        return SafePtrGet<AEgoVehicle>("EgoVehicle", EgoVehiclePtr, [&](void) { SetupEgoVehicle(); });
-    }
-
-    APlayerController *GetPlayer()
-    {
-        return SafePtrGet<APlayerController>("Player", Player,
-                                             [&](void) { Player = GetWorld()->GetFirstPlayerController(); });
-    }
-
-    ADReyeVRPawn *GetPawn()
-    {
-        return SafePtrGet<ADReyeVRPawn>("Pawn", DReyeVR_Pawn, [&](void) { SetupDReyeVRPawn(); });
-    }
+    APawn *GetSpectator();
+    AEgoVehicle *GetEgoVehicle();
+    APlayerController *GetPlayer();
+    ADReyeVRPawn *GetPawn();
 
     void SetEgoVehicle(AEgoVehicle *Ego);
 

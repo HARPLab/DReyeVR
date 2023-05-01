@@ -98,9 +98,11 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     bool bCameraFollowHMD = true; // disable this (in params) to replay without following the player's HMD (replay-only)
 
     ////////////////:SENSOR:////////////////
+    class AEgoSensor *GetSensor();
     void ReplayTick();
     void InitSensor();
-    class AEgoSensor *EgoSensor; // custom sensor helper that holds logic for extracting useful data
+    // custom sensor helper that holds logic for extracting useful data
+    TWeakObjectPtr<class AEgoSensor> EgoSensor; // EgoVehicle should have exclusive access (TODO: unique ptr?)
     void UpdateSensor(const float DeltaTime);
 
     ///////////////:DREYEVRPAWN://///////////
