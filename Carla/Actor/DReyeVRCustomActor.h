@@ -24,7 +24,7 @@ class CARLA_API ADReyeVRCustomActor : public AActor // abstract class
 
   public:
     ADReyeVRCustomActor(const FObjectInitializer &ObjectInitializer);
-    ~ADReyeVRCustomActor();
+    ~ADReyeVRCustomActor() = default;
 
     /// factory function to create a new instance of a given type
     static ADReyeVRCustomActor *CreateNew(const FString &SM_Path, const FString &Mat_Path, UWorld *World,

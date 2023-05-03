@@ -3,6 +3,7 @@
 #include "Carla/Actor/ActorBlueprintFunctionLibrary.h" // UActorBlueprintFunctionLibrary
 #include "Carla/Actor/VehicleParameters.h"             // FVehicleParameters
 #include "Carla/Game/CarlaEpisode.h"                   // UCarlaEpisode
+#include "DReyeVRGameMode.h"                           // ADReyeVRGameMode
 #include "EgoSensor.h"                                 // AEgoSensor
 #include "EgoVehicle.h"                                // AEgoVehicle
 
@@ -63,46 +64,28 @@ void ADReyeVRFactory::MakeVehicleDefinition(const FVehicleParameters &Parameters
     Definition = MakeGenericDefinition(CATEGORY, TEXT("DReyeVR_Vehicle"), Parameters.Model);
     Definition.Class = Parameters.Class;
 
-    FActorVariation ActorRole;
-    {
-        ActorRole.Id = TEXT("role_name");
-        ActorRole.Type = EActorAttributeType::String;
-        ActorRole.RecommendedValues = {TEXT("ego_vehicle")}; // assume this is the CARLA "hero"
-        ActorRole.bRestrictToRecommended = false;
-    }
-    Definition.Variations.Emplace(ActorRole);
-
-    FActorVariation StickyControl;
-    {
-        StickyControl.Id = TEXT("sticky_control");
-        StickyControl.Type = EActorAttributeType::Bool;
-        StickyControl.bRestrictToRecommended = false;
-        StickyControl.RecommendedValues.Emplace(TEXT("false"));
-    }
-    Definition.Variations.Emplace(StickyControl);
+    FActorAttribute ActorRole;
+    ActorRole.Id = "role_name";
+    ActorRole.Type = EActorAttributeType::String;
+    ActorRole.Value = "hero";
+    Definition.Attributes.Emplace(ActorRole);
 
     FActorAttribute ObjectType;
-    {
-        ObjectType.Id = TEXT("object_type");
-        ObjectType.Type = EActorAttributeType::String;
-        ObjectType.Value = Parameters.ObjectType;
-    }
+    ObjectType.Id = "object_type";
+    ObjectType.Type = EActorAttributeType::String;
+    ObjectType.Value = Parameters.ObjectType;
     Definition.Attributes.Emplace(ObjectType);
 
     FActorAttribute NumberOfWheels;
-    {
-        NumberOfWheels.Id = TEXT("number_of_wheels");
-        NumberOfWheels.Type = EActorAttributeType::Int;
-        NumberOfWheels.Value = FString::FromInt(Parameters.NumberOfWheels);
-    }
+    NumberOfWheels.Id = "number_of_wheels";
+    NumberOfWheels.Type = EActorAttributeType::Int;
+    NumberOfWheels.Value = FString::FromInt(Parameters.NumberOfWheels);
     Definition.Attributes.Emplace(NumberOfWheels);
 
     FActorAttribute Generation;
-    {
-        Generation.Id = TEXT("generation");
-        Generation.Type = EActorAttributeType::Int;
-        Generation.Value = FString::FromInt(Parameters.Generation);
-    }
+    Generation.Id = "generation";
+    Generation.Type = EActorAttributeType::Int;
+    Generation.Value = FString::FromInt(Parameters.Generation);
     Definition.Attributes.Emplace(Generation);
 }
 
@@ -156,6 +139,11 @@ FActorSpawnResult ADReyeVRFactory::SpawnActor(const FTransform &SpawnAtTransform
             // EgoVehicle needs the special EgoVehicleBPClass since they depend on the EgoVehicle Blueprint
             return World->SpawnActor<AEgoVehicle>(EgoVehicleBPClass, SpawnAtTransform, SpawnParameters);
         });
+
+        // update the GameMode's EgoVehicle in case it was spawned by someone else
+        auto *Game = Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World));
+        if (Game != nullptr)
+            Game->SetEgoVehicle(Cast<AEgoVehicle>(SpawnedActor));
     }
     else if (ActorDescription.Class == AEgoSensor::StaticClass())
     {

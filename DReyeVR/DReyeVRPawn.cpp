@@ -1,6 +1,7 @@
 #include "DReyeVRPawn.h"
 #include "DReyeVRUtils.h"                      // CreatePostProcessingEffect
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
+#include "EgoVehicle.h"                        // AEgoVehicle
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
 #include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
 #include "UObject/UObjectGlobals.h"            // LoadObject, NewObject
@@ -180,20 +181,30 @@ void ADReyeVRPawn::InitReticleTexture()
 
 void ADReyeVRPawn::InitSpectator()
 {
-    if (bIsHMDConnected)
-    {
-        if (bEnableSpectatorScreen)
-        {
-            InitReticleTexture(); // generate array of pixel values
-            check(ReticleTexture);
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(ESpectatorScreenMode::TexturePlusEye);
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenTexture(ReticleTexture);
-        }
-        else
-        {
-            UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(ESpectatorScreenMode::Disabled);
-        }
-    }
+   if (!bIsHMDConnected)
+       return;
+   // see https://docs.unrealengine.com/4.26/en-US/SharingAndReleasing/XRDevelopment/VR/DevelopVR/VRSpectatorScreen/
+   auto SpectatorScreenMode = ESpectatorScreenMode::Disabled; // black window
+   if (bEnableSpectatorScreen)
+   {
+       // draws the left eye view cropped to the entire window
+       SpectatorScreenMode = ESpectatorScreenMode::SingleEyeCroppedToFill;
+       if (bDrawSpectatorReticle)
+       {
+           InitReticleTexture(); // generate array of pixel values
+           if (ReticleTexture != nullptr)
+           {
+               // draws the full screen view of the left eye (same as SingleEyeCroppedToFill) plus a texture overlaid
+               SpectatorScreenMode = ESpectatorScreenMode::TexturePlusEye;
+               UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenTexture(ReticleTexture);
+           }
+           else
+           {
+               LOG_ERROR("Reticle texture is null! Unable to use for spectator screen");
+           }
+       }
+   }
+   UHeadMountedDisplayFunctionLibrary::SetSpectatorScreenMode(SpectatorScreenMode);
 }
 
 void ADReyeVRPawn::TickSpectatorScreen(float DeltaSeconds)
@@ -551,8 +562,20 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     else if (WheelState->rgdwPOV[0] == 27000) // negative in Y
         EgoVehicle->AwarenessLeftV();
 
-    // Button presses (turn signals, reverse)
-    if (WheelState->rgbButtons[4])
+    // if (bABXY_A || bABXY_B || bABXY_X || bABXY_Y)
+    //     EgoVehicle->PressReverse();
+    // else
+    //     EgoVehicle->ReleaseReverse();
+
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_A, bABXY_A);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_B, bABXY_B);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_X, bABXY_X);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_Y, bABXY_Y);
+
+    bool bTurnSignalR = static_cast<bool>(WheelState.rgbButtons[4]);
+    bool bTurnSignalL = static_cast<bool>(WheelState.rgbButtons[5]);
+
+    if (bTurnSignalR)
         EgoVehicle->PressTurnSignalR();
     else
         EgoVehicle->ReleaseTurnSignalR();
@@ -564,11 +587,18 @@ void ADReyeVRPawn::LogitechWheelUpdate()
 
     // if (WheelState->rgbButtons[23]) // big red button on right side of g923
 
-    // // EgoVehicle VRCamerRoot base position adjustment
-    // else if (WheelState->rgbButtons[19]) // positive in Z
-    //     EgoVehicle->CameraUp();
-    // else if (WheelState->rgbButtons[20]) // negative in Z
-    //     EgoVehicle->CameraDown();
+    const bool bDPad_Up = (WheelState.rgdwPOV[0] == 0);
+    const bool bDPad_Right = (WheelState.rgdwPOV[0] == 9000);
+    const bool bDPad_Down = (WheelState.rgdwPOV[0] == 18000);
+    const bool bDPad_Left = (WheelState.rgdwPOV[0] == 27000);
+    const bool bPositive = static_cast<bool>(WheelState.rgbButtons[19]);
+    const bool bNegative = static_cast<bool>(WheelState.rgbButtons[20]);
+
+    // EgoVehicle->CameraPositionAdjust(bDPad_Up, bDPad_Right, bDPad_Down, bDPad_Left, bPositive, bNegative);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Up, bDPad_Up);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Right, bDPad_Right);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Left, bDPad_Left);
+    EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Down, bDPad_Down);
 }
 
 void ADReyeVRPawn::ApplyForceFeedback() const
