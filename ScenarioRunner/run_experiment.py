@@ -10,20 +10,15 @@ from datetime import datetime
 import argparse
 
 try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
+    CARLA_ROOT: str = os.getenv("CARLA_ROOT")
+    egg_dir = os.path.join(CARLA_ROOT, "PythonAPI", "carla", "dist")
+    sys.path.append(glob.glob(os.path.join(egg_dir, f"carla-*.egg"))[0])
+    sys.path.append(os.path.join(CARLA_ROOT, "PythonAPI", "examples"))
 except IndexError:
-    pass
+    print(f"Unable to find Carla PythonAPI file in {egg_dir}")
 
 import carla
+
 from scenario_runner import ScenarioRunner
 
 recorder_file = None
@@ -52,7 +47,8 @@ def run_schematic(argparser, scenario_runner_instance):
 
     # can be completely avoided if --visualize is False
     # NOTE: this import uses export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/examples
-    from schematic_mode import schematic_run
+    raise NotImplementedError
+    from dreyevr.examples.schematic_mode import schematic_run
 
     # for full definitions of these args see no_rendering_mode.py
     args = argparser.parse_known_args(
@@ -77,19 +73,17 @@ def run_schematic(argparser, scenario_runner_instance):
 
 def start_recording(client, args, scenario_runner_instance):
     wait_until_SR_loaded(scenario_runner_instance)
+    time_str: str = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+    filename: str = f"exp_{args.title}_{time_str}.rec"
 
-    now = datetime.now()
-    time_str = now.strftime("%m_%d_%Y_%H_%M_%S")
-    filename = "exp_%s_%s.rec" % (args.title, time_str)
-
-    global recorder_file
+    global recorder_file # to "return" from this thread
     recorder_file = client.start_recorder(filename)
     print("Recording on file: %s" % recorder_file)
 
 
 def stop_recording(client):
     global recorder_file
-    print("Stopping recording, file saved to %s" % recorder_file)
+    print(f"Stopping recording, file saved to \"{recorder_file}\"")
     client.stop_recorder()
 
 

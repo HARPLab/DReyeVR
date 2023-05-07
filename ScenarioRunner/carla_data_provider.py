@@ -691,7 +691,7 @@ class CarlaDataProvider(object):  # pylint: disable=too-many-public-methods
                     print("The amount of spawn points is lower than the amount of vehicles spawned")
                     break
 
-            if spawn_point and "dreyevr" not in blueprint.id:
+            if spawn_point:
                 batch.append(SpawnActor(blueprint, spawn_point).then(
                     SetAutopilot(FutureActor, autopilot,
                                  CarlaDataProvider._traffic_manager_port)))

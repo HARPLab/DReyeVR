@@ -1,3 +1,6 @@
 ScenarioRunner/run_experiment.py,/
+ScenarioRunner/scenario_runner.py,/
 ScenarioRunner/route_scenario.py,srunner/scenarios
+ScenarioRunner/route_parser.py,srunner/tools
 ScenarioRunner/carla_data_provider.py,srunner/scenariomanager
+ScenarioRunner/scenario_manager.py,srunner/scenariomanager
