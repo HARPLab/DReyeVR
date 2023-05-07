@@ -35,10 +35,6 @@ T *SafePtrGet(const FString &Name, TWeakObjectPtr<T> &Ptr, const std::function<v
     return nullptr;
 }
 
-/// this is the file where we'll read all DReyeVR specific configs
-static const FString ConfigFilePath =
-    FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()), TEXT("Config"), TEXT("DReyeVRConfig.ini"));
-
 static FString UE4RefToClassPath(const FString &UE4ReferencePath)
 {
     // converts (reference) strings of the type "Type'/Game/PATH/asset.asset'" to "/Game/PATH/asset.asset_C"

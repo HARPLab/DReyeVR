@@ -89,6 +89,11 @@ void AEgoSensor::BeginDestroy()
 {
     Super::BeginDestroy();
 
+    if (RecordingCF != nullptr)
+    {
+        delete RecordingCF;
+    }
+
     DestroyEyeTracker();
 
     LOG("EgoSensor has been destroyed");
@@ -96,7 +101,7 @@ void AEgoSensor::BeginDestroy()
 
 void AEgoSensor::ManualTick(float DeltaSeconds)
 {
-    if (!bIsReplaying) // only update the sensor with local values if not replaying
+    if (!ADReyeVRSensor::bIsReplaying) // only update the sensor with local values if not replaying
     {
         const float Timestamp = int64_t(1000.f * UGameplayStatics::GetRealTimeSeconds(World));
         /// TODO: query the eye tracker hardware asynchronously (not limited to UE4 tick)
@@ -376,12 +381,16 @@ void AEgoSensor::SetEgoVehicle(class AEgoVehicle *NewEgoVehicle)
     check(Vehicle.IsValid());
 
     // Also check that the ConfigFileData variable can be written to with Vehicle params
-    ensure(ConfigFile != nullptr);
-    if (ConfigFile)
+    check(ConfigFile); // this is a static variable created in the parent (ADReyeVRSensor)
+
+    // track both the VehicleParams and GeneralParams
+    const auto ConfigFileStr = Vehicle.Get()->GetVehicleParams().Export() + GeneralParams.Export();
+    ConfigFile->Set(ConfigFileStr); // track this config file once
+
+    // saved from some previous request to compare, but failed bc no EgoVehicle
+    if (RecordingCF != nullptr)
     {
-        // track both the VehicleParams and GeneralParams
-        const auto ConfigFileStr = Vehicle.Get()->GetVehicleParams().Export() + GeneralParams.Export();
-        ConfigFile->Set(ConfigFileStr); // track this config file once
+        UpdateData(*RecordingCF, 0.f);
     }
 }
 
@@ -570,8 +579,12 @@ void AEgoSensor::TickFoveatedRender()
 void AEgoSensor::UpdateData(const DReyeVR::ConfigFileData &RecordedParams, const double Per)
 {
     if (!Vehicle.IsValid())
+    {
+        // LOG_WARN("Unable to compare ConfigFile bc EgoVehicle is invalid!");
+        RecordingCF = new DReyeVR::ConfigFileData();
+        (*RecordingCF) = RecordedParams; // save these params for later (ex. SetEgoVehicle)
         return;
-
+    }
     // compare the incoming (recording) ConfigFile with our current (live) one
     const std::string RecordingExport = TCHAR_TO_UTF8(*RecordedParams.ToString());
     const struct ConfigFile Recorded = ConfigFile::Import(RecordingExport);
@@ -582,7 +595,16 @@ void AEgoSensor::UpdateData(const DReyeVR::ConfigFileData &RecordedParams, const
     LiveConfig.Insert(GeneralParams);
 
     bool bPrintWarnings = true;
-    LiveConfig.IsSubset(Recorded, bPrintWarnings); // don't care if Recorded has entries that we dont
+    if (LiveConfig.IsSubset(Recorded, bPrintWarnings)) // don't care if Recorded has entries that we dont
+    {
+        LOG("Config file comparison successful!");
+    }
+    else
+    {
+        LOG_WARN("Config file comparison failed! This means the recording was performed with a different configuration "
+                 "file than what is currently active. You might want to check that this does not affect the validity "
+                 "of your replay.");
+    }
 }
 
 void AEgoSensor::UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per)

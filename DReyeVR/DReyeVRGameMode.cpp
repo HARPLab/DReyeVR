@@ -53,7 +53,6 @@ ADReyeVRGameMode::ADReyeVRGameMode(FObjectInitializer const &FO) : Super(FO)
     };
 
     // read config variables
-    bDoSpawnEgoVehicle = GeneralParams.Get<bool>("Game", "AutomaticallySpawnEgo");
     EgoVolumePercent = GeneralParams.Get<float>("Sound", "EgoVolumePercent");
     NonEgoVolumePercent = GeneralParams.Get<float>("Sound", "NonEgoVolumePercent");
     AmbientVolumePercent = GeneralParams.Get<float>("Sound", "AmbientVolumePercent");
@@ -87,7 +86,7 @@ void ADReyeVRGameMode::BeginPlay()
     ensure(GetPawn() != nullptr);
 
     // Initialize the DReyeVR EgoVehicle and Sensor (second)
-    if (bDoSpawnEgoVehicle)
+    if (GeneralParams.Get<bool>("Game", "AutomaticallySpawnEgo"))
     {
         SetupEgoVehicle();
         ensure(GetEgoVehicle() != nullptr);

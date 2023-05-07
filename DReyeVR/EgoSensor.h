@@ -79,6 +79,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void ComputeEgoVars();
     TWeakObjectPtr<class AEgoVehicle> Vehicle; // the DReyeVR EgoVehicle
     struct DReyeVR::EgoVariables EgoVars;      // data from vehicle that is getting tracked
+    DReyeVR::ConfigFileData *RecordingCF = nullptr;
 
   private: // frame capture
     size_t ScreenshotCount = 0;

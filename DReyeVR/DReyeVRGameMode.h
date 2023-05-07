@@ -62,8 +62,6 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
     std::unordered_map<std::string, ADReyeVRCustomActor *> BBoxes;
 
   private:
-    bool bDoSpawnEgoVehicle = true; // spawn Ego on BeginPlay or not
-
     // for handling inputs and possessions
     void SetupDReyeVRPawn();
     void SetupSpectator();

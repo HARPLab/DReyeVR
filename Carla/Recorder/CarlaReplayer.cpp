@@ -150,9 +150,6 @@ std::string CarlaReplayer::ReplayFile(std::string Filename, double TimeStart, do
   LastReplay.Duration = Duration;
   LastReplay.ThisFollowId = ThisFollowId;
 
-  // make sure we are using an up-to-date EgoSensor
-  InitEgoSensor();
-
   // check to stop if we are replaying another
   if (Enabled)
   {

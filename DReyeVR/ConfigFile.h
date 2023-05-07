@@ -130,8 +130,11 @@ struct ConfigFile
 
     void Insert(const ConfigFile &Other)
     {
+        if (!Other.bIsValid())
+            return;
         FilePath += ";" + Other.FilePath;
-        Sections.insert(Other.Sections.begin(), Other.Sections.end());
+        if (Other.Sections.size() > 0)
+            Sections.insert(Other.Sections.begin(), Other.Sections.end());
         bSuccessfulUpdate = true;
     }
 
