@@ -571,12 +571,11 @@ void ADReyeVRGameMode::SpawnEgoVehicle(const FTransform &SpawnPt)
         DReyeVRDescr.UId = EgoVehicleDefn.UId;
         DReyeVRDescr.Id = EgoVehicleDefn.Id;
         DReyeVRDescr.Class = EgoVehicleDefn.Class;
-        // ensure this vehicle is denoted by the 'hero' attribute
-        FActorAttribute HeroRole;
-        HeroRole.Id = "role_name";
-        HeroRole.Type = EActorAttributeType::String;
-        HeroRole.Value = "hero";
-        DReyeVRDescr.Variations.Add(HeroRole.Id, std::move(HeroRole));
+        // add all the attributes from the definition to the description
+        for (FActorAttribute A : EgoVehicleDefn.Attributes)
+        {
+            DReyeVRDescr.Variations.Add(A.Id, std::move(A));
+        }
     }
     // calls Episode::SpawnActor => SpawnActorWithInfo => ActorDispatcher->SpawnActor => SpawnFunctions[UId]
     EgoVehiclePtr = static_cast<AEgoVehicle *>(Episode->SpawnActor(SpawnPt, DReyeVRDescr));
