@@ -1,24 +1,4 @@
-#!/usr/bin/env python
-
-
-import glob
-import os
-import sys
 from typing import Any, Dict
-
-try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
-except IndexError:
-    pass
 
 from DReyeVR_utils import DReyeVRSensor, find_ego_vehicle
 import no_rendering_mode

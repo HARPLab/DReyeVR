@@ -78,14 +78,6 @@ def main():
         client.set_timeout(2.0)
         world = client.get_world()
         blueprints = world.get_blueprint_library().filter('vehicle.*')
-        # never spawn another dreyevr vehicle!
-        blueprints = [x for x in blueprints if "dreyevr" not in x.id]
-        assert blueprints is not None
-
-        # NO FIXED TIMESTEP (DEBUG ONLY)
-        settings = world.get_settings()
-        settings.fixed_delta_seconds = 0.0
-        world.apply_settings(settings)
 
         spawn_points = world.get_map().get_spawn_points()
         random.shuffle(spawn_points)
@@ -146,7 +138,6 @@ def main():
         else:
             while True:
                 world.wait_for_tick()
-                # time.sleep(0.1)
 
     finally:
 

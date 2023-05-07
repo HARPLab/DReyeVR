@@ -1,29 +1,9 @@
-#!/usr/bin/env python
-
-import glob
-import os
-import sys
 import time
-
-try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
-except IndexError:
-    pass
-
-import carla
-
 import argparse
 from numpy import random
 from DReyeVR_utils import find_ego_vehicle
+
+import carla
 
 
 def set_DReyeVR_autopilot(world, traffic_manager):
