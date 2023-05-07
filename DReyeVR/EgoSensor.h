@@ -37,7 +37,6 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     void ManualTick(float DeltaSeconds); // Tick called explicitly from DReyeVR EgoVehicle
 
     void SetEgoVehicle(class AEgoVehicle *EgoVehicle); // provide access to EgoVehicle (and by extension its camera)
-    void SetGame(class ADReyeVRGameMode *Game);        // provides access to ADReyeVRGameMode
 
     void UpdateData(const DReyeVR::ConfigFileData &RecorderData, const double Per) override;
     void UpdateData(const DReyeVR::CustomActorData &RecorderData, const double Per) override;
@@ -56,7 +55,7 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     int64_t TickCount = 0; // how many ticks have been executed
     void ReadConfigVariables();
 
-    ////////////////:EYETRACKER:////////////////
+  private: // eye tracker
     void InitEyeTracker();
     void DestroyEyeTracker();
     void ComputeDummyEyeData(); // when no hardware sensor is present
@@ -76,16 +75,15 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     struct DReyeVR::FocusInfo FocusInfoData;                            // data from the focus computed from eye gaze
     std::chrono::time_point<std::chrono::system_clock> ChronoStartTime; // std::chrono time at BeginPlay
 
-    ////////////////:EGOVARS:////////////////
+  private: // ego=vehicle variables
     void ComputeEgoVars();
-    class AEgoVehicle *Vehicle;           // the DReyeVR EgoVehicle
-    struct DReyeVR::EgoVariables EgoVars; // data from vehicle that is getting tracked
+    TWeakObjectPtr<class AEgoVehicle> Vehicle; // the DReyeVR EgoVehicle
+    struct DReyeVR::EgoVariables EgoVars;      // data from vehicle that is getting tracked
 
-    ////////////////:FRAMECAPTURE:////////////////
+  private: // frame capture
+    size_t ScreenshotCount = 0;
     void ConstructFrameCapture(); // needs to be called in the constructor
     void InitFrameCapture();      // needs to be called in BeginPlay
-    size_t ScreenshotCount = 0;
-    class UCameraComponent *Camera; // for frame capture views
     class UTextureRenderTarget2D *CaptureRenderTarget = nullptr;
     class USceneCaptureComponent2D *FrameCap = nullptr;
     FString FrameCapLocation; // relative to game dir
@@ -99,12 +97,9 @@ class CARLAUE4_API AEgoSensor : public ADReyeVRSensor
     bool bFileFormatJPG = true;
     bool bFrameCapForceLinearGamma = true;
 
-    ////////////////:FOVEATEDRENDER:////////////////
+  private: // foveated rendering
     void TickFoveatedRender();
     void ConvertToEyeTrackerSpace(FVector &inVec) const;
     bool bEnableFovRender = false;
     bool bUseEyeTrackingVRS = true;
-
-    ////////////////:REPLAY:////////////////
-    class ADReyeVRGameMode *DReyeVRGame = nullptr;
 };

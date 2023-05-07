@@ -168,11 +168,11 @@ private:
   void ProcessWeather(void);
 
   // DReyeVR recordings
-  void InitEgoSensor();
   template <typename T>
   void ProcessDReyeVR(double Per, double DeltaTime);
   std::unordered_set<std::string> CustomActorsVisited = {};
-  class ADReyeVRSensor *EgoSensor = nullptr;
+  class ADReyeVRSensor *GetEgoSensor(); // (safe) getter for EgoSensor
+  TWeakObjectPtr<class ADReyeVRSensor> EgoSensor;
 
   // For restarting the recording with the same params
   struct LastReplayStruct

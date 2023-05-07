@@ -34,8 +34,8 @@ void CarlaReplayer::Stop(bool bKeepActors)
     Helper.ProcessReplayerFinish(bKeepActors, IgnoreHero, IsHeroMap);
 
     // turn off DReyeVR replay
-    if (EgoSensor)
-      EgoSensor->StopReplaying();
+    if (GetEgoSensor())
+      GetEgoSensor()->StopReplaying();
   }
 
   File.close();
@@ -298,14 +298,22 @@ void CarlaReplayer::CheckPlayAfterMapLoaded(void)
   Enabled = true;
 }
 
-void CarlaReplayer::InitEgoSensor()
+class ADReyeVRSensor *CarlaReplayer::GetEgoSensor()
 {
-  check(Episode != nullptr);
-  EgoSensor = ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld());
-  if (EgoSensor == nullptr) {
-    DReyeVR_LOG_ERROR("No EgoSensor available!");
-    return;
+  if (EgoSensor.IsValid()) {
+    return EgoSensor.Get();
   }
+  // not tracked yet, lets find the EgoSensor
+  if (Episode == nullptr) {
+    DReyeVR_LOG_ERROR("No Replayer Episode available!");
+    return nullptr;
+  }
+  EgoSensor = ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld());
+  if (!EgoSensor.IsValid()) {
+    DReyeVR_LOG_ERROR("No EgoSensor available!");
+    return nullptr;
+  }
+  return EgoSensor.Get();
 }
 
 template<>
@@ -319,7 +327,7 @@ void CarlaReplayer::ProcessDReyeVR<DReyeVR::AggregateData>(double Per, double De
   {
     struct DReyeVRDataRecorder<DReyeVR::AggregateData> Instance;
     Instance.Read(File);
-    Helper.ProcessReplayerDReyeVR<DReyeVR::AggregateData>(EgoSensor, Instance.Data, Per);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::AggregateData>(GetEgoSensor(), Instance.Data, Per);
   }
 }
 
@@ -334,7 +342,7 @@ void CarlaReplayer::ProcessDReyeVR<DReyeVR::ConfigFileData>(double Per, double D
   {
     struct DReyeVRDataRecorder<DReyeVR::ConfigFileData> Instance;
     Instance.Read(File);
-    Helper.ProcessReplayerDReyeVR<DReyeVR::ConfigFileData>(EgoSensor, Instance.Data, Per);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::ConfigFileData>(GetEgoSensor(), Instance.Data, Per);
   }
 }
 
@@ -348,7 +356,7 @@ void CarlaReplayer::ProcessDReyeVR<DReyeVR::CustomActorData>(double Per, double 
   {
     struct DReyeVRDataRecorder<DReyeVR::CustomActorData> Instance;
     Instance.Read(File);
-    Helper.ProcessReplayerDReyeVR<DReyeVR::CustomActorData>(EgoSensor, Instance.Data, Per);
+    Helper.ProcessReplayerDReyeVR<DReyeVR::CustomActorData>(GetEgoSensor(), Instance.Data, Per);
     auto Name = Instance.GetUniqueName();
     CustomActorsVisited.insert(Name); // to track lifetime
   }
@@ -866,8 +874,8 @@ void CarlaReplayer::ProcessFrameByFrame()
   if (SyncCurrentFrameId > 0)
     LastTime = FrameStartTimes[SyncCurrentFrameId - 1];
   ProcessToTime(FrameStartTimes[SyncCurrentFrameId] - LastTime, (SyncCurrentFrameId == 0));
-  if (EgoSensor) // take screenshot of this frame
-    EgoSensor->TakeScreenshot();
+  if (GetEgoSensor()) // take screenshot of this frame
+    GetEgoSensor()->TakeScreenshot();
   // progress to the next frame
   if (SyncCurrentFrameId < FrameStartTimes.size() - 1)
     SyncCurrentFrameId++;

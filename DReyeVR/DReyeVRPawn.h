@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Camera/CameraComponent.h" // UCameraComponent
-#include "EgoVehicle.h"             // AEgoVehicle
 #include "Engine/Scene.h"           // FPostProcessSettings
 #include "GameFramework/Pawn.h"     // CreatePlayerInputComponent
 
@@ -16,6 +15,8 @@
 #endif
 
 #include "DReyeVRPawn.generated.h"
+
+class AEgoVehicle;
 
 UCLASS()
 class ADReyeVRPawn : public APawn
