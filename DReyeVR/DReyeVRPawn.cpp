@@ -602,17 +602,14 @@ void ADReyeVRPawn::ApplyForceFeedback() const
     check(EgoVehicle);
 
     // only execute this in Windows, the Logitech plugin is incompatible with Linux
-    const float Speed = EgoVehicle->GetVelocity().Size(); // get magnitude of self (AActor's) velocity
+    // const float Speed = EgoVehicle->GetVelocity().Size(); // get magnitude of self (AActor's) velocity
     /// TODO: move outside this function (in tick()) to avoid redundancy
     if (bIsLogiConnected && LogiHasForceFeedback(WheelDeviceIdx))
     {
-        int OffsetPercentage = 0; // "Specifies the center of the spring force effect"
-        if (!(bLogiFollowAutopilot && EgoVehicle->GetAutopilotStatus()))
-        {
-            // actuate the logi wheel to match the autopilot steering
-            float RawWheel = EgoVehicle->GetWheelSteerAngle(EVehicleWheelLocation::Front_Wheel);
-            OffsetPercentage = static_cast<int>(RawWheel * 0.5f);
-        }
+        // actuate the logi wheel to match the autopilot steering
+        float RawWheel = EgoVehicle->GetWheelSteerAngle(EVehicleWheelLocation::Front_Wheel);
+        // "Specifies the center of the spring force effect"
+        const int OffsetPercentage = static_cast<int>(RawWheel * 0.5f);
         const int CoeffPercentage = 100; // "Slope of the effect strength increase relative to deflection from Offset"
         LogiPlaySpringForce(WheelDeviceIdx, OffsetPercentage, SaturationPercentage, CoeffPercentage);
     }
