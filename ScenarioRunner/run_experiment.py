@@ -76,7 +76,7 @@ def start_recording(client, args, scenario_runner_instance):
     time_str: str = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
     filename: str = f"exp_{args.title}_{time_str}.rec"
 
-    global recorder_file # to "return" from this thread
+    global recorder_file  # to "return" from this thread
     recorder_file = client.start_recorder(filename)
     print("Recording on file: %s" % recorder_file)
 

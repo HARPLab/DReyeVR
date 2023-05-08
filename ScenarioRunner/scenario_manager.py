@@ -13,7 +13,7 @@ It must not be modified and is for reference only!
 from __future__ import print_function
 import sys
 import time
-
+import os
 import py_trees
 
 from srunner.autoagents.agent_wrapper import AgentWrapper
@@ -21,6 +21,7 @@ from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.result_writer import ResultOutputProvider
 from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
+from srunner.tools.route_parser import RouteParser
 
 
 class ScenarioManager(object):
@@ -64,6 +65,7 @@ class ScenarioManager(object):
         self.scenario_duration_game = 0.0
         self.start_system_time = None
         self.end_system_time = None
+        self.route_id = None
 
     def _reset(self):
         """
@@ -116,13 +118,13 @@ class ScenarioManager(object):
             self._agent.setup_sensors(self.ego_vehicles[0], self._debug_mode)
 
         self.route_id = route_id
-        self.load_DReyeVR_signs()
+        self.load_dreyevr_signs()
 
-    def load_DReyeVR_signs(self):
-        # retrieve and place direction signs for route if they exist
-        from srunner.tools.route_parser import RouteParser
+    def load_dreyevr_signs(self):
+        """
+        retrieve and place direction signs for route if they exist
+        """
 
-        import os
         signs_file = os.path.join(os.getenv("SCENARIO_RUNNER_ROOT"), "srunner", "data", "all_routes_signs.json")
         route_signs_list = RouteParser.parse_direction_signs_file(signs_file, self.route_id)
 
@@ -140,7 +142,7 @@ class ScenarioManager(object):
             sign_transform = RouteParser.convert_dict2transform(sign_waypoint)
             print(f"Loading \"{sign_type}\" @ {sign_transform}")
             # TODO: keep track of these signs somewhere?
-            traffic_sign = CarlaDataProvider.request_new_actor(sign_type, sign_transform, rolename='navigation_sign')
+            CarlaDataProvider.request_new_actor(sign_type, sign_transform, rolename='navigation_sign')
 
     def run_scenario(self):
         """

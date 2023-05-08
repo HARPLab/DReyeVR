@@ -30,19 +30,15 @@ import time
 import json
 import pkg_resources
 
-sys.path.insert(0, os.path.join(os.getenv("CARLA_ROOT"), "PythonAPI")) # for Carla stuff
-sys.path.insert(0, os.path.join(os.getenv("CARLA_ROOT"), "PythonAPI", "carla")) # for agents
-sys.path.insert(0, os.path.join(os.getenv("CARLA_ROOT"), "PythonAPI", "dreyevr")) # for DReyeVR stuff
-
 import carla
 
-from srunner.scenarioconfigs.openscenario_configuration import OpenScenarioConfiguration
-from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-from srunner.scenariomanager.scenario_manager import ScenarioManager
-from srunner.scenarios.open_scenario import OpenScenario
-from srunner.scenarios.route_scenario import RouteScenario
-from srunner.tools.scenario_parser import ScenarioConfigurationParser
 from srunner.tools.route_parser import RouteParser
+from srunner.tools.scenario_parser import ScenarioConfigurationParser
+from srunner.scenarios.route_scenario import RouteScenario
+from srunner.scenarios.open_scenario import OpenScenario
+from srunner.scenariomanager.scenario_manager import ScenarioManager
+from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
+from srunner.scenarioconfigs.openscenario_configuration import OpenScenarioConfiguration
 
 # Version of scenario_runner
 VERSION = '0.9.13'
