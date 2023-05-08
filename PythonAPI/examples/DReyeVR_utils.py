@@ -2,6 +2,9 @@ from typing import Optional, Any, Dict, List
 import carla
 import numpy as np
 import time
+
+import sys, os
+sys.path.append(os.path.join(os.getenv("CARLA_ROOT"), "PythonAPI"))
 import examples  # calls ./__init__.py to add all the necessary things to path
 
 
