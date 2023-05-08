@@ -51,6 +51,7 @@ void ADReyeVRPawn::ReadConfigVariables()
     // wheel hardware
     GeneralParams.Get("Hardware", "DeviceIdx", WheelDeviceIdx);
     GeneralParams.Get("Hardware", "LogUpdates", bLogLogitechWheel);
+    GeneralParams.Get("Hardware", "ForceFeedbackMagnitude", SaturationPercentage);
 }
 
 void ADReyeVRPawn::ConstructCamera()
@@ -602,7 +603,6 @@ void ADReyeVRPawn::ApplyForceFeedback() const
     if (bIsLogiConnected && LogiHasForceFeedback(WheelDeviceIdx))
     {
         const int OffsetPercentage = 0;      // "Specifies the center of the spring force effect"
-        const int SaturationPercentage = 30; // "Level of saturation... comparable to a magnitude"
         const int CoeffPercentage = 100; // "Slope of the effect strength increase relative to deflection from Offset"
         LogiPlaySpringForce(WheelDeviceIdx, OffsetPercentage, SaturationPercentage, CoeffPercentage);
     }

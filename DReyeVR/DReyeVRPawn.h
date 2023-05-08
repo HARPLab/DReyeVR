@@ -126,6 +126,7 @@ class ADReyeVRPawn : public APawn
     void TickLogiWheel();
     void DestroyLogiWheel(bool DestroyModule);
     bool bLogLogitechWheel = false;
+    int SaturationPercentage = 30; // "Level of saturation... comparable to a magnitude"
     int WheelDeviceIdx = 0; // usually leaving as 0 is fine, only use 1 if 0 is taken
 #if USE_LOGITECH_PLUGIN
     struct DIJOYSTATE2 *Old = nullptr; // global "old" struct for the last state
