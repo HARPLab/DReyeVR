@@ -420,7 +420,7 @@ void AEgoSensor::ComputeEgoVars()
 
 void AEgoSensor::ConstructFrameCapture()
 {
-    if (bCaptureFrameData && Vehicle.IsValid())
+    if (bCaptureFrameData)
     {
         // Frame capture
         CaptureRenderTarget = CreateDefaultSubobject<UTextureRenderTarget2D>(TEXT("CaptureRenderTarget_DReyeVR"));
@@ -437,7 +437,6 @@ void AEgoSensor::ConstructFrameCapture()
         check(CaptureRenderTarget->GetSurfaceWidth() > 0 && CaptureRenderTarget->GetSurfaceHeight() > 0);
 
         FrameCap = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("FrameCap"));
-        FrameCap->SetupAttachment(Vehicle.Get()->GetCamera());
         FrameCap->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
         FrameCap->bCaptureOnMovement = false;
         FrameCap->bCaptureEveryFrame = false;
@@ -460,10 +459,13 @@ void AEgoSensor::ConstructFrameCapture()
 
 void AEgoSensor::InitFrameCapture()
 {
-    // creates the directory for the frame capture to take place
     if (bCaptureFrameData)
     {
-        // create out dir
+        // initialize frame capture attachment to the ego vehicle
+        if (FrameCap && Vehicle.IsValid())
+            FrameCap->SetupAttachment(Vehicle.Get()->GetCamera());
+
+        // creates the directory for the frame capture to take place
         /// TODO: add check for absolute paths
         FrameCapLocation = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() + FrameCapLocation);
         // The returned string has the following format: yyyy.mm.dd-hh.mm.ss
