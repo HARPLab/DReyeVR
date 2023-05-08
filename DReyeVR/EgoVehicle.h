@@ -248,6 +248,7 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     float MaxSteerAngleDeg;
     float MaxSteerVelocity;
     float SteeringAnimScale;
+    bool bWheelFollowAutopilot = true; // disable steering during autopilot and follow AI
     // wheel face buttons
     void InitWheelButtons();
     void UpdateWheelButton(ADReyeVRCustomActor *Button, bool bEnabled);

@@ -52,6 +52,7 @@ void ADReyeVRPawn::ReadConfigVariables()
     GeneralParams.Get("Hardware", "DeviceIdx", WheelDeviceIdx);
     GeneralParams.Get("Hardware", "LogUpdates", bLogLogitechWheel);
     GeneralParams.Get("Hardware", "ForceFeedbackMagnitude", SaturationPercentage);
+    GeneralParams.Get("Hardware", "LogiFollowAutopilot", bLogiFollowAutopilot);
 }
 
 void ADReyeVRPawn::ConstructCamera()
@@ -534,7 +535,10 @@ void ADReyeVRPawn::LogitechWheelUpdate()
         }
         else
         {
-            EgoVehicle->AddSteering(WheelRotation);
+            if (!(bLogiFollowAutopilot && EgoVehicle->GetAutopilotStatus()))
+            {
+                EgoVehicle->AddSteering(WheelRotation);
+            }
             EgoVehicle->AddThrottle(AccelerationPedal);
             EgoVehicle->AddBrake(BrakePedal);
         }
@@ -602,7 +606,13 @@ void ADReyeVRPawn::ApplyForceFeedback() const
     /// TODO: move outside this function (in tick()) to avoid redundancy
     if (bIsLogiConnected && LogiHasForceFeedback(WheelDeviceIdx))
     {
-        const int OffsetPercentage = 0;      // "Specifies the center of the spring force effect"
+        int OffsetPercentage = 0; // "Specifies the center of the spring force effect"
+        if (!(bLogiFollowAutopilot && EgoVehicle->GetAutopilotStatus()))
+        {
+            // actuate the logi wheel to match the autopilot steering
+            float RawWheel = EgoVehicle->GetWheelSteerAngle(EVehicleWheelLocation::Front_Wheel);
+            OffsetPercentage = static_cast<int>(RawWheel * 0.5f);
+        }
         const int CoeffPercentage = 100; // "Slope of the effect strength increase relative to deflection from Offset"
         LogiPlaySpringForce(WheelDeviceIdx, OffsetPercentage, SaturationPercentage, CoeffPercentage);
     }
