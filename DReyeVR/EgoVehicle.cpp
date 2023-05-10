@@ -92,7 +92,6 @@ void AEgoVehicle::ReadConfigVariables()
     GeneralParams.Get("VehicleInputs", "ScaleBrakeInput", ScaleBrakeInput);
     // replay
     GeneralParams.Get("Replayer", "CameraFollowHMD", bCameraFollowHMD);
-    GeneralParams.Get("Hardware", "LogiFollowAutopilot", bWheelFollowAutopilot);
 }
 
 void AEgoVehicle::BeginPlay()
@@ -945,7 +944,7 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
         InitWheelButtons();
     const FRotator CurrentRotation = SteeringWheel->GetRelativeRotation();
     FRotator NewRotation = CurrentRotation;
-    if (Pawn && Pawn->GetIsLogiConnected() && !(bWheelFollowAutopilot && GetAutopilotStatus()))
+    if (Pawn && Pawn->GetIsLogiConnected() && !GetAutopilotStatus())
     {
         // make the virtual wheel rotation follow the physical steering wheel
         const float RawSteering = GetVehicleInputs().Steering; // this is scaled in SetSteering
@@ -954,6 +953,7 @@ void AEgoVehicle::TickSteeringWheel(const float DeltaTime)
     }
     else if (GetMesh() && Cast<UVehicleAnimInstance>(GetMesh()->GetAnimInstance()) != nullptr)
     {
+        // use the animation (front wheels) steer angle for the steering wheel
         float WheelAngleDeg = GetWheelSteerAngle(EVehicleWheelLocation::Front_Wheel);
         // float MaxWheelAngle = GetMaximumSteerAngle();
         float DeltaAngle = 10.f * (2.0f * WheelAngleDeg - CurrentRotation.Roll);
