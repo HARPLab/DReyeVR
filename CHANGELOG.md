@@ -1,6 +1,9 @@
 ## DReyeVR 0.2.1
 - Adding smart (weak) pointers for the major DReyeVR class connections to ensure better pointer validity before dereference. Helps with detecting dangling (freed, but not-null) pointers which happens commonly during map changes and would otherwise crash the replay system.
-- Adding PythonAPI startup function
+- Adding PythonAPI startup function (namely a custom `__init__.py` script that is loaded when using `DReyeVR_utils.py`)
+- Fix bug with shaders not being cooked in package mode
+- Fine-tune ego-vehicle mirrors according to vehicle chassis
+- Adding threshold for manual takeover of logitech inputs. Logitech wheel actuation follows autopilot otherwise.
 
 ## DReyeVR 0.2.0
 - Add face button indicators on the steering wheel
