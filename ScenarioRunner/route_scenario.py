@@ -290,7 +290,11 @@ class RouteScenario(BasicScenario):
             return None
         # find the first non-road waypoint so our drivers can read it (with a limit)
         max_tries: int = 100
-        while max_tries > 0 and _wp.lane_type not in [carla.LaneType.Sidewalk, carla.LaneType.Shoulder]:
+        valid_sign_lanes = [
+            carla.LaneType.Sidewalk,
+            # carla.LaneType.Shoulder, # disable shoulder
+        ]
+        while max_tries > 0 and _wp.lane_type not in valid_sign_lanes:
             max_tries -= 1
             right_wp = _wp.get_right_lane()
             if right_wp is not None:
