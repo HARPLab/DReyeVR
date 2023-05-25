@@ -14,13 +14,15 @@ from __future__ import print_function
 import math
 import traceback
 import xml.etree.ElementTree as ET
-from numpy import random
 
 import py_trees
 
 import carla
 
 from agents.navigation.local_planner import RoadOption
+
+# DReyeVR import
+from examples.DReyeVR_utils import find_ego_vehicle
 
 # pylint: disable=line-too-long
 from srunner.scenarioconfigs.scenario_configuration import ScenarioConfiguration, ActorConfigurationData
@@ -33,12 +35,16 @@ from srunner.tools.route_manipulation import interpolate_trajectory
 from srunner.tools.py_trees_port import oneshot_behavior
 
 from srunner.scenarios.control_loss import ControlLoss
-from srunner.scenarios.follow_leading_vehicle import FollowLeadingVehicle
+from srunner.scenarios.follow_leading_vehicle import FollowLeadingVehicleRoute
 from srunner.scenarios.object_crash_vehicle import DynamicObjectCrossing
 from srunner.scenarios.object_crash_intersection import VehicleTurningRoute
 from srunner.scenarios.other_leading_vehicle import OtherLeadingVehicle
 from srunner.scenarios.maneuver_opposite_direction import ManeuverOppositeDirection
-from srunner.scenarios.junction_crossing_route import SignalJunctionCrossingRoute, NoSignalJunctionCrossingRoute
+from srunner.scenarios.junction_crossing_route import NoSignalJunctionCrossingRoute
+from srunner.scenarios.signalized_junction_left_turn import SignalizedJunctionLeftTurn
+from srunner.scenarios.signalized_junction_right_turn import SignalizedJunctionRightTurn
+from srunner.scenarios.opposite_vehicle_taking_priority import OppositeVehicleRunningRedLight
+from srunner.scenarios.background_activity import BackgroundActivity
 
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import (CollisionTest,
                                                                      InRouteTest,
@@ -48,21 +54,18 @@ from srunner.scenariomanager.scenarioatomics.atomic_criteria import (CollisionTe
                                                                      RunningStopTest,
                                                                      ActorSpeedAboveThresholdTest)
 
-# DReyeVR utils
-from DReyeVR_utils import find_ego_vehicle
-
 SECONDS_GIVEN_PER_METERS = 0.4
 
 NUMBER_CLASS_TRANSLATION = {
     "Scenario1": ControlLoss,
-    "Scenario2": FollowLeadingVehicle,
+    "Scenario2": FollowLeadingVehicleRoute,
     "Scenario3": DynamicObjectCrossing,
     "Scenario4": VehicleTurningRoute,
     "Scenario5": OtherLeadingVehicle,
     "Scenario6": ManeuverOppositeDirection,
-    "Scenario7": SignalJunctionCrossingRoute,
-    "Scenario8": SignalJunctionCrossingRoute,
-    "Scenario9": SignalJunctionCrossingRoute,
+    "Scenario7": OppositeVehicleRunningRedLight,
+    "Scenario8": SignalizedJunctionLeftTurn,
+    "Scenario9": SignalizedJunctionRightTurn,
     "Scenario10": NoSignalJunctionCrossingRoute
 }
 
@@ -156,7 +159,7 @@ class RouteScenario(BasicScenario):
 
         self._update_route(world, config, debug_mode)
 
-        self.ego_vehicle = self._initialize_ego_vehicle_DReyeVR(find_ego_vehicle(world))
+        self.ego_vehicle = self._initialize_ego_vehicle_dreyevr(find_ego_vehicle(world))
 
         self.list_scenarios = self._build_scenario_instances(world,
                                                              self.ego_vehicle,
@@ -164,6 +167,9 @@ class RouteScenario(BasicScenario):
                                                              scenarios_per_tick=5,
                                                              timeout=self.timeout,
                                                              debug_mode=debug_mode)
+
+        self.list_scenarios.append(BackgroundActivity(
+            world, self.ego_vehicle, self.config, self.route, timeout=self.timeout))
 
         super(RouteScenario, self).__init__(name=config.name,
                                             ego_vehicles=[self.ego_vehicle],
@@ -186,7 +192,7 @@ class RouteScenario(BasicScenario):
         world_annotations = RouteParser.parse_annotations_file(config.scenario_file)
 
         # prepare route's trajectory (interpolate and add the GPS route)
-        gps_route, route = interpolate_trajectory(world, config.trajectory)
+        gps_route, route = interpolate_trajectory(config.trajectory)
 
         potential_scenarios_definitions, _ = RouteParser.scan_route_for_scenarios(config.town, route, world_annotations)
 
@@ -204,9 +210,11 @@ class RouteScenario(BasicScenario):
 
         # Print route in debug mode
         if debug_mode:
-            self._draw_waypoints(world, self.route, vertical_shift=1.0, persistency=50000.0)
+            self._draw_waypoints(world, self.route, vertical_shift=0.1, persistency=50000.0)
 
-    def _initialize_ego_vehicle_DReyeVR(self, ego_vehicle):
+        self._setup_nav_signs(self.route)
+
+    def _initialize_ego_vehicle_dreyevr(self, ego_vehicle):
         """
         Set/Update the start position of the ego_vehicle (instead of _update_ego_vehicle below)
         """
@@ -215,7 +223,6 @@ class RouteScenario(BasicScenario):
         elevate_transform.location.z += 0.5
         ego_vehicle.set_transform(elevate_transform)
         CarlaDataProvider.register_actor(ego_vehicle)
-        CarlaDataProvider.ego_DReyeVR = ego_vehicle.type_id
         return ego_vehicle
 
     def _update_ego_vehicle(self):
@@ -254,7 +261,6 @@ class RouteScenario(BasicScenario):
         for w in waypoints:
             wp = w[0].location + carla.Location(z=vertical_shift)
 
-            size = 0.2
             if w[1] == RoadOption.LEFT:  # Yellow
                 color = carla.Color(255, 255, 0)
             elif w[1] == RoadOption.RIGHT:  # Cyan
@@ -267,14 +273,86 @@ class RouteScenario(BasicScenario):
                 color = carla.Color(128, 128, 128)
             else:  # LANEFOLLOW
                 color = carla.Color(0, 255, 0)  # Green
-                size = 0.1
 
-            world.debug.draw_point(wp, size=size, color=color, life_time=persistency)
+            world.debug.draw_point(wp, size=0.1, color=color, life_time=persistency)
 
         world.debug.draw_point(waypoints[0][0].location + carla.Location(z=vertical_shift), size=0.2,
                                color=carla.Color(0, 0, 255), life_time=persistency)
         world.debug.draw_point(waypoints[-1][0].location + carla.Location(z=vertical_shift), size=0.2,
                                color=carla.Color(255, 0, 0), life_time=persistency)
+
+    def _get_valid_sign_transform(self, wp_transform):
+        # use the original waypoint location as long as it is on a sidewalk
+        _wp = CarlaDataProvider.get_map().get_waypoint(wp_transform.location,
+                                                       project_to_road=False,
+                                                       lane_type=carla.LaneType.Any)
+        if _wp is None:
+            return None
+        # find the first non-road waypoint so our drivers can read it (with a limit)
+        max_tries: int = 100
+        valid_sign_lanes = [
+            carla.LaneType.Sidewalk,
+            # carla.LaneType.Shoulder, # disable shoulder
+        ]
+        while max_tries > 0 and _wp.lane_type not in valid_sign_lanes:
+            max_tries -= 1
+            right_wp = _wp.get_right_lane()
+            if right_wp is not None:
+                _wp = right_wp
+            else:
+                continue  # skip this one
+        # carla transforms don't have a native assignment operator :/
+        t = carla.Transform(_wp.transform.location, _wp.transform.rotation)
+        if max_tries == 0:  # didn't find a sidewalk, so push it slightly right by the road lane width
+            push = t.get_right_vector() * _wp.lane_width * 1.1  # 10% more just to be safe
+            # carla locations don't have a native += operator
+            t.location = carla.Location(x=t.location.x + push.x,
+                                        y=t.location.y + push.y,
+                                        z=t.location.z + push.z)
+        t.location.z += 2.0  # go up slightly (for the height of the road sign)
+        t.rotation.yaw += 90.0  # rotate another 90 degrees
+        return t
+
+    def _setup_nav_signs(self, waypoints: list):
+        """
+        Draw the signs along the waypoints of a route automatically
+        """
+        prev_sign_type = None  # only request new actor if nav type changes
+        for i, w in enumerate(waypoints):
+            wp_transform, sign_type = w
+            if prev_sign_type is not None and prev_sign_type == sign_type:
+                continue  # only spawn a sign when the waypoint type changes
+            prev_sign_type = sign_type
+            sign_transform = self._get_valid_sign_transform(wp_transform)
+            if sign_transform is None:
+                continue  # invalid
+            # now we can finally go about spawning the sign in this location
+            dreyevr_sign_type: str = "dreyevr_sign_straight"
+            if sign_type == RoadOption.LEFT:
+                dreyevr_sign_type = "dreyevr_sign_left"
+            elif sign_type == RoadOption.RIGHT:
+                dreyevr_sign_type = "dreyevr_sign_right"
+            elif sign_type == RoadOption.CHANGELANELEFT:
+                continue
+            elif sign_type == RoadOption.CHANGELANERIGHT:
+                continue
+            elif sign_type == RoadOption.STRAIGHT:
+                dreyevr_sign_type = "dreyevr_sign_straight"
+            else:
+                continue
+            sign_type: str = f"static.prop.{dreyevr_sign_type}"
+            print(f"Spawning ({sign_type}) sign {i} at {sign_transform}")
+            CarlaDataProvider.request_new_actor(sign_type, sign_transform,
+                                                rolename='navigation_sign')
+        # plot the final goal waypoint (at the end)
+        wp_transform_final = waypoints[-1][0]
+        goal_sign_transform = self._get_valid_sign_transform(wp_transform_final)
+        if goal_sign_transform is not None:
+            sign_type: str = "static.prop.dreyevr_sign_goal"
+            print(f"Spawning ({sign_type}) sign {len(waypoints) - 1} at {goal_sign_transform}")
+            CarlaDataProvider.request_new_actor(sign_type,
+                                                goal_sign_transform,
+                                                rolename='navigation_sign')
 
     def _scenario_sampling(self, potential_scenarios_definitions, random_seed=0):
         """
@@ -282,7 +360,7 @@ class RouteScenario(BasicScenario):
         """
 
         # fix the random seed for reproducibility
-        rng = random.RandomState(random_seed)
+        rng = CarlaDataProvider.get_random_seed()
 
         def position_sampled(scenario_choice, sampled_scenarios):
             """
@@ -408,19 +486,18 @@ class RouteScenario(BasicScenario):
         """
         Set other_actors to the superset of all scenario actors
         """
-
         # Create the background activity of the route
         town_amount = {
-            'Town01': 120,
-            'Town02': 100,
-            'Town03': 120,
-            'Town04': 200,
-            'Town05': 120,
-            'Town06': 150,
-            'Town07': 110,
-            'Town08': 180,
-            'Town09': 300,
-            'Town10': 120,
+            'Town01': 0,
+            'Town02': 0,
+            'Town03': 0,
+            'Town04': 0,
+            'Town05': 0,
+            'Town06': 0,
+            'Town07': 0,
+            'Town08': 0,
+            'Town09': 0,
+            'Town10': 0,
         }
 
         amount = town_amount[config.town] if config.town in town_amount else 0
@@ -433,7 +510,10 @@ class RouteScenario(BasicScenario):
                                                                 rolename='background')
 
         if new_actors is None:
-            raise Exception("Error: Unable to add the background activity, all spawn points were occupied")
+            raise RuntimeError("Error: Unable to add the background activity, all spawn points were occupied")
+
+        if not hasattr(self, "other_actors"):
+            self.other_actors = []
 
         for _actor in new_actors:
             self.other_actors.append(_actor)
@@ -441,12 +521,6 @@ class RouteScenario(BasicScenario):
         # Add all the actors of the specific scenarios to self.other_actors
         for scenario in self.list_scenarios:
             self.other_actors.extend(scenario.other_actors)
-        
-        for i, actor in enumerate(self.other_actors):
-            if actor.type_id == self.ego_vehicle.type_id:
-                self.other_actors.pop(i) # removes reference to any DReyeVR ego vehicles that might've been spawned
-                # NOTE: even if it thinks it spawned DReyeVR ego vehicles, it cant. Only one can be spawned by the
-                # carla ActorRegistry (See RegisterActor)
 
     def _create_behavior(self):
         """
