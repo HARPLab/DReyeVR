@@ -907,8 +907,9 @@ void AEgoVehicle::InitWheelButtons()
         Button->MaterialParams.BaseColor = ButtonNeutralCol;
         Button->MaterialParams.Emissive = ButtonNeutralCol;
         Button->UpdateMaterial();
-        Button->SetActorTickEnabled(false);   // don't tick these actors (for performance)
-        Button->SetActorRecordEnabled(false); // don't need to record these actors either
+        Button->SetActorTickEnabled(false);      // don't tick these actors (for performance)
+        Button->SetActorRecordEnabled(false);    // don't need to record these actors either
+        Button->GetMesh()->SetCastShadow(false); // don't want shadows (looks weird)
     }
     bInitializedButtons = true;
 }

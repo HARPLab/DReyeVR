@@ -57,6 +57,11 @@ class CARLA_API ADReyeVRCustomActor : public AActor // abstract class
 
     static std::unordered_map<std::string, class ADReyeVRCustomActor *> ActiveCustomActors;
 
+    inline class UStaticMeshComponent *GetMesh()
+    {
+        return ActorMesh;
+    }
+
     // function to dynamically change the material params of the object at runtime
     void AssignMat(const FString &Path);
     void UpdateMaterial();
