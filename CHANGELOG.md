@@ -4,6 +4,8 @@
 - Fix bug with shaders not being cooked in package mode
 - Fine-tune ego-vehicle mirrors according to vehicle chassis
 - Adding threshold for manual takeover of logitech inputs. Logitech wheel actuation follows autopilot otherwise.
+- Disabling shadows for wheel face buttons
+- Adding autopilot light indicator
 
 ## DReyeVR 0.2.0
 - Add face button indicators on the steering wheel

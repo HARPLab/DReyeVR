@@ -257,6 +257,11 @@ class CARLAUE4_API AEgoVehicle : public ACarlaWheeledVehicle
     bool bInitializedButtons = false;
     const FLinearColor ButtonNeutralCol = 0.2f * FLinearColor::White;
     const FLinearColor ButtonPressedCol = 1.5f * FLinearColor::White;
+    // wheel face autopilot indicator
+    void InitAutopilotIndicator();
+    void TickAutopilotIndicator(bool);
+    class ADReyeVRCustomActor *AutopilotIndicator;
+    bool bInitializedAutopilotIndicator = false;
 
   private: // other
     void DebugLines() const;

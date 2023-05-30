@@ -531,14 +531,14 @@ void ADReyeVRPawn::LogitechWheelUpdate()
         {
             // let the autopilot drive if the user is not putting significant inputs
             // ie. if their inputs are close enough to what was previously input
-            /// TODO: this system might break down if the autopilot is putt in sufficiently
-            ///       strong inputs, since the autopilot controls might might inadvertedly
+            /// TODO: this system might break down if the autopilot is putting in sufficiently
+            ///       strong inputs, since the autopilot controls might might inadvertently
             ///       be considered as human-input controls which amplifies the input and
             ///       causes a positive cycle loop (which would be better avoided)
         }
         else
         {
-            // driver has issued sufficient input to warrant manual takeover
+            // driver has issued sufficient input to warrant manual takeover (disables autopilot)
             EgoVehicle->SetAutopilot(false);
             EgoVehicle->AddSteering(WheelRotation);
             EgoVehicle->AddThrottle(AccelerationPedal);
