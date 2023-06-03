@@ -109,7 +109,7 @@ See [`Docs/Install.md`](Docs/Install.md) to:
 - See [`Install.md`](Docs/Install.md) to install and build DReyeVR
 - See [`Usage.md`](Docs/Usage.md) to learn how to use our provided DReyeVR features
 - See [`Development.md`](Docs/Development.md) to get started with DReyeVR development and add new features
-- See [`Docs/Tutorials/`](Docs/Tutorials/) to view several DReyeVR tutorials
+- See [`Docs/Tutorials/`](Docs/Tutorials/) to view several DReyeVR tutorials such as customizing the EgoVehicle, adding custom signs/props and more.
 
 ## Citation
 If you use our work, please cite the corresponding [paper](https://arxiv.org/abs/2201.01931):
