@@ -30,7 +30,7 @@ A guide from how to add your own custom EgoVehicle from an existing Carla vehicl
     - Inside your `XYZ/` folder, you'll want to copy your new BP_XYZ asset (do this from the editor so that cached paths can be updated) and create any additional folders in here that you might want (ex. `Mesh`, `Mirrors`, `SteeringWheel`, `Tires`, are a few examples). 
     - It is best to perform these asset file modifications within the Editor. You can copy the files from within the content browser to other folders by click+dragging to get this pop-up:
 
-        ![CopyHere](Figures/EgoVehicle/CopyHere.jpg)
+        ![CopyHere](../Figures/EgoVehicle/CopyHere.jpg)
 
 **NOTE**: If you want to edit the vehicle mesh at all, this is where you'd want to do it. You will probably want to build off the existing static meshes in the `Static` directory. 
 
@@ -40,16 +40,16 @@ A guide from how to add your own custom EgoVehicle from an existing Carla vehicl
 2. Select `Class Defaults` then in the top right (`Class Options`) select the `Parent Class` and search for `EgoVehicle` to reparent (as in the figure below). This effectively reorganizes the blueprint's base class from `BaseVehiclePawn` (the Carla default) to `EgoVehicle` (the DReyeVR C++ class, which still inherits from BaseVehiclePawn). 
     - There will be a warning pop-up regarding data loss, you should proceed (it is purely additive). 
     - **NOTE** if the blueprint ever gets corrupted, you should first try reparenting back to the `BaseVehiclePawn` (the original parent) and then back to the DReyeVR `EgoVehicle`. 
-    - ![EditClass](Figures/EgoVehicle/EditClassSettings.jpg)
+    - ![EditClass](../Figures/EgoVehicle/EditClassSettings.jpg)
         - Demonstrating class setting button, used to edit this BP's class instance
-    - ![Reparent](Figures/EgoVehicle/Reparent.jpg)
+    - ![Reparent](../Figures/EgoVehicle/Reparent.jpg)
         - Demonstrating the reparenting button, select the dropdown and search for a compatible class to reparent with `BaseVehiclePawn` (Carla) or `EgoVehicle` (DReyeVR).
 3. Now this vehicle is technically a DReyeVR EgoVehicle!
 
 ## 3. Add the new config file and code
 Now, to actually register this new blueprint with DReyeVR and have it available to spawn you'll need to add two bits to the code:
 
-1. Add the name of your new vehicle (for example `"Ambulance"` for the `BP_Ambulance` blueprint we inherited) to the list of available EgoVehicles in [`DReyeVRFactory.h`](../DReyeVR/DReyeVRFactory.h).
+1. Add the name of your new vehicle (for example `"Ambulance"` for the `BP_Ambulance` blueprint we inherited) to the list of available EgoVehicles in [`DReyeVRFactory.h`](../../DReyeVR/DReyeVRFactory.h).
     ```c++
     // place the names of all your new custom EgoVehicle types here:
     /// IMPORTANT: make sure these match the ConfigFile AND Blueprint!!
@@ -63,7 +63,7 @@ Now, to actually register this new blueprint with DReyeVR and have it available 
         // add more here
     };
     ```
-2. Add a new config file (to `Unreal/CarlaUE4/Config/EgoVehicles/`) that is used to parameterize this vehicle. This allows DReyeVR to know where to place things such as the camera root location (driver's seat), mirrors, steering wheel, etc. and this [`ConfigFile`](../DReyeVR/ConfigFile.h) can be extended to support many run-time combinations. 
+2. Add a new config file (to `Unreal/CarlaUE4/Config/EgoVehicles/`) that is used to parameterize this vehicle. This allows DReyeVR to know where to place things such as the camera root location (driver's seat), mirrors, steering wheel, etc. and this [`ConfigFile`](../../DReyeVR/ConfigFile.h) can be extended to support many run-time combinations. 
     - You'll need to make sure the config file has the EXACT same name as your new EgoVehicle (this is how they are read). We recommend copying an existing config file (default is `TeslaM3.ini` and renaming as follows):
         ```
         CarlaUE4/Config/
@@ -80,16 +80,16 @@ Now, to actually register this new blueprint with DReyeVR and have it available 
         ...
         ```
     - Then you'll probably want to edit some of the contents of this file to match the EgoVehicle specifications which you can get from the Editor. For instance, the following figure shows that we are going to want to move the VRCameraRoot (head position) to (`108, -40, 158`). 
-        - ![CameraRepos](Figures/EgoVehicle/CameraReposition.jpg)
+        - ![CameraRepos](../Figures/EgoVehicle/CameraReposition.jpg)
         - You'll probably also want to move the dashboard elements around to whatever fits your preference.
     - **IMPORTANT** You also need to enable the `Start with Tick Enabled` for the Blueprint (`BP_Ambulance` in the Components list) because by default they are disabled for Carla vehicles:
-        - ![ActorTick](Figures/EgoVehicle/ActorTick.jpg)
+        - ![ActorTick](../Figures/EgoVehicle/ActorTick.jpg)
     - You should also notice that assets such as the SteeringWheel & Mirrors don't have any assigned static mesh. You can access these by clicking the component (on the left hierarchy) and assigning a new static mesh (on the right details pane). This bakes the asset directly in the blueprint file, so this only needs to be done once.
         | Example: Mirrors | Example: Steering wheel |
         | --- | --- |
-        | ![Mirrors](Figures/EgoVehicle/SM_Mirror.jpg) | ![Wheel](Figures/EgoVehicle/SM_Wheel.jpg)
+        | ![Mirrors](../Figures/EgoVehicle/SM_Mirror.jpg) | ![Wheel](../Figures/EgoVehicle/SM_Wheel.jpg)
     - Now, open the `Ambulance.ini` file you just created and begin updating the fields (mostly transforms) to match the parameters you care about. Importantly, for the `[Blueprint]::Path` entry, you'll get this path by right-clicking on the Blueprint in the content viewer and selecting `Copy Reference`. 
-        - ![CopyRef](Figures/EgoVehicle/CopyRef.jpg)
+        - ![CopyRef](../Figures/EgoVehicle/CopyRef.jpg)
         - Note that transforms are encoded as follows
         ```ini
         # Format: Location XYZ in CM | Rotation Roll/Pitch/Yaw in Degrees | Scale XYZ percent (1=100%)
@@ -116,14 +116,14 @@ See Carla's corresponding documentation [here](https://carla.readthedocs.io/en/l
 
 ### Steps to create a new animation blueprint for Carla/DReyeVR
 1. Create a new Animation Blueprint in the Ambulance/Mesh directory (if you have one, else make a new folder `Mesh/` inside `Ambulance`). 
-- ![CreateAnim](Figures/EgoVehicle/CreateAnim.jpg)
+- ![CreateAnim](../Figures/EgoVehicle/CreateAnim.jpg)
 2. Make sure the parent of the animation mesh is set to `VehicleAnimInstance` and the preview skeleton is set to the skeletal mesh of your new vehicle (ex. `SK_Ambulance_Skeleton`)
-- ![CreateAnimBP](Figures/EgoVehicle/CreateAnimBP.jpg)
+- ![CreateAnimBP](../Figures/EgoVehicle/CreateAnimBP.jpg)
 3. Name your new asset to something like `Anim_Ambulance` and open it up. Open the AnimationGraph in the bottom right as shown:
-- ![AnimGraph](Figures/EgoVehicle/AnimGraph.jpg)
+- ![AnimGraph](../Figures/EgoVehicle/AnimGraph.jpg)
 4. Open another nearby animation blueprint (ex. `Content/DReyeVR/EgoVehicle/TeslaM3/Mesh/Animation_model3`) and open its AnimationGraph to copy the first three blueprint nodes that connect to the Output Pose as follows:
-- ![CopyAnim](Figures/EgoVehicle/CopyAnim.jpg)
+- ![CopyAnim](../Figures/EgoVehicle/CopyAnim.jpg)
 5. Then, back in `Anim_Ambulance`, paste the three nodes you just copied and connect them to the Output Pose:
-- ![PasteAnim](Figures/EgoVehicle/PasteAnim.jpg)
+- ![PasteAnim](../Figures/EgoVehicle/PasteAnim.jpg)
 6. Finally, go back to the vehicle blueprint (BP_Ambulance) and in the components section select Mesh, then in the (right) details panel change the animation class to your new `Anim_Ambulance` like this:
-- ![AssignAnim](Figures/EgoVehicle/AssignAnim.jpg)
+- ![AssignAnim](../Figures/EgoVehicle/AssignAnim.jpg)

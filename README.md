@@ -13,7 +13,6 @@ This project extends the [`Carla`](https://github.com/carla-simulator/carla/tree
 If you have questions, hopefully our [F.A.Q. wiki page](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) and [issues page](https://github.com/HARPLab/DReyeVR/issues?q=is%3Aissue+is%3Aclosed) can answer some of them.
 
 **IMPORTANT:** Currently DReyeVR only supports Carla versions: [0.9.13](https://github.com/carla-simulator/carla/tree/0.9.13) with Unreal Engine 4.26
-- (upcoming DReyeVR versions will support the newer Carla versions)
 
 ## Highlights
 ### Ego Vehicle
@@ -25,13 +24,15 @@ Fully drivable **virtual reality (VR) ego-vehicle** with [SteamVR integration](h
     | [HTC Vive Pro Eye](https://business.vive.com/us/product/vive-pro-eye-office/) | :white_check_mark: | :white_check_mark: | Windows, Linux |
     | [Quest 2](https://www.oculus.com/quest-2/) | :white_check_mark: | :x: | Windows |
   - While we haven't tested other headsets, they should still work for basic VR usage (not eye tracking) if supported by SteamVR.
+  - Eye tracking is currently **ONLY** supported on the HTC Vive Pro Eye since we use [SRanipal](https://forum.htc.com/topic/5641-sranipal-faq/) for the eye-tracker SDK. We are happy to support more devices through contributions for adding other SDKs. 
 - Vehicle controls:
   - Generic keyboard WASD + mouse
   - Support for Logitech Steering wheel with this open source [LogitechWheelPlugin](https://github.com/HARPLab/LogitechWheelPlugin) 
     - Includes force-feedback with the steering wheel.
     - We used a [Logitech G923 Racing Wheel & Pedals](https://www.logitechg.com/en-us/products/driving/driving-force-racing-wheel.html)
       - Full list of supported devices can be found [here](https://github.com/HARPLab/LogitechWheelPlugin/blob/master/README.md) though we can't guarantee out-of-box functionality without testing. 
-- Realistic (and parameterizable) rear & side view mirrors (WARNING: very performance intensive)
+- Realistic (and parameterizable) rear & side view mirrors 
+  - WARNING: very performance intensive
 - Vehicle dashboard:
   - Speedometer (in miles-per-hour by default)
   - Gear indicator
@@ -105,15 +106,10 @@ See [`Docs/Install.md`](Docs/Install.md) to:
 
 ## Documentation & Guides
 - See [`F.A.Q. wiki`](https://github.com/HARPLab/DReyeVR/wiki/Frequently-Asked-Questions) for our Frequently Asked Questions wiki page.
+- See [`Install.md`](Docs/Install.md) to install and build DReyeVR
 - See [`Usage.md`](Docs/Usage.md) to learn how to use our provided DReyeVR features
 - See [`Development.md`](Docs/Development.md) to get started with DReyeVR development and add new features
-- See [`Sounds.md`](Docs/Sounds.md) to use our custom sounds to CARLA and create your own
-- See [`CustomActor.md`](Docs/CustomActor.md) to use our CustomActor API and spawn "Overlay" actors
-- See [`Model.md`](Docs/Model.md) to learn how we added a dynamic steering wheel to the ego vehicle
-- See [`EgoVehicle.md`](Docs/EgoVehicle.md) to add your own custom EgoVehicle model to DReyeVR
-- See [`Signs.md`](Docs/Signs.md) to add custom in-world directional signs and spawn them
-- See [`LODs.md`](Docs/LODs.md) to learn about LOD modes for tuning your VR experience
-<!-- - See [`SetupVR.md`](Docs/SetupVR.md) to learn how to quickly and minimally set up VR with Carla -->
+- See [`Docs/Tutorials/`](Docs/Tutorials/) to view several DReyeVR tutorials
 
 ## Citation
 If you use our work, please cite the corresponding [paper](https://arxiv.org/abs/2201.01931):

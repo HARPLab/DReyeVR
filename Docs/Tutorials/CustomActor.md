@@ -21,9 +21,9 @@ We are often interested in spawning arbitrary "AR-like" (Augmented reality) elem
 
 # Usage
 
-Using these CustomActors is designed to be straightforward and cooperate with UE4/Carla's notion of [AActors](https://docs.unrealengine.com/5.0/en-US/API/Runtime/Engine/GameFramework/AActor/). You can see how we define all the core data for these actors (and what gets recorded/replayed) in [`DReyeVRData.h`](../Carla/Sensor/DReyeVRData.h)`::CustomActorData`
+Using these CustomActors is designed to be straightforward and cooperate with UE4/Carla's notion of [AActors](https://docs.unrealengine.com/5.0/en-US/API/Runtime/Engine/GameFramework/AActor/). You can see how we define all the core data for these actors (and what gets recorded/replayed) in [`DReyeVRData.h`](../../Carla/Sensor/DReyeVRData.h)`::CustomActorData`
 
-We have several basic 3D shapes ready for simple CustomActor usage. Theoretically you can use any static mesh. To access these types (or add your own) you should check out the references in [`DReyeVRCustomActor.h`](../Carla/Actor/DReyeVRCustomActor.h):
+We have several basic 3D shapes ready for simple CustomActor usage. Theoretically you can use any static mesh. To access these types (or add your own) you should check out the references in [`DReyeVRCustomActor.h`](../../Carla/Actor/DReyeVRCustomActor.h):
 ```c++
 #define MAT_OPAQUE "Material'/Game/DReyeVR/Custom/OpaqueParamMaterial.OpaqueParamMaterial'"
 #define MAT_TRANSLUCENT "Material'/Game/DReyeVR/Custom/TranslucentParamMaterial.TranslucentParamMaterial'"
@@ -48,7 +48,7 @@ UWorld *World = GetWorld();
 ADReyeVRCustomActor *A = ADReyeVRCustomActor::CreateNew(PathToSM, PathToMaterial, World, Name);
 ```
 
-Implementation wise, the custom actors are all managed by a "global" table (`static std::unordered_map<std::string, class ADReyeVRCustomActor *>`) that indexes the actors by their `Name` therefore it is critical that they all have unique names. This is often easy to do when spawning many since UE4 `AActor`s themselves have unique names enumerated by their spawn order. To further understand how we use the global table, check out `ADReyeVRCustomActor::ActiveCustomActors` in [`DReyevRCustomActor.h`](../Carla/Actor/DReyeVRCustomActor.h)
+Implementation wise, the custom actors are all managed by a "global" table (`static std::unordered_map<std::string, class ADReyeVRCustomActor *>`) that indexes the actors by their `Name` therefore it is critical that they all have unique names. This is often easy to do when spawning many since UE4 `AActor`s themselves have unique names enumerated by their spawn order. To further understand how we use the global table, check out `ADReyeVRCustomActor::ActiveCustomActors` in [`DReyevRCustomActor.h`](../../Carla/Actor/DReyeVRCustomActor.h)
 
 ## Activate/deactivate a custom actor
 
@@ -94,12 +94,12 @@ A->MaterialParams.Anisotropy = 0.5f;
 Note that in order to use the `Opacity` property, the material needs to have a translucent blend mode. So far we only have two material types, opaque and translucent, each with their own set of available properties as follows:
 | OpaqueParamMaterial | TranslucentParamMaterial |
 | --- | --- |
-| ![OpaqueMaterial](Figures/Actor/OpaqueParamMaterial.jpg) | ![OpaqueMaterial](Figures/Actor/TranslucentParamMaterial.jpg) |
+| ![OpaqueMaterial](../Figures/Actor/OpaqueParamMaterial.jpg) | ![OpaqueMaterial](../Figures/Actor/TranslucentParamMaterial.jpg) |
 
 ## Bounding Box Example
 
-As an example of the CustomActor bounding boxes in action, checkout [`LevelScript.cpp::DrawBBoxes`](../DReyeVR/LevelScript.cpp) where some simple logic for drawing translucent bounding boxes is held (coloured based on distance to EgoVehicle). To enable this function, you'll need to manually enable it by removing the `#if 0` and corresponding `#endif` around the function body.
+As an example of the CustomActor bounding boxes in action, checkout [`LevelScript.cpp::DrawBBoxes`](../../DReyeVR/LevelScript.cpp) where some simple logic for drawing translucent bounding boxes is held (coloured based on distance to EgoVehicle). To enable this function, you'll need to manually enable it by removing the `#if 0` and corresponding `#endif` around the function body.
 
 Here is what it might look like in action:
 
-![BboxExample](Figures/Actor/Bbox.jpg)
+![BboxExample](../Figures/Actor/Bbox.jpg)

@@ -21,7 +21,7 @@ One of the best feedback mechanisms for a user applying throttle is the roar of 
    - For all these tracks, we'll start with a sole TripleOscillator playing a constant C2 octave (4 beats should be fine). 
       | Configuration                                                                                                                                                                                                                                                                                                | Visually                                                  |
       | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-      | PM value for OSC1+OSC2 </br> PM value for OSC2+OSC3 </br> OSC1 volume of 60 </br>OSC1 CRS of -4 </br>OSC1 to use triangle wave </br> OSC2 CRS of -24 </br> OSC3 CRS of -24 </br></br> Image credits: [ContinueBreak](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12/) | ![TripleOscillator](Figures/Sounds/triple_oscillator.jpg) |
+      | PM value for OSC1+OSC2 </br> PM value for OSC2+OSC3 </br> OSC1 volume of 60 </br>OSC1 CRS of -4 </br>OSC1 to use triangle wave </br> OSC2 CRS of -24 </br> OSC3 CRS of -24 </br></br> Image credits: [ContinueBreak](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12/) | ![TripleOscillator](../Figures/Sounds/triple_oscillator.jpg) |
    - Then we'll want to amplify this effect by adding an LMMS-type Amplifier from the FX-Mixer window and crank the volume to the max.
    1. This works for the idle engine sound, nothing more to do here. The remaining drive sounds will gradually increase their CRS values.
    2. For Drive1 change OSC1 CRS to 0, OSC2 CRS to -20, OSC3 CRS to -20.
@@ -38,7 +38,7 @@ One of the best feedback mechanisms for a user applying throttle is the roar of 
    1. When looping, you'll probably hear a sudden snap/click sound on every repeat, this is due to wave discontinuities
 3. We'll want to find where the sound starts/ends and make sure the wave approximately matches so as to have a continuous transition between repetitions.
    1. This can be done by finding patterns from the beginning and cutting off the minimum amount from the track such that a new pattern would fit in as soon as the track ended.
-![Audacity](Figures/Sounds/audacity_wave.jpg)
+![Audacity](../Figures/Sounds/audacity_wave.jpg)
 Image source: [ContinueBreak](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12/)
 1. After you cut all the tracks to be seamlessly loopable, export them to new `.wav`'s and these are ready to be taken in to the UE4 and used as vehicle noises.
 ### Applying the sounds in UE4
@@ -49,7 +49,7 @@ Image source: [ContinueBreak](https://continuebreak.com/articles/generating-sett
    2. Attach a **Continuous Modulator** node to each output from the Looping Wave Player's
       1. The parameters for these Continuous Modulators define the range of input/output for these tracks (value min/max)
       2. **NOTE** all the params have the same name `"RPM"` it is very important this is consistent as it will be used in the `C++` code
-      ![SoundCue](Figures/Sounds/sound_cue.jpg)
+      ![SoundCue](../Figures/Sounds/sound_cue.jpg)
          - Image credits: [ContinueBreak](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12/)
 
       - These are the recommended parameter values from the guide.
@@ -78,7 +78,7 @@ Image source: [ContinueBreak](https://continuebreak.com/articles/generating-sett
       2. Change the **Falloff Distance** 3000
    2. Back in the **Sound Cue** asset from step 2, scroll down in the Details pane and use the newly created **Sound Attenuation** asset as its Attenuation Settings:
    
-      ![SoundAttenuation](Figures/Sounds/sound_attenuation.jpg)
+      ![SoundAttenuation](../Figures/Sounds/sound_attenuation.jpg)
          - Image credits: [ContinueBreak](https://continuebreak.com/articles/generating-setting-basic-engine-sounds-ue4-part-12/)
 
 ## Other vehicle noises
@@ -89,13 +89,13 @@ Generally, adding sounds can get complicated like the above, or they can be very
 - Similarly, adding sounds for **turn-signals** is essentially the same:
   - Just need to import the sounds, find them in code, and play them on our desired events
 
-To see how we implemented our audio components in DReyeVR (for both the ego-vehicle as well as the baseline CarlaWheeledVehicle) check out [`EgoVehicle.h`](../DReyeVR/EgoVehicle.h) and [`CarlaWheeledVehicle.h`](../Carla/Vehicle/CarlaWheeledVehicle.h)
+To see how we implemented our audio components in DReyeVR (for both the ego-vehicle as well as the baseline CarlaWheeledVehicle) check out [`EgoVehicle.h`](../../DReyeVR/EgoVehicle.h) and [`CarlaWheeledVehicle.h`](../../Carla/Vehicle/CarlaWheeledVehicle.h)
 
 ## Ambient noise in the World
 It's also doable (and fairly easy) to have ambient noise in the world that attenuates based on the distance to the source. 
 
 For reference, our provided Town03 has sound cues like this:
-![WorldSound](Figures/Sounds/sound_selected.jpg)
+![WorldSound](../Figures/Sounds/sound_selected.jpg)
 
 Notice that once you drag & drop the sounds into the world, make sure to enable the **Override Attenuation** checkbox so you can edit the attenuation function, shape, and radius. 
 - The Inner Radius denotes the region where the volume is maximized
@@ -113,17 +113,17 @@ Our general strategy for simple ambient noise in the world follows these basic r
 For custom tuning the attenuation parameters, see the `Details` pane after spawning an AmbientSound instance. It is also recommended to see this [Unreal Engine documentation on Audio Attenuation](https://docs.unrealengine.com/en-US/WorkingWithMedia/Audio/DistanceModelAttenuation/index.html)
 | Example attenuation parameter settings  | Bird sounds selected  |
 | --- | --- |
-| ![BirdAttenuation](Figures/Sounds/bird_attenuation.jpg) | ![BirdAttenuation](Figures/Sounds/bird_selected.jpg)</br> In the World Outliner simply searching for "Sound" returns all AmbientSound instances |
+| ![BirdAttenuation](../Figures/Sounds/bird_attenuation.jpg) | ![BirdAttenuation](../Figures/Sounds/bird_selected.jpg)</br> In the World Outliner simply searching for "Sound" returns all AmbientSound instances |
 
 For reference, our birds ambient noise for Town03 looks like the following:
-![BirdAttenuation](Figures/Sounds/bird_world.jpg)
+![BirdAttenuation](../Figures/Sounds/bird_world.jpg)
 It is difficult to see the orange lines denoting our attenuation spheres, but all three are selected and displayed (generally over all grassy patches). 
 
 We also added other custom sounds such as slight water splashing (works well with the fountain in the middle).
 
 Additionally, some maps are surrounded by water, this poses a challenge because often the coasts are very curvy and keeping a 3D sound spatialization only works if the sound is general enough to be emitting from the general body of water. This works great for the fountain where the water is symmetric, but require more granularly placed AmbientSounds in the world as follows (Town04):
 
-![WaterWorld](Figures/Sounds/water_world.jpg)
+![WaterWorld](../Figures/Sounds/water_world.jpg)
 
 It is more tedious to place these smaller & more granular sound components in the world, but they make for a much better experience and are relatively quick to edit (just copy & paste & move around).
 
