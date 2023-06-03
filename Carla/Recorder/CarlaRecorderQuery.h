@@ -72,6 +72,7 @@ private:
   // custom DReyeVR packets
   DReyeVRDataRecorder<DReyeVR::AggregateData> DReyeVRAggDataInstance;
   DReyeVRDataRecorder<DReyeVR::CustomActorData> DReyeVRCustomActorDataInstance;
+  DReyeVRDataRecorder<DReyeVR::ConfigFileData> DReyeVRConfigFileDataInstance;
 
   // read next header packet
   bool ReadHeader(void);

@@ -182,6 +182,14 @@ void ACarlaWheeledVehicle::BeginPlay()
   SetVolume(0);
 }
 
+void ACarlaWheeledVehicle::Tick(float DeltaSeconds)
+{
+  Super::Tick(DeltaSeconds);
+
+  // Play sound that requires constant ticking
+  TickSounds(DeltaSeconds);
+}
+
 // =============================================================================
 // -- Sound Functions ----------------------------------------------------------
 // =============================================================================
@@ -213,7 +221,7 @@ void ACarlaWheeledVehicle::ConstructSounds()
   check(CrashSound != nullptr);
 }
 
-void ACarlaWheeledVehicle::TickSounds()
+void ACarlaWheeledVehicle::TickSounds(float DeltaSeconds)
 {
   // Respect the global vehicle volume param
   SetVolume(ACarlaWheeledVehicle::Volume);
@@ -228,12 +236,6 @@ void ACarlaWheeledVehicle::TickSounds()
     EngineRevSound->SetFloatParameter(FName("RPM"), RPM);
   }
   // add other sounds that need tick-level granularity here...
-}
-
-void ACarlaWheeledVehicle::PlayCrashSound(const float DelayBeforePlay) const
-{
-  if (this->CrashSound)
-    this->CrashSound->Play(DelayBeforePlay);
 }
 
 void ACarlaWheeledVehicle::SetVolume(const float VolumeIn)
@@ -258,39 +260,44 @@ void ACarlaWheeledVehicle::ConstructCollisionHandler()
   Bounds->OnComponentBeginOverlap.AddDynamic(this, &ACarlaWheeledVehicle::OnOverlapBegin);
 }
 
+bool ACarlaWheeledVehicle::EnableCollisionForActor(AActor *OtherActor)
+{
+  // define whether or not we should "collide" with these actors
+  // as opposed to actors such as the ground/grass
+  const FString OtherName = OtherActor->GetName().ToLower();
+  double Now = GetWorld()->GetTimeSeconds();
+  bool bIsAVehicle = OtherActor->IsA(ACarlaWheeledVehicle::StaticClass());
+  return (CollisionCooldownTime < Now &&        // respect collision audio cooldown
+          (bIsAVehicle ||                       // do collide with vehicles
+            OtherName.Contains("spline") ||      // do collide with carla "spline" (misc) objects
+            OtherName.Contains("streetlight") || // do collide with street lights
+            OtherName.Contains("curb")           // do collide with curb objects
+          ));
+}
+
 void ACarlaWheeledVehicle::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherActor,
                                           UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                           const FHitResult &SweepResult)
 {
-  if (OtherActor != nullptr && OtherActor != this)
+  if (OtherActor == nullptr || OtherActor == this)
+    return;
+  
+  // can be more flexible, such as having collisions with static props or people too
+  if (EnableCollisionForActor(OtherActor))
   {
-    FString actor_name = OtherActor->GetName();
-    // UE_LOG(LogTemp, Log, TEXT("Collision with \"%s\""), *actor_name);
-    // can be more flexible, such as having collisions with static props or people too
-    const FString OtherName = OtherActor->GetName().ToLower();
-    double Now = FPlatformTime::Seconds();
+    // emit the car collision sound at the midpoint between the vehicles' collision
+    /// TODO: would be ideal to use FHitPoint::ImpactPoint but there is a bug in UE4 where this is not initialized
+    // see: https://answers.unrealengine.com/questions/219744/component-overlap-hit-position-always-returns-000.html
+    FVector SoundEmitLocation = EngineLocnInVehicle;
     bool bIsAVehicle = OtherActor->IsA(ACarlaWheeledVehicle::StaticClass());
-    if (CollisionCooldownTime < Now &&        // respect collision audio cooldown
-        (bIsAVehicle ||                       // do collide with vehicles
-         OtherName.Contains("spline") ||      // do collide with carla "spline" (misc) objects 
-         OtherName.Contains("streetlight") || // do collide with street lights
-         OtherName.Contains("curb")           // do collide with curb objects
-        )
-    )
-    {
-      // emit the car collision sound at the midpoint between the vehicles' collision
-      /// TODO: would be ideal to use FHitPoint::ImpactPoint but there is a bug in UE4 where this is not initialized
-      // see: https://answers.unrealengine.com/questions/219744/component-overlap-hit-position-always-returns-000.html
-      FVector SoundEmitLocation = EngineLocnInVehicle;
-      if (bIsAVehicle) { // in the case where the other actor is a vehicle, do emit the sound at the location midpoint
-        SoundEmitLocation = (OtherActor->GetActorLocation() - this->GetActorLocation()) / 2.f;
-        SoundEmitLocation += 75.f * FVector::UpVector; // Make the sound emitted not at the ground (0.75m above ground)
-      }
-      if (CrashSound != nullptr) {
-        CrashSound->SetRelativeLocation(SoundEmitLocation);
-        PlayCrashSound();
-        CollisionCooldownTime = Now + 0.5f; // have at least 1s of buffer between collision audio
-      }
+    if (bIsAVehicle) { // in the case where the other actor is a vehicle, do emit the sound at the location midpoint
+      SoundEmitLocation = (OtherActor->GetActorLocation() - this->GetActorLocation()) / 2.f;
+      SoundEmitLocation += 75.f * FVector::UpVector; // Make the sound emitted not at the ground (0.75m above ground)
+    }
+    if (CrashSound != nullptr) {
+      CrashSound->SetRelativeLocation(SoundEmitLocation);
+      CrashSound->Play();
+      CollisionCooldownTime = GetWorld()->GetTimeSeconds() + 0.5f; // have at least 0.5s of buffer between collision audio
     }
   }
 }
@@ -368,9 +375,6 @@ void ACarlaWheeledVehicle::FlushVehicleControl()
   InputControl.Control.bReverse = InputControl.Control.Gear < 0;
   LastAppliedControl = InputControl.Control;
   InputControl.Priority = EVehicleInputPriority::INVALID;
-
-  // Play sound that requires constant ticking
-  TickSounds();
 }
 
 void ACarlaWheeledVehicle::SetThrottleInput(const float Value)

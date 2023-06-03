@@ -3,12 +3,13 @@
 #include "Carla/Actor/DReyeVRCustomActor.h" // ADReyeVRCustomActor
 #include "Carla/Game/CarlaGameModeBase.h"   // ACarlaGameModeBase
 #include "Carla/Sensor/DReyeVRData.h"       // DReyeVR::
+#include "DReyeVRPawn.h"                    // ADReyeVRPawn
+#include "DReyeVRUtils.h"                   // SafePtrGet<T>
 #include <unordered_map>                    // std::unordered_map
 
 #include "DReyeVRGameMode.generated.h"
 
 class AEgoVehicle;
-class ADReyeVRPawn;
 
 UCLASS()
 class ADReyeVRGameMode : public ACarlaGameModeBase
@@ -24,15 +25,12 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
 
     virtual void Tick(float DeltaSeconds) override;
 
-    ADReyeVRPawn *GetPawn()
-    {
-        return DReyeVR_Pawn;
-    }
+    APawn *GetSpectator();
+    AEgoVehicle *GetEgoVehicle();
+    APlayerController *GetPlayer();
+    ADReyeVRPawn *GetPawn();
 
-    void SetEgoVehicle(AEgoVehicle *Vehicle)
-    {
-        EgoVehiclePtr = Vehicle;
-    }
+    void SetEgoVehicle(AEgoVehicle *Ego);
 
     // input handling
     void SetupPlayerInputComponent();
@@ -64,20 +62,21 @@ class ADReyeVRGameMode : public ACarlaGameModeBase
     std::unordered_map<std::string, ADReyeVRCustomActor *> BBoxes;
 
   private:
-    bool bDoSpawnEgoVehicle = true; // spawn Ego on BeginPlay or not
-
     // for handling inputs and possessions
     void SetupDReyeVRPawn();
     void SetupSpectator();
     bool SetupEgoVehicle();
     void SpawnEgoVehicle(const FTransform &SpawnPt);
-    class APlayerController *Player = nullptr;
-    class ADReyeVRPawn *DReyeVR_Pawn = nullptr;
+
+    // TWeakObjectPtr's allow us to check if the underlying object is alive
+    // in case it was destroyed by someone other than us (ex. garbage collection)
+    TWeakObjectPtr<class APlayerController> Player;
+    TWeakObjectPtr<class ADReyeVRPawn> DReyeVR_Pawn;
+    TWeakObjectPtr<class APawn> SpectatorPtr;
+    TWeakObjectPtr<class AEgoVehicle> EgoVehiclePtr;
 
     // for toggling bw spectator mode
     bool bIsSpectating = true;
-    class APawn *SpectatorPtr = nullptr;
-    class AEgoVehicle *EgoVehiclePtr = nullptr;
 
     // for audio control
     float EgoVolumePercent;

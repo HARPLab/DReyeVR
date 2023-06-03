@@ -91,12 +91,15 @@ void ACarlaRecorder::Ticking(float DeltaSeconds)
     PlatformTime.UpdateTime();
     const FActorRegistry &Registry = Episode->GetActorRegistry();
 
+    // Skip the spectator actor
+    FCarlaActor* CarlaSpectator = Episode->FindCarlaActor(Episode->GetSpectatorPawn());
+
     // through all actors in registry
     for (auto It = Registry.begin(); It != Registry.end(); ++It)
     {
       FCarlaActor* View = It.Value().Get();
 
-      if (View->GetActorId() == 0)
+      if (CarlaSpectator && (View->GetActor() == CarlaSpectator->GetActor()))
         continue; // don't record the spectator
 
       switch (View->GetActorType())
@@ -277,18 +280,20 @@ void ACarlaRecorder::AddActorBoundingBox(FCarlaActor *CarlaActor)
 
 void ACarlaRecorder::AddDReyeVRData()
 {
+  static bool bAddedConfigFile;
+  if (!bAddedConfigFile) {
+    // add DReyeVR config files (only once at the beginning of recording)
+    DReyeVRConfigFileData.Add(ADReyeVRSensor::ConfigFile);
+    bAddedConfigFile = true;
+  }
+
   // Add the latest instance of the DReyeVR snapshot to our data
   DReyeVRAggData.Add(DReyeVRDataRecorder<DReyeVR::AggregateData>(ADReyeVRSensor::Data));
 
-  TArray<AActor *> FoundActors;
-  if (Episode != nullptr && Episode->GetWorld() != nullptr)
+  for (auto &ActiveCAs : ADReyeVRCustomActor::ActiveCustomActors)
   {
-      UGameplayStatics::GetAllActorsOfClass(Episode->GetWorld(), ADReyeVRCustomActor::StaticClass(), FoundActors);
-  }
-  for (AActor *A : FoundActors)
-  {
-    ADReyeVRCustomActor *CustomActor = Cast<ADReyeVRCustomActor>(A);
-    if (CustomActor != nullptr && CustomActor->IsActive())
+    ADReyeVRCustomActor *CustomActor = ActiveCAs.second;
+    if (CustomActor != nullptr && CustomActor->IsActive() && CustomActor->GetShouldRecord())
     {
       DReyeVRCustomActorData.Add(DReyeVRDataRecorder<DReyeVR::CustomActorData>(&(CustomActor->GetInternals())));
     }
@@ -427,6 +432,7 @@ void ACarlaRecorder::Clear(void)
   TrafficLightTimes.Clear();
   DReyeVRAggData.Clear();
   DReyeVRCustomActorData.Clear();
+  DReyeVRConfigFileData.Clear();
   Weathers.Clear();
 }
 
@@ -469,6 +475,14 @@ void ACarlaRecorder::Write(double DeltaSeconds)
 
   // custom DReyeVR Actor data write
   DReyeVRCustomActorData.Write(File);
+
+  // only write this once (at the beginning)
+  static bool bWroteConfigFile = false;
+  if (!bWroteConfigFile) {
+    // DReyeVR configuration/parameters
+    DReyeVRConfigFileData.Write(File);
+    bWroteConfigFile = true;
+  }
 
   // weather state
   Weathers.Write(File);

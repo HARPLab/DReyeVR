@@ -3,6 +3,7 @@ CarlaUE4,Unreal/CarlaUE4/Source/
 Config/CarlaUE4.Build.cs,Unreal/CarlaUE4/Source/CarlaUE4
 Config/Default*.ini,Unreal/CarlaUE4/Config/
 Config/DReyeVRConfig.ini,Unreal/CarlaUE4/Config/
+Config/EgoVehicles/*,Unreal/CarlaUE4/Config/EgoVehicles/
 Config/Default.Package.json,Unreal/CarlaUE4/Content/Carla/Config/
 Config/CarlaUE4.uproject,Unreal/CarlaUE4/
 Content,Unreal/CarlaUE4/

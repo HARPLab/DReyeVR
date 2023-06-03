@@ -54,10 +54,21 @@ void AEgoVehicle::CameraDown()
 
 void AEgoVehicle::CameraPositionAdjust(const FVector &Disp)
 {
+    if (Disp.Equals(FVector::ZeroVector, 0.0001f))
+        return;
     // preserves adjustment even after changing view
     CameraPoseOffset.SetLocation(CameraPoseOffset.GetLocation() + Disp);
     VRCameraRoot->SetRelativeLocation(CameraPose.GetLocation() + CameraPoseOffset.GetLocation());
     /// TODO: account for rotation? scale?
+}
+
+void AEgoVehicle::CameraPositionAdjust(bool bForward, bool bRight, bool bBackwards, bool bLeft, bool bUp, bool bDown)
+{
+    // add the corresponding directions according to the adjustment booleans
+    const FVector Disp = FVector::ForwardVector * bForward + FVector::RightVector * bRight +
+                         FVector::BackwardVector * bBackwards + FVector::LeftVector * bLeft + FVector::UpVector * bUp +
+                         FVector::DownVector * bDown;
+    CameraPositionAdjust(Disp);
 }
 
 void AEgoVehicle::PressNextCameraView()
@@ -86,56 +97,59 @@ void AEgoVehicle::ReleasePrevCameraView()
 
 void AEgoVehicle::NextCameraView()
 {
-    CurrentCameraTransformIdx = (CurrentCameraTransformIdx + 1) % (CameraTransforms.size());
-    LOG("Switching to next camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
+    if (CameraPoseKeys.Num() == 0)
+        return;
+    CurrentCameraTransformIdx = (CurrentCameraTransformIdx + 1) % (CameraPoseKeys.Num());
+    const FString &Key = CameraPoseKeys[CurrentCameraTransformIdx];
+    LOG("Switching manually to next camera view: \"%s\"", *Key);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
 void AEgoVehicle::PrevCameraView()
 {
+    if (CameraPoseKeys.Num() == 0)
+        return;
     if (CurrentCameraTransformIdx == 0)
-        CurrentCameraTransformIdx = CameraTransforms.size();
+        CurrentCameraTransformIdx = CameraPoseKeys.Num();
     CurrentCameraTransformIdx--;
-    LOG("Switching to prev camera view: \"%s\"", *CameraTransforms[CurrentCameraTransformIdx].first);
+    const FString &Key = CameraPoseKeys[CurrentCameraTransformIdx];
+    LOG("Switching manually to prev camera view: \"%s\"", *Key);
     SetCameraRootPose(CurrentCameraTransformIdx);
 }
 
-void AEgoVehicle::SetSteering(const float SteeringInput)
+void AEgoVehicle::AddSteering(const float SteeringInput)
 {
     float ScaledSteeringInput = this->ScaleSteeringInput * SteeringInput;
-    this->GetVehicleMovementComponent()->SetSteeringInput(ScaledSteeringInput); // UE4 control
     // assign to input struct
-    VehicleInputs.Steering = ScaledSteeringInput;
+    VehicleInputs.Steering += ScaledSteeringInput;
 }
 
-void AEgoVehicle::SetThrottle(const float ThrottleInput)
+void AEgoVehicle::AddThrottle(const float ThrottleInput)
 {
     float ScaledThrottleInput = this->ScaleThrottleInput * ThrottleInput;
-    this->GetVehicleMovementComponent()->SetThrottleInput(ScaledThrottleInput); // UE4 control
 
     // apply new light state
-    FVehicleLightState Lights = this->GetVehicleLightState();
+    FVehicleLightState Lights = GetVehicleLightState();
     Lights.Reverse = false;
     Lights.Brake = false;
-    this->SetVehicleLightState(Lights);
+    SetVehicleLightState(Lights);
 
     // assign to input struct
-    VehicleInputs.Throttle = ScaledThrottleInput;
+    VehicleInputs.Throttle += ScaledThrottleInput;
 }
 
-void AEgoVehicle::SetBrake(const float BrakeInput)
+void AEgoVehicle::AddBrake(const float BrakeInput)
 {
     float ScaledBrakeInput = this->ScaleBrakeInput * BrakeInput;
-    this->GetVehicleMovementComponent()->SetBrakeInput(ScaledBrakeInput); // UE4 control
 
     // apply new light state
-    FVehicleLightState Lights = this->GetVehicleLightState();
+    FVehicleLightState Lights = GetVehicleLightState();
     Lights.Reverse = false;
     Lights.Brake = true;
-    this->SetVehicleLightState(Lights);
+    SetVehicleLightState(Lights);
 
     // assign to input struct
-    VehicleInputs.Brake = ScaledBrakeInput;
+    VehicleInputs.Brake += ScaledBrakeInput;
 }
 
 void AEgoVehicle::PressReverse()
@@ -146,24 +160,27 @@ void AEgoVehicle::PressReverse()
     bReverse = !bReverse;
 
     // negate to toggle bw + (forwards) and - (backwards)
-    const int CurrentGear = this->GetVehicleMovementComponent()->GetTargetGear();
-    int NewGear = -1; // for when parked
-    if (CurrentGear != 0)
-    {
-        NewGear = bReverse ? -1 * std::abs(CurrentGear) : std::abs(CurrentGear); // negative => backwards
-    }
-    this->GetVehicleMovementComponent()->SetTargetGear(NewGear, true); // UE4 control
+    // const int CurrentGear = this->GetVehicleMovementComponent()->GetTargetGear();
+    // int NewGear = -1; // for when parked
+    // if (CurrentGear != 0)
+    // {
+    //     NewGear = bReverse ? -1 * std::abs(CurrentGear) : std::abs(CurrentGear); // negative => backwards
+    // }
+    // this->GetVehicleMovementComponent()->SetTargetGear(NewGear, true); // UE4 control
 
     // apply new light state
     FVehicleLightState Lights = this->GetVehicleLightState();
     Lights.Reverse = this->bReverse;
     this->SetVehicleLightState(Lights);
 
-    LOG("Toggle Reverse");
+    // LOG("Toggle Reverse");
     // assign to input struct
     VehicleInputs.ToggledReverse = true;
 
-    this->PlayGearShiftSound();
+    PlayGearShiftSound();
+
+    // call to parent
+    SetReverse(bReverse);
 }
 
 void AEgoVehicle::ReleaseReverse()
@@ -234,20 +251,20 @@ void AEgoVehicle::ReleaseTurnSignalL()
     bCanPressTurnSignalL = true;
 }
 
-void AEgoVehicle::PressHandbrake()
+void AEgoVehicle::TickVehicleInputs()
 {
-    if (!bCanPressHandbrake)
-        return;
-    bCanPressHandbrake = false;                             // don't press again until release
-    GetVehicleMovementComponent()->SetHandbrakeInput(true); // UE4 control
-    // assign to input struct
-    VehicleInputs.HoldHandbrake = true;
-}
+    FVehicleControl LastAppliedControl = GetVehicleControl();
 
-void AEgoVehicle::ReleaseHandbrake()
-{
-    GetVehicleMovementComponent()->SetHandbrakeInput(false); // UE4 control
-    // assign to input struct
-    VehicleInputs.HoldHandbrake = false;
-    bCanPressHandbrake = true;
+    int bIncludeLast = static_cast<int>(GetAutopilotStatus());
+    FVehicleControl ManualInputs;
+    // only include LastAppliedControl when autopilot is running (bc it would have flushed earlier this tick)
+    ManualInputs.Steer = VehicleInputs.Steering + bIncludeLast * LastAppliedControl.Steer;
+    ManualInputs.Brake = VehicleInputs.Brake + bIncludeLast * LastAppliedControl.Brake;
+    ManualInputs.Throttle = VehicleInputs.Throttle + bIncludeLast * LastAppliedControl.Throttle;
+    ManualInputs.bReverse = bReverse;
+    this->ApplyVehicleControl(ManualInputs, EVehicleInputPriority::User);
+    // send these inputs to the Carla (parent) vehicle
+    FlushVehicleControl();
+
+    VehicleInputs = DReyeVR::UserInputs(); // clear inputs for this frame
 }

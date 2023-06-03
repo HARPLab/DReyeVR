@@ -1,3 +1,21 @@
+## DReyeVR 0.2.1
+- Adding smart (weak) pointers for the major DReyeVR class connections to ensure better pointer validity before dereference. Helps with detecting dangling (freed, but not-null) pointers which happens commonly during map changes and would otherwise crash the replay system.
+- Adding PythonAPI startup function (namely a custom `__init__.py` script that is loaded when using `DReyeVR_utils.py`)
+- Fix bug with shaders not being cooked in package mode
+- Fine-tune ego-vehicle mirrors according to vehicle chassis
+- Adding threshold for manual takeover of logitech inputs. Logitech wheel actuation follows autopilot otherwise.
+- Disabling shadows for wheel face buttons
+- Adding autopilot light indicator
+
+## DReyeVR 0.2.0
+- Add face button indicators on the steering wheel
+- Revamping `ConfigFile` class rather than a static `ReadConfigFile` helper function
+- Adding Config-file check as part of the tracked DReyeVRData, gives you a warning if your loaded ConfigFile is different from the one that was used during recording (so you can match your replay config with that which was recorded)
+- Adding per-vehicle configuration files in `Content/DReyeVR/EgoVehicle` that can be selected via parameters. Allows parameterization of all EgoVehicle components, magic numbers (ex. location of camera, mirrors, engine), sound files, mirror meshes, steering wheel types, and enable/disable these on a highly granular basis
+- Revamp EgoVehicle input controls to use parent (ACarlaWheeledVehicle) controls and flush
+- Disabling (turning invisible) default Carla spectator in map
+- Added tutorial for custom EgoVehicle
+
 ## DReyeVR 0.1.3
 - Fix bug where other non-ego Autopilto vehicles ignored the EgoVehicle and would routinely crash into it
 - Fix bug where some EgoVehicle attributes were missing, notably `"number_of_wheels"`

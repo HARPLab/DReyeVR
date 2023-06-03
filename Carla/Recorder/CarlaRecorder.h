@@ -47,6 +47,7 @@ class ATrafficLightBase;
 
 #define DREYEVR_PACKET_ID 139
 #define DREYEVR_CUSTOM_ACTOR_PACKET_ID 140
+#define DREYEVR_CONFIG_FILE_PACKET_ID 141
 
 enum class CarlaRecorderPacketId : uint8_t
 {
@@ -70,8 +71,9 @@ enum class CarlaRecorderPacketId : uint8_t
   TriggerVolume,
   Weather,
   // "We suggest to use id over 100 for user custom packets, because this list will keep growing in the future"
-  DReyeVR = DREYEVR_PACKET_ID,                        // our custom DReyeVR packet (for raw sensor data)
-  DReyeVRCustomActor = DREYEVR_CUSTOM_ACTOR_PACKET_ID // custom DReyeVR actors (not raw sensor data)
+  DReyeVR = DREYEVR_PACKET_ID,                         // our custom DReyeVR packet (for raw sensor data)
+  DReyeVRCustomActor = DREYEVR_CUSTOM_ACTOR_PACKET_ID, // custom DReyeVR actors (not raw sensor data)
+  DReyeVRConfigFile = DREYEVR_CONFIG_FILE_PACKET_ID    // DReyeVR configuration files (parameters)
 };
 
 /// Recorder for the simulation
@@ -205,6 +207,7 @@ private:
   CarlaRecorderWeathers Weathers;
   DReyeVRDataRecorders<DReyeVR::AggregateData, DREYEVR_PACKET_ID> DReyeVRAggData;
   DReyeVRDataRecorders<DReyeVR::CustomActorData, DREYEVR_CUSTOM_ACTOR_PACKET_ID> DReyeVRCustomActorData;
+  DReyeVRDataRecorders<DReyeVR::ConfigFileData, DREYEVR_CONFIG_FILE_PACKET_ID> DReyeVRConfigFileData;
 
   // replayer
   CarlaReplayer Replayer;

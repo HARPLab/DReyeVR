@@ -1,10 +1,7 @@
-#!/usr/bin/env python
-
 import argparse
 import numpy as np
 import time
 import sys
-import glob
 import os
 from DReyeVR_utils import DReyeVRSensor
 
@@ -15,20 +12,6 @@ except ImportError:
     rospy = None
     String = None
     print("Rospy not initialized. Unable to use ROS for logging")
-
-try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
-except IndexError:
-    pass
 
 import carla
 

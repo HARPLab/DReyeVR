@@ -133,6 +133,18 @@ enum class Eye
     LEFT,
 };
 
+// all DReyeVR Config data (only used once at the start of each recording)
+class CARLA_API ConfigFileData : public DataSerializer
+{
+  private:
+    FString StringContents; // all the config files, concatenated
+  public:
+    void Set(const std::string &Contents);
+    void Read(std::ifstream &InFile) override;
+    void Write(std::ofstream &OutFile) const override;
+    FString ToString() const override;
+};
+
 // all DReyeVR sensor data is held here
 class CARLA_API AggregateData : public DataSerializer
 {
@@ -161,7 +173,6 @@ class CARLA_API AggregateData : public DataSerializer
     float GetVehicleVelocity() const;
     const FVector &GetVehicleLocation() const;
     const FRotator &GetVehicleRotation() const;
-    std::string GetUniqueName() const;
 
     // focus
     const FString &GetFocusActorName() const;

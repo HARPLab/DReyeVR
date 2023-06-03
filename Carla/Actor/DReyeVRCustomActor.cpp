@@ -49,12 +49,6 @@ ADReyeVRCustomActor::ADReyeVRCustomActor(const FObjectInitializer &ObjectInitial
     Internals.Scale3D = this->GetActorScale3D();
 }
 
-ADReyeVRCustomActor::~ADReyeVRCustomActor()
-{
-    this->Deactivate();
-    this->Destroy(); // UE4 Destroy method
-}
-
 bool ADReyeVRCustomActor::AssignSM(const FString &Path, UWorld *World)
 {
     UStaticMesh *SM = LoadObject<UStaticMesh>(nullptr, *Path);
@@ -164,9 +158,14 @@ void ADReyeVRCustomActor::Tick(float DeltaSeconds)
         Internals.Scale3D = this->GetActorScale3D();
         Internals.MaterialParams = MaterialParams;
     }
+    UpdateMaterial();
+    /// TODO: use other string?
+}
+
+void ADReyeVRCustomActor::UpdateMaterial()
+{
     // update the materials according to the params
     MaterialParams.Apply(DynamicMat);
-    /// TODO: use other string?
 }
 
 void ADReyeVRCustomActor::SetInternals(const DReyeVR::CustomActorData &InData)

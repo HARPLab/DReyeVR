@@ -477,20 +477,20 @@ bool CarlaReplayerHelper::ProcessReplayerFinish(bool bApplyAutopilot, bool bIgno
         break;
     }
   }
-  // tell the DReyeVR sensor to NOT continue replaying
-  if (ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld()))
-    ADReyeVRSensor::GetDReyeVRSensor()->StopReplaying();
-  else
-    DReyeVR_LOG_ERROR("No DReyeVR sensor available!");
   return true;
 }
 
-template <typename T> void CarlaReplayerHelper::ProcessReplayerDReyeVRData(const T &DReyeVRDataInstance, const double Per)
+template <typename T> 
+void CarlaReplayerHelper::ProcessReplayerDReyeVR(ADReyeVRSensor *EgoSensor, const T &Data, const double Per)
 {
-  if (ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld()))
-    ADReyeVRSensor::GetDReyeVRSensor()->UpdateData(DReyeVRDataInstance.Data, Per);
-  else
+  if (EgoSensor == nullptr) { // try getting and assigning the new EgoSensor
+    EgoSensor = ADReyeVRSensor::GetDReyeVRSensor(Episode->GetWorld());
+  }
+  if (EgoSensor == nullptr) { // still null?? throw an error
     DReyeVR_LOG_ERROR("No DReyeVR sensor available!");
+    return;
+  }
+  EgoSensor->UpdateData(Data, Per);
 }
 
 void CarlaReplayerHelper::SetActorVelocity(FCarlaActor *CarlaActor, FVector Velocity)
