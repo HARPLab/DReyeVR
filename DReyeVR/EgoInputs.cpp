@@ -263,10 +263,11 @@ void AEgoVehicle::TickVehicleInputs()
     ManualInputs.Throttle = VehicleInputs.Throttle + bIncludeLast * LastAppliedControl.Throttle;
     ManualInputs.bReverse = bReverse;
 
-    // apply inputs to this vehicle only when either one of the parameter is non-zero
-    if (!FMath::IsNearlyEqual(ManualInputs.Steer, 0.f, 0.02f) ||
+    // apply inputs to this vehicle only when either one of the parameter is non-zero or autopilot is on
+    if ((!FMath::IsNearlyEqual(ManualInputs.Steer, 0.f, 0.02f) ||
         !FMath::IsNearlyEqual(ManualInputs.Brake, 0.f, 0.02f) ||
-        !FMath::IsNearlyEqual(ManualInputs.Throttle, 0.f, 0.02f))
+        !FMath::IsNearlyEqual(ManualInputs.Throttle, 0.f, 0.02f)) ||
+        GetAutopilotStatus())
     {
         this->ApplyVehicleControl(ManualInputs, EVehicleInputPriority::User);
         // send these inputs to the Carla (parent) vehicle
