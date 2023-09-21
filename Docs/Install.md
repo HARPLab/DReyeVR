@@ -29,6 +29,7 @@
   - **IMPORTANT:** if the `git clone` link does not work for you, you probably need to [join the Epic Games Organization](https://www.unrealengine.com/en-US/ue4-on-github) to get access to UnrealEngine and all of its forks. 
   - UE4 build instructions for your system can be found here: [Windows](https://carla.readthedocs.io/en/0.9.13/build_windows/#unreal-engine), [Linux](https://carla.readthedocs.io/en/0.9.13/build_linux/#unreal-engine), [Mac*](https://github.com/GustavoSilvera/carla/blob/m1/Docs/build_mac.md#unreal-engine-fork )
   <!-- - NOTE: We only keep our own HARPLab fork of Carla's fork to preserve version compatibility and enable minor features that Carla doesn't need (ex. foveated rendering). -->
+   - In order to successfully run Setup.sh, you will need to download and replace the Commit.gitdeps.xml file within /Engine/Build. See updated XML file at [Commit.gitdeps.xml](https://github.com/HARPLab/UnrealEngine/blob/carla/Engine/Build/Commit.gitdeps.xml)
 
 - You'll then need to clone and build a [vanilla Carla 0.9.13](https://carla.readthedocs.io/en/0.9.13/#building-carla)
   ```bash
