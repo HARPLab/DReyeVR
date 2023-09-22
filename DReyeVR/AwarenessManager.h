@@ -48,7 +48,7 @@ public:
         PosMode = false;
     }
     void Tick(float DeltaTime);
-    void SetAwarenessManager(UCarlaEpisode *Episode, UWorld *World, AEgoSensor *EgoSensor);
+    void SetAwarenessManager(UCarlaEpisode *Episode, UWorld *World, ADReyeVRSensor *EgoSensor);
     void Destroy();    
     ZoneInfo Zones;
     BitsEncode Encode;
@@ -65,7 +65,7 @@ private:
     class UWorld *World;
     UCarlaEpisode *Episode = nullptr;
     class AActor *EgoVehiclePtr = nullptr;
-    class AEgoSensor *EgoSensor;
+    class ADReyeVRSensor *EgoSensor;
     bool IsEnabled;
     bool VelMode;
     bool PosMode;

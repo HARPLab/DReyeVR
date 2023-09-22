@@ -314,7 +314,7 @@ void FAwarenessManager::Tick(float DeltaTime)
 //#endif
 }
 
-void FAwarenessManager::SetAwarenessManager(UCarlaEpisode *EpisodeIn, UWorld *WorldIn, AEgoSensor *EgoSensorIn) 
+void FAwarenessManager::SetAwarenessManager(UCarlaEpisode *EpisodeIn, UWorld *WorldIn, ADReyeVRSensor *EgoSensorIn) 
 {
     World = WorldIn;
     Episode = EpisodeIn;

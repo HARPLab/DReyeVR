@@ -35,6 +35,11 @@ class DReyeVREvent : public SensorData
     {
         return InternalData.FrameSequence;
     }
+    int64_t GetReplayStatus() const
+    {
+        return InternalData.ReplayStatus;
+    }
+
     const geom::Vector3D &GetGazeDir() const
     {
         return InternalData.GazeDir;

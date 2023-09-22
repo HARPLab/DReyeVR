@@ -210,6 +210,9 @@ class CARLA_API AggregateData : public DataSerializer
                           const std::vector<DReyeVR::AwarenessActor> &NewVisible,
                           const std::vector<FCarlaActor*> &NewVisibleRaw,
                           const int64_t NewUserInput);
+    // Replay
+    int64_t GetReplayStatus() const;
+    void UpdateReplayStatus(int64_t ReplayStatus);
 
 
     ////////////////////:SETTERS://////////////////////
@@ -231,6 +234,8 @@ class CARLA_API AggregateData : public DataSerializer
     struct FocusInfo FocusData;
     struct UserInputs Inputs;
     struct AwarenessInfo AwarenessData;
+    int64_t ReplayStatus;
+    int64_t FrameNumber;
 };
 
 class CARLA_API CustomActorData : public DataSerializer

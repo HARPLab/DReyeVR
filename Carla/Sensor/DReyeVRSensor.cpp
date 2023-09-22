@@ -105,6 +105,7 @@ void ADReyeVRSensor::PostPhysTick(UWorld *W, ELevelTick TickType, float DeltaSec
                     Data->GetTimestampCarla(),  // Timestamp of Carla (ms)
                     Data->GetTimestampDevice(), // Timestamp of SRanipal (ms)
                     Data->GetFrameSequence(),   // Frame sequence
+                    Data->GetReplayStatus(), // Replay
                     // camera
                     ToGeom(Data->GetCameraLocation()), // HMD absolute location
                     ToGeom(Data->GetCameraRotation()), // HMD absolute rotation

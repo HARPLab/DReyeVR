@@ -509,6 +509,17 @@ void AggregateData::SetAwarenessData(const int64_t NewVisibleTotal, const std::v
   AwarenessData.UserInput = NewUserInput;
 }
 
+int64_t AggregateData::GetReplayStatus() const
+{
+    return ReplayStatus;
+}
+
+void AggregateData::UpdateReplayStatus(int64_t NewReplayStatus)
+{
+    ReplayStatus = NewReplayStatus;
+}
+
+
 void AggregateData::UpdateCamera(const FVector &NewCameraLoc, const FRotator &NewCameraRot)
 {
     EgoVars.CameraLocation = NewCameraLoc;
@@ -542,6 +553,7 @@ void AggregateData::Read(std::ifstream &InFile)
 {
     /// CAUTION: make sure the order of writes/reads is the same
     ReadValue<int64_t>(InFile, TimestampCarlaUE4);
+    ReadValue<int64_t>(InFile, ReplayStatus);
     AwarenessData.Read(InFile);
     EgoVars.Read(InFile);
     EyeTrackerData.Read(InFile);
@@ -553,6 +565,7 @@ void AggregateData::Write(std::ofstream &OutFile) const
 {
     /// CAUTION: make sure the order of writes/reads is the same
     WriteValue<int64_t>(OutFile, GetTimestampCarla());
+    WriteValue<int64_t>(OutFile, ReplayStatus);
     AwarenessData.Write(OutFile);
     EgoVars.Write(OutFile);
     EyeTrackerData.Write(OutFile);
@@ -564,6 +577,7 @@ FString AggregateData::ToString() const
 {
     FString print;
     print += FString::Printf(TEXT("  [DReyeVR]TimestampCarla:%ld,\n"), long(TimestampCarlaUE4));
+    print += FString::Printf(TEXT("  [DReyeVR]ReplayStatus:%ld,\n"), long(ReplayStatus));
     print += FString::Printf(TEXT("  [DReyeVR]EyeTracker:%s,\n"), *EyeTrackerData.ToString());
     print += FString::Printf(TEXT("  [DReyeVR]FocusInfo:%s,\n"), *FocusData.ToString());
     print += FString::Printf(TEXT("  [DReyeVR]EgoVariables:%s,\n"), *EgoVars.ToString());

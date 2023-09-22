@@ -109,7 +109,7 @@ void AEgoVehicle::BeginPlay()
     // get the GameMode script
     SetGame(Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World)));
 
-    if (AwarenessManager) AwarenessManager->SetAwarenessManager(Episode, World, EgoSensor);
+    if (AwarenessManager) AwarenessManager->SetAwarenessManager(Episode, World, EgoSensor.Get());
 
     LOG("Initialized DReyeVR EgoVehicle");
 }
@@ -465,7 +465,12 @@ void AEgoVehicle::ReplayTick()
 {
     if (!EgoSensor.IsValid())
         return;
+    if (!EgoSensor.IsValid())
+        return;
     const bool bIsReplaying = EgoSensor.Get()->IsReplaying();
+    EgoSensor->GetData()->UpdateReplayStatus(bIsReplaying);
+    // std::cout << "replaying? " << (EgoSensor->GetData()->GetReplayStatus()) << std::endl;
+
     // need to enable/disable VehicleMesh simulation
     class USkeletalMeshComponent *VehicleMesh = GetMesh();
     if (VehicleMesh)
