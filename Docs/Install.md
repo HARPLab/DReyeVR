@@ -278,6 +278,13 @@ make check CARLA=../carla
       # create a symlink between python3.7 -> python3.7m
       ln -s python3.7m python3.7
       ```
+      Get boost_1_72_0.tar.gz from source from https://github.com/jerry73204/carla/releases/tag/fix-boost, download it and follow the first step in the link. Then run the ./bootstrap.sh command (found in Util/BuildTools/Setup.sh)
+
+      Add the following command to "~./bashrc"
+      ```bash
+      export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/path-to-conda/anaconda3/envs/carla13/include/python3.7m"
+      ```
+
       Now when you `make LibCarla` again, the `boost` errors should be resolved.
       - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
 

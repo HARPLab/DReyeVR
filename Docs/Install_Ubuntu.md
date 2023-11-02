@@ -95,3 +95,31 @@ Follow the rest of the instructions from the [tutorial](https://carla.readthedoc
 
 
 Now that you have a working CARLA 0.9.13 build, go back to the [DReyeVR installation guide](https://github.com/HARPLab/DReyeVR/blob/main/Docs/Install.md) and follow the rest of the steps to install DReyeVR on top of it.
+
+  - **READ THIS FIRST (Linux)**: You might run into a problem when compiling Boost 1.72.0 (required by `LibCarla`).
+    <details>
+
+    <summary> Show instructions to get Anaconda working on Linux </summary>
+
+    - ```bash
+      # find anaconda install:
+      which python3
+      ... PATH/TO/ANACONDA/envs/carla/bin/python3 # example output
+
+      # go to carla/install dir from here
+      cd PATH/TO/ANACONDA/envs/carla/install
+      
+      # create a symlink between python3.7 -> python3.7m
+      ln -s python3.7m python3.7
+      ```
+      Get boost_1_72_0.tar.gz from source from https://github.com/jerry73204/carla/releases/tag/fix-boost, download it and follow the first step in the link. Then run the ./bootstrap.sh command (found in Util/BuildTools/Setup.sh)
+
+      Add the following command to "~./bashrc"
+      ```bash
+      export CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/path-to-conda/anaconda3/envs/carla13/include/python3.7m"
+      ```
+
+      Now when you `make LibCarla` again, the `boost` errors should be resolved.
+      - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
+
+    </details>
