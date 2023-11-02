@@ -285,7 +285,6 @@ make check CARLA=../carla
 
       Find the section named `Get boost` includes and comment out the `wget` lines.
 
-
       Now when you `make LibCarla` again, the `boost` errors should be resolved.
       - For more information see the bottom of this [SO post](https://stackoverflow.com/questions/42839382/failing-to-install-boost-in-python-pyconfig-h-not-found)
 
