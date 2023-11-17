@@ -2,6 +2,7 @@
 #include "DReyeVRUtils.h"                      // CreatePostProcessingEffect
 #include "EgoVehicle.h"                        // AEgoVehicle
 #include "HeadMountedDisplayFunctionLibrary.h" // SetTrackingOrigin, GetWorldToMetersScale
+#include "EgoVehicle.h"                        // AEgoVehicle
 #include "HeadMountedDisplayTypes.h"           // ESpectatorScreenMode
 #include "Materials/MaterialInstanceDynamic.h" // UMaterialInstanceDynamic
 #include "UObject/UObjectGlobals.h"            // LoadObject, NewObject
@@ -550,21 +551,34 @@ void ADReyeVRPawn::LogitechWheelUpdate()
     AccelerationPedalLast = AccelerationPedal;
     BrakePedalLast = BrakePedal;
 
-    ManageButtonPresses(*WheelState);
-}
-
-void ADReyeVRPawn::ManageButtonPresses(const DIJOYSTATE2 &WheelState)
-{
     const bool bABXY_A = static_cast<bool>(WheelState.rgbButtons[0]);
     const bool bABXY_B = static_cast<bool>(WheelState.rgbButtons[2]);
     const bool bABXY_X = static_cast<bool>(WheelState.rgbButtons[1]);
     const bool bABXY_Y = static_cast<bool>(WheelState.rgbButtons[3]);
 
-    if (bABXY_A || bABXY_B || bABXY_X || bABXY_Y)
-        EgoVehicle->PressReverse();
-    else
-        EgoVehicle->ReleaseReverse();
+    // awareness 
+    if (bABXY_A) 
+        EgoVehicle->AwarenessFwdV();
+    else if (bABXY_B) 
+        EgoVehicle->AwarenessFwdV();
+    else if (bABXY_X) 
+        EgoVehicle->AwarenessFwdV();
+    else if (bABXY_Y) 
+        EgoVehicle->AwarenessFwdV();
+        
+    if (WheelState->rgdwPOV[0] == 0) // positive in X
+        EgoVehicle->AwarenessFwdV();
+    else if (WheelState->rgdwPOV[0] == 18000) // negative in X
+        EgoVehicle->AwarenessBackV();
+    else if (WheelState->rgdwPOV[0] == 9000) // positive in Y
+        EgoVehicle->AwarenessRightV();
+    else if (WheelState->rgdwPOV[0] == 27000) // negative in Y
+        EgoVehicle->AwarenessLeftV();
 
+    // if (bABXY_A || bABXY_B || bABXY_X || bABXY_Y)
+    //     EgoVehicle->PressReverse();
+    // else
+    //     EgoVehicle->ReleaseReverse();
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_A, bABXY_A);
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_B, bABXY_B);
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_ABXY_X, bABXY_X);
@@ -592,7 +606,7 @@ void ADReyeVRPawn::ManageButtonPresses(const DIJOYSTATE2 &WheelState)
     const bool bPositive = static_cast<bool>(WheelState.rgbButtons[19]);
     const bool bNegative = static_cast<bool>(WheelState.rgbButtons[20]);
 
-    EgoVehicle->CameraPositionAdjust(bDPad_Up, bDPad_Right, bDPad_Down, bDPad_Left, bPositive, bNegative);
+    // EgoVehicle->CameraPositionAdjust(bDPad_Up, bDPad_Right, bDPad_Down, bDPad_Left, bPositive, bNegative);
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Up, bDPad_Up);
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Right, bDPad_Right);
     EgoVehicle->UpdateWheelButton(EgoVehicle->Button_DPad_Left, bDPad_Left);
@@ -688,6 +702,15 @@ void ADReyeVRPawn::SetupEgoVehicleInputComponent(UInputComponent *PlayerInputCom
     PlayerInputComponent->BindAction("CameraRight_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraRight);
     PlayerInputComponent->BindAction("CameraUp_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraUp);
     PlayerInputComponent->BindAction("CameraDown_DReyeVR", IE_Pressed, EV, &AEgoVehicle::CameraDown);
+    // awareness
+    PlayerInputComponent->BindAction("AwarenessFwdV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessFwdV);
+    PlayerInputComponent->BindAction("AwarenessBackV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessBackV);
+    PlayerInputComponent->BindAction("AwarenessLeftV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessLeftV);
+    PlayerInputComponent->BindAction("AwarenessRightV_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessRightV);
+    PlayerInputComponent->BindAction("AwarenessFwdW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessFwdW);
+    PlayerInputComponent->BindAction("AwarenessBackW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessBackW);
+    PlayerInputComponent->BindAction("AwarenessLeftW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessLeftW);
+    PlayerInputComponent->BindAction("AwarenessRightW_DReyeVR", IE_Pressed, EV, &AEgoVehicle::AwarenessRightW);
 }
 
 /// ========================================== ///

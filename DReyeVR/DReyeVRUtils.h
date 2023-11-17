@@ -9,6 +9,28 @@
 #include "ImageWriteQueue.h"               // TImagePixelData
 #include "ImageWriteTask.h"                // FImageWriteTask
 #include <carla/image/CityScapesPalette.h> // CityScapesPalette
+#include <fstream>                         // std::ifstream
+#include <sstream>                         // std::istringstream
+#include <string>
+#include <unordered_map>
+
+template <typename T>
+T *SafePtrGet(const FString &Name, TWeakObjectPtr<T> &Ptr, const std::function<void(void)> &RemedyFunction)
+{
+    if (Ptr.IsValid())
+        return Ptr.Get();
+    // object was destroyed! possibly by external process (ex. map change)
+    if (!Ptr.IsExplicitlyNull())
+    { // dangling pointer!!
+        LOG_WARN("Dangling pointer \"%s\" (%p) is invalid! Attempting to remedy", Ptr.Get(), *Name);
+    }
+    RemedyFunction();
+    // try to remedy
+    if (Ptr.IsValid())
+        return Ptr.Get();
+    LOG_ERROR("Unable to remedy (%s)", *Name);
+    return nullptr;
+}
 
 // instead of vehicle.dreyevr.model3 or sensor.dreyevr.ego_sensor, we use "harplab" for category
 // => harplab.dreyevr_vehicle.model3 & harplab.dreyevr_sensor.ego_sensor

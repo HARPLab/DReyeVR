@@ -176,6 +176,7 @@ namespace data {
     const std::string sep = ", ";
     out << "DReyeVR(frame=" << event.GetFrame() << sep
         << "t=" << event.GetTimestamp() << sep
+        << "Replaystatus=" << event.GetReplayStatus() << sep
         << "GazeDir(" << event.GetGazeValid() << ")={" << GazeDir.x << ", " << GazeDir.y << ", " << GazeDir.z<< "}" << sep
         << "GazeOrigin={" << GazeOrigin.x << ", " << GazeOrigin.y << ", " << GazeOrigin.z << "}" << sep
         << "Vergence=" << event.GetGazeVergence() << sep
@@ -578,6 +579,7 @@ void export_sensor_data() {
       .add_property("timestamp_carla", CALL_RETURNING_COPY(csd::DReyeVREvent, GetTimestampCarla))
       .add_property("timestamp_device", CALL_RETURNING_COPY(csd::DReyeVREvent, GetTimestampDevice))
       .add_property("framesequence", CALL_RETURNING_COPY(csd::DReyeVREvent, GetFrameSequence))
+      .add_property("replaystatus", CALL_RETURNING_COPY(csd::DReyeVREvent, GetReplayStatus))
       .add_property("timestamp_stream", CALL_RETURNING_COPY(csd::DReyeVREvent, GetTimestamp)) // Stream timestamp
       .add_property("camera_location", CALL_RETURNING_COPY(csd::DReyeVREvent, GetCameraLocation))
       .add_property("camera_rotation", CALL_RETURNING_COPY(csd::DReyeVREvent, GetCameraRotation))

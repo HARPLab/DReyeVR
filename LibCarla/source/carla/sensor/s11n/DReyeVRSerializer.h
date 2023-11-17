@@ -32,6 +32,8 @@ class DReyeVRSerializer
         int64_t TimestampCarla;
         int64_t TimestampDevice;
         int64_t FrameSequence;
+        int64_t ReplayStatus;
+
         // camera
         geom::Vector3D CameraLocation;
         geom::Vector3D CameraRotation;
@@ -70,6 +72,7 @@ class DReyeVRSerializer
         bool HoldHandbrake;
 
         MSGPACK_DEFINE_ARRAY(TimestampCarla, TimestampDevice, FrameSequence, // timings
+                             ReplayStatus,  
                              CameraLocation, CameraRotation,                 // camera
                              GazeDir, GazeOrigin, GazeValid, GazeVergence,   // combined gaze
                              LGazeDir, LGazeOrigin, LGazeValid, LEyeOpenness, LEyeOpenValid, LPupilPos, LPupilPosValid, LPupilDiameter, // left gaze/eye

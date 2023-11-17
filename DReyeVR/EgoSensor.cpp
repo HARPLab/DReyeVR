@@ -420,7 +420,7 @@ void AEgoSensor::ComputeEgoVars()
 
 void AEgoSensor::ConstructFrameCapture()
 {
-    if (bCaptureFrameData)
+    if (bCaptureFrameData && Vehicle.IsValid())
     {
         // Frame capture
         CaptureRenderTarget = CreateDefaultSubobject<UTextureRenderTarget2D>(TEXT("CaptureRenderTarget_DReyeVR"));
@@ -437,6 +437,7 @@ void AEgoSensor::ConstructFrameCapture()
         check(CaptureRenderTarget->GetSurfaceWidth() > 0 && CaptureRenderTarget->GetSurfaceHeight() > 0);
 
         FrameCap = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("FrameCap"));
+        FrameCap->SetupAttachment(Vehicle.Get()->GetCamera());
         FrameCap->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_RenderScenePrimitives;
         FrameCap->bCaptureOnMovement = false;
         FrameCap->bCaptureEveryFrame = false;

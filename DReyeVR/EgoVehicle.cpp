@@ -46,6 +46,9 @@ AEgoVehicle::AEgoVehicle(const FObjectInitializer &ObjectInitializer) : Super(Ob
     // Initialize the steering wheel
     ConstructSteeringWheel();
 
+    AwarenessManager = new FAwarenessManager(this, AwarenessModeEnabled, 
+                                         AwarenessVelMode, AwarenessPosMode);
+
     LOG("Finished constructing %s", *FString(this->GetName()));
 }
 
@@ -91,7 +94,11 @@ void AEgoVehicle::ReadConfigVariables()
     GeneralParams.Get("VehicleInputs", "ScaleThrottleInput", ScaleThrottleInput);
     GeneralParams.Get("VehicleInputs", "ScaleBrakeInput", ScaleBrakeInput);
     // replay
-    GeneralParams.Get("Replayer", "CameraFollowHMD", bCameraFollowHMD);
+    ReadConfigValue("Replayer", "CameraFollowHMD", bCameraFollowHMD);
+    // awareness mode
+    ReadConfigValue("AwarenessMode", "AwarenessModeEnabled", AwarenessModeEnabled);
+    ReadConfigValue("AwarenessMode", "AwarenessVelMode", AwarenessVelMode);
+    ReadConfigValue("AwarenessMode", "AwarenessPosMode", AwarenessPosMode);
 }
 
 void AEgoVehicle::BeginPlay()
@@ -102,6 +109,7 @@ void AEgoVehicle::BeginPlay()
     // Get information about the world
     World = GetWorld();
     ensure(World != nullptr);
+    Episode = UCarlaStatics::GetCurrentEpisode(World);
 
     // initialize
     InitAIPlayer();
@@ -113,6 +121,8 @@ void AEgoVehicle::BeginPlay()
     SetGame(Cast<ADReyeVRGameMode>(UGameplayStatics::GetGameMode(World)));
 
     BeginThirdPersonCameraInit();
+
+    if (AwarenessManager) AwarenessManager->SetAwarenessManager(Episode, World, EgoSensor.Get());
 
     LOG("Initialized DReyeVR EgoVehicle");
 }
@@ -140,11 +150,15 @@ void AEgoVehicle::BeginDestroy()
     Super::BeginDestroy();
 
     // destroy all spawned entities
-    if (EgoSensor.IsValid())
-        EgoSensor.Get()->Destroy();
+    if (EgoSensor.IsValid().IsValid())
+        EgoSensor.Get().Get()->Destroy();
 
     DestroySteeringWheel();
-
+    
+    // destroy awareness manager
+    if (AwarenessManager) {
+        delete AwarenessManager;
+    }
     LOG("EgoVehicle has been destroyed");
 }
 
@@ -172,10 +186,92 @@ void AEgoVehicle::Tick(float DeltaSeconds)
     TickAutopilot();
 
     // Update the world level
-    TickGame(DeltaSeconds);
+    
+    // Tick awareness manager
+    if (AwarenessManager) {
+        AwarenessManager->Tick(DeltaSeconds);
+    }
 
-    // Tick vehicle controls
+     // Tick vehicle controls
     TickVehicleInputs();
+
+    // Play sound that requires constant ticking
+    TickSounds();
+    // TODO: is TickSounds still necessary 
+}
+
+void AEgoVehicle::ConstructRigidBody()
+{
+#if 0
+    /// TODO: re-enable this code once spawning from DReyeVR needs to be done without a hardcoded blueprint asset
+    ///       to see this effect remove the reference to EgoVehicleBPClass in DReyeVRFactory.cpp once implemented
+
+    // https://forums.unrealengine.com/t/cannot-create-vehicle-updatedcomponent-has-not-initialized-its-rigid-body-actor/461662
+    /// NOTE: this must be run in the constructors!
+
+    // load skeletal mesh (static mesh)
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> CarMesh(TEXT(
+        "SkeletalMesh'/Game/DReyeVR/EgoVehicle/model3/Mesh/SkeletalMesh_model3.SkeletalMesh_model3'"));
+    // original: "SkeletalMesh'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_v2.SM_TeslaM3_v2'"
+    USkeletalMesh *SkeletalMesh = CarMesh.Object;
+    if (SkeletalMesh == nullptr)
+    {
+        LOG_ERROR("Unable to load skeletal mesh!");
+        return;
+    }
+
+    // load skeleton (for animations)
+    static ConstructorHelpers::FObjectFinder<USkeleton> CarSkeleton(
+        TEXT("Skeleton'/Game/DReyeVR/EgoVehicle/model3/Mesh/Skeleton_model3.Skeleton_model3'"));
+    // original:
+    // "Skeleton'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_lights_body_Skeleton.SM_TeslaM3_lights_body_Skeleton'"
+    USkeleton *Skeleton = CarSkeleton.Object;
+    if (Skeleton == nullptr)
+    {
+        LOG_ERROR("Unable to load skeleton!");
+        return;
+    }
+
+    // load animations bp
+    static ConstructorHelpers::FClassFinder<UObject> AnimBPClass(
+        TEXT("/Game/DReyeVR/EgoVehicle/model3/Mesh/Animation_model3.Animation_model3_C"));
+    // original: "/Game/Carla/Static/Car/4Wheeled/Tesla/Tesla_Animation.Tesla_Animation_C"
+    auto AnimInstance = AnimBPClass.Class;
+    if (!AnimBPClass.Succeeded())
+    {
+        LOG_ERROR("Unable to load Animation!");
+        return;
+    }
+
+    // load physics asset
+    static ConstructorHelpers::FObjectFinder<UPhysicsAsset> CarPhysics(TEXT(
+        "PhysicsAsset'/Game/DReyeVR/EgoVehicle/model3/Mesh/Physics_model3.Physics_model3'"));
+    // original: "PhysicsAsset'/Game/Carla/Static/Car/4Wheeled/Tesla/SM_TeslaM3_PhysicsAsset.SM_TeslaM3_PhysicsAsset'"
+    UPhysicsAsset *PhysicsAsset = CarPhysics.Object;
+    if (PhysicsAsset == nullptr)
+    {
+        LOG_ERROR("Unable to load PhysicsAsset!");
+        return;
+    }
+
+    // contrary to https://docs.unrealengine.com/4.27/en-US/API/Runtime/Engine/Engine/USkeletalMesh/SetSkeleton/
+    SkeletalMesh->Skeleton = Skeleton;
+    SkeletalMesh->PhysicsAsset = PhysicsAsset;
+    SkeletalMesh->Build();
+
+    USkeletalMeshComponent *Mesh = GetMesh();
+    check(Mesh != nullptr);
+    Mesh->SetSkeletalMesh(SkeletalMesh, true);
+    Mesh->SetAnimInstanceClass(AnimInstance);
+    Mesh->SetPhysicsAsset(PhysicsAsset);
+    Mesh->RecreatePhysicsState();
+    this->GetVehicleMovementComponent()->RecreatePhysicsState();
+
+    // sanity checks
+    ensure(Mesh->GetPhysicsAsset() != nullptr);
+
+    LOG("Successfully created EgoVehicle rigid body");
+#endif
 }
 
 /// ========================================== ///
@@ -427,6 +523,9 @@ void AEgoVehicle::InitSensor()
     EgoSensor.Get()->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
     EgoSensor.Get()->SetActorTransform(FTransform::Identity, false, nullptr, ETeleportType::TeleportPhysics);
     EgoSensor.Get()->SetEgoVehicle(this);
+
+    // Awareness
+    EgoSensor->GetData()->AwarenessMode = AwarenessModeEnabled;
 }
 
 void AEgoVehicle::ReplayTick()
@@ -434,6 +533,9 @@ void AEgoVehicle::ReplayTick()
     if (!EgoSensor.IsValid())
         return;
     const bool bIsReplaying = EgoSensor.Get()->IsReplaying();
+    EgoSensor->GetData()->UpdateReplayStatus(bIsReplaying);
+    // std::cout << "replaying? " << (EgoSensor->GetData()->GetReplayStatus()) << std::endl;
+
     // need to enable/disable VehicleMesh simulation
     class USkeletalMeshComponent *VehicleMesh = GetMesh();
     if (VehicleMesh)
@@ -1032,6 +1134,31 @@ void AEgoVehicle::TickGame(float DeltaSeconds)
 /// ========================================== ///
 /// ---------------:COSMETIC:----------------- ///
 /// ========================================== ///
+
+void AEgoVehicle::render_info(const DReyeVR::AwarenessInfo AwData, float DeltaTime) {
+    std::vector<FCarlaActor*> VisibleRaw = AwData.VisibleRaw;
+    std::cout << "****** *" << VisibleRaw.size() << std::endl;
+    for (int i = 0; i < VisibleRaw.size(); i++) {
+        std::cout << "!!!" << std::endl;
+        FCarlaActor* Actor = VisibleRaw[i];
+        FVector BBox_Offset, BBox_Extent;
+        int64_t id = Actor->GetActorId();
+        FString id_s = FString::Printf(TEXT("%d"), id);
+        Actor->GetActor()->GetActorBounds(true, BBox_Offset, BBox_Extent, false);
+        float Height = 2 * BBox_Extent.Z; // extent is only half the "volume" (extension from center)
+        FVector Pos = Actor->GetActor()->GetActorLocation() - this->GetActorLocation();
+        DrawDebugString(World, Pos, id_s, this, FColor::Blue, DeltaTime * 5);
+
+        FString s = "";
+        int64_t Answer = AwData.Visible[i].Answer;
+        if (Answer & 1) s += 'F';
+        if (Answer & 2) s += 'R';
+        if (Answer & 4) s += 'B';
+        if (Answer & 8) s += 'L';
+        DrawDebugString(World, Pos + Height / 2, s, this, FColor::Red, DeltaTime * 2);
+    }
+}
+
 
 void AEgoVehicle::DebugLines() const
 {

@@ -10,6 +10,16 @@
 #include <string>
 #include <unordered_map>
 
+#include "Carla/Actor/ActorInfo.h"
+#include "Carla/Actor/ActorData.h"
+#include "Carla/Vehicle/CarlaWheeledVehicle.h"
+#include "Carla/Walker/WalkerController.h"
+#include "Carla/Traffic/TrafficLightState.h"
+
+#include "Carla/Actor/ActorDefinition.h"
+#include "Carla/Actor/ActorDescription.h"
+#include "Carla/Actor/ActorRegistry.h"
+
 namespace DReyeVR
 {
 
@@ -133,6 +143,30 @@ enum class Eye
     LEFT,
 };
 
+struct AwarenessActor
+{
+    int64_t ActorId;
+    FVector ActorLocation;
+    FVector ActorVelocity;
+    int64_t Answer = 0;
+
+    void Read(std::ifstream &InFile);
+    void Write(std::ofstream &OutFile) const;
+    FString ToString() const;
+};
+
+struct AwarenessInfo
+{
+    int64_t VisibleTotal = 0;
+    std::vector<FCarlaActor*> VisibleRaw;
+    std::vector<AwarenessActor> Visible;
+    int UserInput = 0;
+    void Read(std::ifstream &InFile);
+    void Write(std::ofstream &OutFile) const;
+    FString ToString() const;
+};
+
+
 // all DReyeVR Config data (only used once at the start of each recording)
 class CARLA_API ConfigFileData : public DataSerializer
 {
@@ -180,6 +214,18 @@ class CARLA_API AggregateData : public DataSerializer
     float GetFocusActorDistance() const;
     const DReyeVR::UserInputs &GetUserInputs() const;
 
+    // Awareness
+    bool AwarenessMode = true;
+    const DReyeVR::AwarenessInfo &GetAwarenessData() const;
+    void SetAwarenessData(const int64_t NewVisibleTotal, 
+                          const std::vector<DReyeVR::AwarenessActor> &NewVisible,
+                          const std::vector<FCarlaActor*> &NewVisibleRaw,
+                          const int64_t NewUserInput);
+    // Replay
+    int64_t GetReplayStatus() const;
+    void UpdateReplayStatus(int64_t ReplayStatus);
+
+
     ////////////////////:SETTERS://////////////////////
     void UpdateCamera(const FVector &NewCameraLoc, const FRotator &NewCameraRot);
     void UpdateCameraAbs(const FVector &NewCameraLocAbs, const FRotator &NewCameraRotAbs);
@@ -198,6 +244,9 @@ class CARLA_API AggregateData : public DataSerializer
     struct EgoVariables EgoVars;
     struct FocusInfo FocusData;
     struct UserInputs Inputs;
+    struct AwarenessInfo AwarenessData;
+    int64_t ReplayStatus;
+    int64_t FrameNumber;
 };
 
 class CARLA_API CustomActorData : public DataSerializer
