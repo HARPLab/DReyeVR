@@ -57,7 +57,7 @@ mkdir CarlaDReyeVR && cd CarlaDReyeVR # doing everything in this "CarlaDReyeVR" 
 #####################################################
 ########### install OUR UnrealEngine fork ###########
 #####################################################
-# Rather than https://github.com/CarlaUnreal/UnrealEngine UE4, you SHOULD clone https://github.com/HARPLab/UnrealEngine
+# Rather than https://github.com/CarlaUnreal/UnrealEngine UE4, you SHOULD clone https://github.com/GustavoSilvera/UnrealEngine
 # but otherwise all instructions remain the same. 
 
 # Linux: https://carla.readthedocs.io/en/0.9.13/build_linux/#unreal-engine
