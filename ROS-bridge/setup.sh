@@ -2,7 +2,7 @@
 
 # Export the pythonpath to include the Carla python module
 # NOTE: this requires the PythonAPI to be built on the machine this script is run
-export PYTHONPATH=$PYTHONPATH:~/carla/PythonAPI/carla/dist/carla-0.9.10-py3.8-linux-x86_64.egg &&
+export PYTHONPATH=$PYTHONPATH:~/carla/PythonAPI/carla/dist/carla-0.9.13-py3.8-linux-x86_64.egg &&
 
 # Source the main ROS setup, in our case we're using ROS Noetic
 source /opt/ros/noetic/setup.bash &&

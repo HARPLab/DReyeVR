@@ -1,0 +1,21 @@
+{
+	"simulation": {
+		"sync_mode": true,
+		"delta_t": 0.01666666667,
+		"calibration_samples": 201
+	},
+	"haptic_control": {
+		"Cs": 0.5,
+		"Kc": 0.5,
+		"tp": 12.0
+	},
+	"force_feedback": {
+		"saturation_percentage": 100,
+		"coefficient_percentage": 0
+	},
+	"logging": {
+		"enable_debug": true,
+		"log_dir": "./logs"
+	},
+	"default_path_idx": "3"
+}

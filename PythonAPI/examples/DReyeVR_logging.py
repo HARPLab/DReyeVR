@@ -1,8 +1,9 @@
 import argparse
-import numpy as np
-import time
-import sys
 import os
+import sys
+import time
+
+import numpy as np
 from DReyeVR_utils import DReyeVRSensor
 
 try:

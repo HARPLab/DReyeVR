@@ -1,4 +1,6 @@
-import os, sys, glob
+import glob
+import os
+import sys
 from typing import List
 
 CARLA_ROOT: str = os.getenv("CARLA_ROOT")

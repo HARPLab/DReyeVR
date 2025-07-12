@@ -1,18 +1,11 @@
 from typing import Any, Dict
 
-from DReyeVR_utils import DReyeVRSensor, find_ego_vehicle
-import no_rendering_mode
-from no_rendering_mode import (
-    COLOR_SCARLET_RED_1,
-    World,
-    main,
-    game_loop,
-)
-
 import carla
+import no_rendering_mode
 import numpy as np
+from DReyeVR_utils import DReyeVRSensor, find_ego_vehicle
+from no_rendering_mode import COLOR_SCARLET_RED_1, World, game_loop, main
 from scipy.spatial.transform import Rotation
-
 
 try:
     import pygame
@@ -67,10 +60,14 @@ class DReyeVRWorld(World):
 
 def schematic_run(args):
     # used when isolated and run in a script such as run_experiment.py
-    no_rendering_mode.World = DReyeVRWorld  # hack to make the no_rendering_mode game_loop use the new DReyeVRWorld
+    no_rendering_mode.World = (
+        DReyeVRWorld  # hack to make the no_rendering_mode game_loop use the new DReyeVRWorld
+    )
     game_loop(args)
 
 
 if __name__ == "__main__":
-    no_rendering_mode.World = DReyeVRWorld  # hack to make the no_rendering_mode game_loop use the new DReyeVRWorld
+    no_rendering_mode.World = (
+        DReyeVRWorld  # hack to make the no_rendering_mode game_loop use the new DReyeVRWorld
+    )
     main()

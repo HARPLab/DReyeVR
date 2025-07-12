@@ -1,9 +1,9 @@
-import time
 import argparse
-from numpy import random
-from DReyeVR_utils import find_ego_vehicle
+import time
 
 import carla
+from DReyeVR_utils import find_ego_vehicle
+from numpy import random
 
 
 def set_DReyeVR_autopilot(world, traffic_manager):
@@ -34,9 +34,7 @@ def spawn_other_vehicles(client, max_vehicles, world, traffic_manager):
             color = random.choice(blueprint.get_attribute("color").recommended_values)
             blueprint.set_attribute("color", color)
         if blueprint.has_attribute("driver_id"):
-            driver_id = random.choice(
-                blueprint.get_attribute("driver_id").recommended_values
-            )
+            driver_id = random.choice(blueprint.get_attribute("driver_id").recommended_values)
             blueprint.set_attribute("driver_id", driver_id)
         try:
             blueprint.set_attribute("role_name", "autopilot")
@@ -89,9 +87,7 @@ def main():
         type=int,
         help="port to communicate with TM (default: 8000)",
     )
-    argparser.add_argument(
-        "-s", "--seed", metavar="S", type=int, help="Random device seed"
-    )
+    argparser.add_argument("-s", "--seed", metavar="S", type=int, help="Random device seed")
     args = argparser.parse_args()
 
     client = carla.Client(args.host, args.port)

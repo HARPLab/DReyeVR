@@ -1,6 +1,6 @@
 <!-- DReyeVR ROS bridge launch file that includes the default host and port for our situation -->
 <launch>
-  <arg name='host' default='192.168.86.182'/>
+  <arg name='host' default='163.221.139.137'/>
   <arg name='port' default='2000'/>
   <arg name='timeout' default=''/>
   <arg name='rosbag_fname' default=''/>
@@ -8,7 +8,7 @@
   <arg name='synchronous_mode' default='false'/>
   <arg name='synchronous_mode_wait_for_vehicle_control_command' default=''/>
   <arg name='fixed_delta_seconds' default='0.0'/>
-  <arg name='town' default=''/>
+  <arg name='town' default='Town05'/>
   <param name="rosbag_fname" value="$(arg rosbag_fname)"/>
   <rosparam file="$(find carla_ros_bridge)/config/settings.yaml" command="load" />
   <param name="carla/host" value="$(arg host)" unless="$(eval host == '')"/>

@@ -1,0 +1,45 @@
+{
+	"0": {
+		"P_0": [-1.47066772, -13.22415039],
+		"P_d": [-0.37066772, -29.02415039],
+		"P_f": [-6.87066772, -21.62415039],
+		"yaw_0": 180,
+		"yaw_d": 170,
+		"yaw_f": 90,
+		"use_bezier": true
+	},
+	"1": {
+		"P_0": [-2.376371583333333, -13.749357381666668],
+		"P_d": [-0.566469992644628, -27.297582133636364],
+		"P_f": [-7.7486732, -21.271947543333333],
+		"yaw_0": 1.0237121333333334,
+		"yaw_d": 27.831170400000005,
+		"yaw_f": 91.9554259149999922,
+		"forward_path_file": "../data/paths/driving_path_left2right.txt",
+		"forward_path_range": [0, 40],
+		"backward_path_file": "../data/paths/driving_path_left2right.txt",
+		"backward_path_range": [40, -1]
+	},
+	"2": {
+		"P_0": [-2.284308814, -31.734065629999996],
+		"P_d": [0.409550333177305, -18.459612079588652],
+		"P_f": [-7.449310874, -21.459648512],
+		"yaw_0": 178.9748993,
+		"yaw_d": 128.76474382600003,
+		"yaw_f": 88.703015164000007,
+		"forward_path_file": "../data/paths/driving_path_right2left.txt",
+		"forward_path_range": [0, 46],
+		"backward_path_file": "../data/paths/driving_path_right2left.txt",
+		"backward_path_range": [46, -1]
+	},
+	"3": {
+		"P_0": [],
+		"P_d": [1.035116, -18.325821],
+		"P_f": [-7.685114, -21.214608],
+		"yaw_0": null,
+		"yaw_d": 40,
+		"yaw_f": 90,
+		"backward_path_file": "../data/paths/hitachi.txt",
+		"backward_path_range": [0, -1]
+	}
+}

@@ -1,0 +1,73 @@
+{
+	"simulation": {
+		"sync_mode": false,
+		"delta_t": 0.05,
+		"update_frequency": 20.0
+	},
+	"trigger_area": {
+		"center": {
+			"x": 0.0,
+			"y": 0.0,
+			"z": 0.0
+		},
+		"radius": 50.0,
+		"description": "Circular area that triggers walker spawning when vehicle enters"
+	},
+	"walker_spawn": {
+		"number_of_walkers": 2,
+		"spawn_positions": [
+			{
+				"x": 1.0,
+				"y": 1.0,
+				"z": 0.3
+			},
+			{
+				"x": 5.0,
+				"y": 5.0,
+				"z": 0.3
+			}
+			
+		],
+		"target_positions": [
+			{
+				"x": 10.0,
+				"y": 10.0,
+				"z": 0.3
+			},
+			{
+				"x": 15.0,
+				"y": 15.0,
+				"z": 0.3
+			}
+		],
+		"walker_movement": {
+			"type": "target_based",
+			"movement_radius": 5.0,
+			"change_direction_interval": 5.0,
+			"use_navigation_mesh": true,
+			"_comments": {
+				"type": "Movement type: 'target_based' for walking to fixed targets, 'random_walk' for 5m radius movement",
+				"movement_radius": "Maximum distance in meters walkers will move from their spawn position (for random_walk)",
+				"change_direction_interval": "How often (in seconds) walkers get new random destinations (for random_walk)",
+				"use_navigation_mesh": "Whether to use CARLA's navigation mesh for more realistic pathfinding"
+			}
+		},
+		"walker_speed": {
+			"min": 0.5,
+			"max": 2.5,
+			"default": 1.5
+		},
+		"walker_filter": "walker.pedestrian.*",
+		"generation": "2",
+		"is_invincible": false
+	},
+	"vehicle_tracking": {
+		"role_name": "hero",
+		"check_interval": 0.1,
+		"spawn_once_per_entry": true
+	},
+	"logging": {
+		"enable_debug": true,
+		"log_file": "walker_spawn_log.txt"
+	}
+}
